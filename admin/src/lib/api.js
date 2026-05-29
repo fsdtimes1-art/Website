@@ -1,4 +1,4 @@
-const BASE = '/api/admin'
+const BASE = (import.meta.env.VITE_API_URL || '') + '/api/admin'
 
 // ── stored key ───────────────────────────────────────────────
 export function getStoredKey() {
@@ -15,7 +15,7 @@ export function clearStoredKey() {
 
 // ── generic fetch helper ─────────────────────────────────────
 async function request(path, options = {}, useAdminBase = true) {
-  const base = useAdminBase ? BASE : '/api'
+  const base = useAdminBase ? BASE : (import.meta.env.VITE_API_URL || '') + '/api'
   const res  = await fetch(`${base}${path}`, {
     headers: {
       'Content-Type':  'application/json',
