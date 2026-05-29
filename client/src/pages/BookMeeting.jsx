@@ -222,15 +222,24 @@ export default function BookMeeting() {
                         </p>
                       </div>
                     ) : <div />}
-                    <a
-                      href="https://faisalabad-times.vercel.app/contact"
-                      target="_blank"
-                      rel="noreferrer"
+                    <button
+                      onClick={() => {
+                        document.getElementById('booking-form')?.scrollIntoView({
+                          behavior: 'smooth',
+                          block: 'start',
+                        })
+                      }}
                       className="btn-gold"
-                      style={{ fontSize: '13px', padding: '10px 20px', whiteSpace: 'nowrap' }}
+                      style={{
+                        fontSize: '13px',
+                        padding: '10px 20px',
+                        whiteSpace: 'nowrap',
+                        border: 'none',
+                        cursor: 'pointer',
+                      }}
                     >
                       Book Free Meeting
-                    </a>
+                    </button>
                   </div>
 
                 </div>
@@ -241,7 +250,7 @@ export default function BookMeeting() {
       </section>
 
       {/* ── Contact Form ── */}
-      <section style={{ padding: '0 0 96px' }}>
+      <section id="booking-form" style={{ padding: '0 0 96px' }}>
         <div className="container">
 
           <div style={{ marginBottom: '48px' }}>
