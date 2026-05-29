@@ -3,15 +3,15 @@ import { Link } from 'react-router-dom'
 
 const WHATSAPP_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER || '923001234567'
 
-const EVENT_TYPES = [
-  'Corporate Conference',
-  'Product Launch',
-  'Wedding / Nikkah',
-  'Private Party',
-  'Concert / Live Show',
-  'Exhibition / Expo',
-  'Sports Event',
-  'Other',
+const SERVICE_TYPES = [
+  'Restaurant Digital Marketing',
+  'FT Page Business Promotion',
+  'Event Ticketing & Management',
+  'Social Media Management',
+  'Paid Advertising',
+  'Event Promotion',
+  'Brand Collaboration',
+  'Custom Requirement',
 ]
 
 const BUDGET_RANGES = [
@@ -76,11 +76,13 @@ export default function BookMeeting() {
     name:      '',
     phone:     '',
     email:     '',
-    eventType: '',
+    serviceType: '',
     budget:    '',
     date:      '',
     attendees: '',
     message:   '',
+    business: '',
+    marketingBudget: '',
   })
   const [submitted, setSubmitted] = useState(false)
 
@@ -89,7 +91,7 @@ export default function BookMeeting() {
   }
 
   function handleSubmit() {
-    const required = ['name', 'phone', 'eventType']
+    const required = ['name', 'phone', 'serviceType']
     const missing  = required.find(k => !form[k].trim())
     if (missing) return
 
@@ -99,10 +101,10 @@ export default function BookMeeting() {
       `*Name:* ${form.name}`,
       `*Phone:* ${form.phone}`,
       form.email     ? `*Email:* ${form.email}`                   : null,
-      `*Event Type:* ${form.eventType}`,
+      `*Service Interested In:* ${form.serviceType}`,
+      form.business  ? `*Business Name:* ${form.business}`        : null,
+      form.marketingBudget  ? `*Marketing Budget:* ${form.marketingBudget}`     : null,
       form.budget    ? `*Budget:* ${form.budget}`                  : null,
-      form.date      ? `*Preferred Date:* ${form.date}`            : null,
-      form.attendees ? `*Expected Attendees:* ${form.attendees}`   : null,
       form.message   ? `\n*Notes:*\n${form.message}`               : null,
     ].filter(Boolean).join('\n')
 
@@ -111,7 +113,7 @@ export default function BookMeeting() {
     setTimeout(() => window.open(url, '_blank'), 400)
   }
 
-  const isValid = form.name.trim() && form.phone.trim() && form.eventType
+  const isValid = form.name.trim() && form.phone.trim() && form.serviceType
 
   return (
     <div>
@@ -382,10 +384,10 @@ export default function BookMeeting() {
                     borderBottom: '1px solid rgba(255,255,255,0.06)',
                   }}>
                     <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '20px', letterSpacing: '2px' }}>
-                      TELL US ABOUT YOUR EVENT
+                      LET'S GROW YOUR BRAND
                     </h3>
                     <p style={{ color: 'var(--gray-mid)', fontSize: '12px', marginTop: '4px' }}>
-                      We'll reach out on WhatsApp within a few hours
+                      Tell us what you need and our team will contact you shortly.
                     </p>
                   </div>
 
@@ -397,10 +399,22 @@ export default function BookMeeting() {
                     <Field label="Email Address" name="email" type="email" placeholder="you@email.com" value={form.email} onChange={handleField} />
 
                     <div>
-                      <label style={labelStyle}>Event Type *</label>
-                      <select name="eventType" value={form.eventType} onChange={handleField} className="input" style={{ cursor: 'pointer' }}>
-                        <option value="">Select event type...</option>
-                        {EVENT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                      <label style={labelStyle}>Service Interested In *</label>
+
+                      <select
+                        name="serviceType"
+                        value={form.serviceType}
+                        onChange={handleField}
+                        className="input"
+                        style={{ cursor: 'pointer' }}
+                      >
+                        <option value="">Select a service...</option>
+
+                        {SERVICE_TYPES.map(service => (
+                          <option key={service} value={service}>
+                            {service}
+                          </option>
+                        ))}
                       </select>
                     </div>
 
@@ -413,15 +427,28 @@ export default function BookMeeting() {
                     </div>
 
                     <div className="field-row">
-                      <Field label="Event Date"          name="date"      type="date"   value={form.date}      onChange={handleField} />
-                      <Field label="Expected Attendees"  name="attendees" type="number" placeholder="e.g. 300" value={form.attendees} onChange={handleField} />
+                      <Field
+                        label="Business / Brand Name"
+                        name="business"
+                        placeholder="Your business name"
+                        value={form.business}
+                        onChange={handleField}
+                      />
+
+                      <Field
+                        label="Monthly Marketing Budget"
+                        name="marketingBudget"
+                        placeholder="Optional"
+                        value={form.marketingBudget}
+                        onChange={handleField}
+                      />
                     </div>
 
                     <div>
                       <label style={labelStyle}>Additional Notes</label>
                       <textarea
                         name="message"
-                        placeholder="Any specific requirements, venue preferences, or questions..."
+                        placeholder="Tell us about your business, goals, campaign idea, or requirements..."
                         value={form.message}
                         onChange={handleField}
                         className="input"
