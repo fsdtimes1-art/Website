@@ -247,13 +247,14 @@ function HeroSlider({ events }) {
 
       {/* Bottom fade */}
       <div style={{
-        position:   'absolute',
-        bottom:     0,
-        left:       0,
-        right:      0,
-        height:     '120px',
-        background: 'linear-gradient(to bottom, transparent, var(--black))',
-        zIndex:     2,
+        position:      'absolute',
+        bottom:        0,
+        left:          0,
+        right:         0,
+        height:        '120px',
+        background:    'linear-gradient(to bottom, transparent, var(--black))',
+        zIndex:        1,
+        pointerEvents: 'none',
       }} />
 
       <style>{`
