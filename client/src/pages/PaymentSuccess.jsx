@@ -169,7 +169,7 @@ export default function PaymentSuccess() {
             {[
               { icon: '📧', text: 'A payment confirmation email has been sent to your inbox.' },
               { icon: '🎟️', text: 'A second email with your ticket PDF and QR codes will arrive shortly.' },
-              { icon: '📱', text: 'Save the PDF to your phone or print it — both work at the gate.' },
+              { icon: '📱', text: 'Save the PDF to your phone or print it, both work at the gate.' },
               { icon: '🚪', text: 'Show your QR code to staff at the entrance for a single-use scan.' },
             ].map((item, i) => (
               <div key={i} style={{

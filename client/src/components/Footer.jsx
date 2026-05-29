@@ -92,19 +92,29 @@ export default function Footer() {
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {[
-                { icon: '📧', label: 'hello@eventflow.com' },
-                { icon: '📱', label: '+92 300 123 4567' },
-                { icon: '📍', label: 'Karachi, Pakistan' },
+                { icon: '📧', label: 'hello@eventflow.com', href: 'mailto:hello@eventflow.com' },
+                { icon: '📱', label: '+92 300 123 4567', href: 'tel:+923001234567' },
+                { icon: '📍', label: 'Faisalabad, Pakistan', href: 'https://maps.google.com/?q=Faisalabad,+Pakistan', target: '_blank', rel: 'noreferrer' },
+                { icon: '📸', label: 'Instagram', href: 'https://www.instagram.com/faisalabadtimes/', target: '_blank', rel: 'noreferrer' },
               ].map((item, i) => (
-                <p key={i} style={{
-                  color:    'var(--gray-mid)',
-                  fontSize: '14px',
-                  display:  'flex',
-                  gap:      '8px',
-                }}>
+                <a
+                  key={i}
+                  href={item.href}
+                  target={item.target}
+                  rel={item.rel}
+                  style={{
+                    color: 'var(--white)',
+                    fontSize: '14px',
+                    margin: 0,
+                    textDecoration: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                  }}
+                >
                   <span>{item.icon}</span>
-                  <span>{item.label}</span>
-                </p>
+                  {item.label}
+                </a>
               ))}
             </div>
           </div>

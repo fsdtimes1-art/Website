@@ -57,7 +57,7 @@ export default function Portfolio() {
             lineHeight: '1.6',
           }}>
             A track record of unforgettable experiences. From intimate private gatherings
-            to large-scale productions — here's what we've delivered.
+            to large-scale productions here's what we've delivered.
           </p>
         </div>
       </section>

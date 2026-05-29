@@ -96,7 +96,7 @@ export default function BookMeeting() {
     if (missing) return
 
     const lines = [
-      `👋 *New Meeting Request — EventFlow*`,
+      `👋 *New Meeting Request:EventFlow*`,
       ``,
       `*Name:* ${form.name}`,
       `*Phone:* ${form.phone}`,
@@ -286,14 +286,14 @@ export default function BookMeeting() {
                   WHY EVENTFLOW?
                 </h2>
                 <p style={{ color: 'var(--gray-light)', fontSize: '15px', lineHeight: '1.7' }}>
-                  We've managed over 50 events across Pakistan — from intimate corporate dinners
+                  We've managed over 50 events across Pakistan: from intimate corporate dinners
                   to large-scale concerts. Our team handles everything so you don't have to.
                 </p>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                 {[
-                  { icon: '🎯', title: 'End-to-End Management',    desc: 'Venue, ticketing, logistics, on-ground staff — all handled by us.' },
+                  { icon: '🎯', title: 'End-to-End Management',    desc: 'Venue, ticketing, logistics, on-ground staff: All handled by us.' },
                   { icon: '🎟️', title: 'Built-In Ticketing',       desc: 'Our platform handles sales, seat allocation, QR check-in, and revenue reporting.' },
                   { icon: '📊', title: 'Real-Time Insights',       desc: 'Live dashboards showing sales, attendance, and revenue as it happens.' },
                   { icon: '🤝', title: 'Dedicated Point of Contact', desc: 'One person responsible for your event from kickoff to curtain call.' },
@@ -476,7 +476,7 @@ export default function BookMeeting() {
 
                     <p style={{ color: 'var(--gray-mid)', fontSize: '11px', textAlign: 'center', lineHeight: '1.5' }}>
                       Clicking the button will open WhatsApp with a pre-filled message.
-                      No account needed — just hit Send.
+                      No account needed, just hit Send.
                     </p>
                   </div>
                 </div>
@@ -672,7 +672,7 @@ function SuccessState({ onReset }) {
         color: 'var(--gray-light)', fontSize: '14px', lineHeight: '1.6',
         maxWidth: '320px', margin: '0 auto 28px',
       }}>
-        WhatsApp should open with your message pre-filled. Just hit Send — we'll respond within a few hours.
+        WhatsApp should open with your message pre-filled. Just hit Send & we'll respond within a few hours.
       </p>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
         <button onClick={onReset} className="btn-ghost" style={{ width: '100%' }}>

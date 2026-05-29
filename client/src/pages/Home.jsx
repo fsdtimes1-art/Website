@@ -20,7 +20,7 @@ function HeroSlider({ events }) {
     setTimeout(() => setAnimating(false), 700)
   }, [animating])
 
-  // Stable interval — never re-registers, reads currentRef instead of stale closure
+  // Stable interval never re-registers, reads currentRef instead of stale closure
   useEffect(() => {
     timerRef.current = setInterval(() => {
       const next = (currentRef.current + 1) % events.length
@@ -58,7 +58,7 @@ function HeroSlider({ events }) {
             zIndex:     i === current ? 1 : 0,
           }}
         >
-          {/* Background image — NO zoom/scale */}
+          {/* Background image NO zoom/scale */}
           {ev.image_url ? (
             <div style={{
               position:           'absolute',
@@ -72,7 +72,7 @@ function HeroSlider({ events }) {
             <div style={{ position: 'absolute', inset: 0, background: 'var(--black-2)' }} />
           )}
 
-          {/* Overlay — reduced opacity for a lighter shade */}
+          {/* Overlay reduced opacity for a lighter shade */}
           <div style={{
             position:   'absolute',
             inset:      0,
@@ -275,7 +275,7 @@ export default function Home() {
   const [loading,      setLoading]      = useState(true)
   const [fontsReady,   setFontsReady]   = useState(false)
 
-  // Wait for fonts to load before rendering — prevents FOUT flash
+  // Wait for fonts to load before rendering prevents FOUT flash
   useEffect(() => {
     if (document.fonts && document.fonts.ready) {
       document.fonts.ready.then(() => setFontsReady(true))
@@ -294,7 +294,7 @@ export default function Home() {
   const sliderEvents = events.slice(0, 5)
   const gridEvents   = events.slice(0, 3)
 
-  // Keep layout stable while fonts load — invisible until ready
+  // Keep layout stable while fonts load invisible until ready
   const visibilityStyle = fontsReady ? {} : { visibility: 'hidden' }
 
   return (
@@ -352,7 +352,7 @@ export default function Home() {
                 marginBottom: '40px',
                 maxWidth:     '520px',
               }}>
-                From intimate gatherings to grand spectacles — we manage every detail
+                From intimate gatherings to grand spectacles, We manage every detail
                 so you can simply experience the moment.
               </p>
               <div className="fade-up fade-up-delay-3" style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
@@ -436,7 +436,7 @@ export default function Home() {
           }}>
             {[
               { step: '01', icon: '🎟️', title: 'Browse Events',   desc: 'Explore upcoming events and find the ones that excite you most.' },
-              { step: '02', icon: '💺', title: 'Choose Your Seat', desc: 'Pick your preferred category — VIP, Premium, or General.' },
+              { step: '02', icon: '💺', title: 'Choose Your Seat', desc: 'Pick your preferred category: VIP, Premium, or General.' },
               { step: '03', icon: '💳', title: 'Secure Payment',   desc: 'Pay safely via card through our Stripe-powered checkout.' },
               { step: '04', icon: '📧', title: 'Get Your Ticket',  desc: 'Receive a PDF ticket with QR code instantly in your inbox.' },
             ].map((item, i) => (
@@ -453,7 +453,7 @@ export default function Home() {
                   right:      '20px',
                   fontFamily: 'var(--font-display)',
                   fontSize:   '52px',
-                  color:      'rgba(245,158,11,0.06)',
+                  color:      'var(--gold)',
                   lineHeight: '1',
                   userSelect: 'none',
                 }}>
@@ -500,7 +500,7 @@ export default function Home() {
             margin:      '0 auto 36px',
             maxWidth:    '480px',
           }}>
-            Let us handle everything — from ticketing to on-ground management.
+            Let us handle everything: From ticketing to on-ground management.
           </p>
           <Link to="/book-meeting" className="btn-gold" style={{ fontSize: '15px' }}>
             Book a Free Consultation →
