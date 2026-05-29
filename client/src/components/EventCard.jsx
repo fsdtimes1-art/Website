@@ -231,13 +231,20 @@ export default function EventCard({ event }) {
               Sold Out
             </span>
           ) : (
-            <Link
-              to={`/events/${id}`}
-              className="btn-gold"
-              style={{ fontSize: '13px', padding: '9px 20px' }}
-            >
-              Get Tickets →
-            </Link>
+          <Link
+            to={`/events/${id}`}
+            style={{
+              display: 'inline-block',
+              padding: '9px 20px',
+              background: 'gold',
+              color: '#000',
+              fontWeight: 'bold',
+              borderRadius: '6px',
+              textDecoration: 'none',
+            }}
+          >
+            Get Tickets →
+          </Link>
           )}
         </div>
 

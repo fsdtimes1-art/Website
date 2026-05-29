@@ -79,21 +79,27 @@ h1, h2, h3, h4, h5, h6 {
 
 /* ── Gold button ────────────────────────────────────────────── */
 .btn-gold {
-  display:         inline-flex;
-  align-items:     center;
+  display: inline-flex;
+  align-items: center;
   justify-content: center;
-  gap:             8px;
-  background:      var(--gold);
-  color:           var(--black);
-  font-family:     var(--font-display);
-  font-size:       16px;
-  letter-spacing:  2px;
-  padding:         14px 32px;
-  border:          none;
-  border-radius:   4px;
-  cursor:          pointer;
-  transition:      background 0.2s, transform 0.15s, box-shadow 0.2s;
+  gap: 8px;
+
+  background: var(--gold);
+  color: var(--black);
+
+  font-family: var(--font-display);
+  font-size: 16px;
+  letter-spacing: 2px;
+
+  padding: 14px 32px;
+  border: none;
+  border-radius: 4px;
+
+  cursor: pointer;
   text-decoration: none;
+
+  position: relative;
+  z-index: 10;   /* IMPORTANT */
 }
 
 .btn-gold:hover {
