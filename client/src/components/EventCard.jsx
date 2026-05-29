@@ -252,3 +252,6 @@ export default function EventCard({ event }) {
     </div>
   )
 }
+
+
+console.log("EVENT ID:", id)
