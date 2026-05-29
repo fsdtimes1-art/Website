@@ -222,7 +222,7 @@ export default function BookMeeting() {
                         </p>
                       </div>
                     ) : <div />}
-                    
+                    <a
                       href="https://faisalabad-times.vercel.app/contact"
                       target="_blank"
                       rel="noreferrer"
