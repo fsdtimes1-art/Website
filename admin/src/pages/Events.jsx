@@ -1,7 +1,7 @@
 import { useEffect, useState }                    from 'react'
 import { Link }                                   from 'react-router-dom'
 import { getAdminEvents, toggleEvent, deleteEvent } from '../lib/api'
-import EventTable                                 from '../Components/EventTable'
+import EventTable                                 from '../components/EventTable'
 
 export default function Events() {
   const [events,  setEvents]  = useState([])
