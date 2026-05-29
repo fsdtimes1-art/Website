@@ -1,7 +1,7 @@
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useEffect, useState }                   from 'react'
 import { getStoredKey }                          from './lib/api'
-import Sidebar    from './Components/Sidebar'
+import Sidebar    from './components/Sidebar'
 import Login      from './pages/Login'
 import Dashboard  from './pages/Dashboard'
 import Events     from './pages/Events'
