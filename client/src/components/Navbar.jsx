@@ -48,7 +48,7 @@ export default function Navbar() {
               letterSpacing: '4px',
               color:         'var(--gold)',
             }}>
-              EVENT<span style={{ color: 'var(--white)' }}>FLOW</span>
+              Faisalabad<span style={{ color: 'var(--white)' }}>Times.co</span>
             </span>
           </Link>
 
