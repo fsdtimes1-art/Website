@@ -4,24 +4,41 @@ const supabase = require('../lib/supabase');
 
 // ============================================================
 // AUTH MIDDLEWARE
-// Checks x-admin-key header on every admin request
 // ============================================================
 const adminAuth = (req, res, next) => {
   const key = req.headers['x-admin-key'];
-  if (!key || key !== process.env.ADMIN_SECRET_KEY) {
-    return res.status(401).json({ error: 'Unauthorized' });
+  if (!key) return res.status(401).json({ error: 'Unauthorized' });
+
+  if (key === process.env.ADMIN_SECRET_KEY) {
+    req.role = 'admin';
+    return next();
   }
+  if (key === process.env.SCANNER_SECRET_KEY) {
+    req.role = 'scanner';
+    return next();
+  }
+
+  return res.status(401).json({ error: 'Unauthorized' });
+};
+
+const requireAdmin = (req, res, next) => {
+  if (req.role !== 'admin') return res.status(403).json({ error: 'Forbidden' });
   next();
 };
 
 router.use(adminAuth);
 
 // ============================================================
-// DASHBOARD
+// ME — returns role so frontend knows what to show
 // ============================================================
+router.get('/me', (req, res) => {
+  res.json({ role: req.role });
+});
 
-// GET /api/admin/dashboard
-router.get('/dashboard', async (req, res) => {
+// ============================================================
+// DASHBOARD — admin only
+// ============================================================
+router.get('/dashboard', requireAdmin, async (req, res) => {
   try {
     const [eventsRes, purchasesRes, ticketsRes] = await Promise.all([
       supabase.from('events').select('id, name, is_active, date'),
@@ -33,7 +50,6 @@ router.get('/dashboard', async (req, res) => {
     const purchases = purchasesRes.data || [];
     const tickets   = ticketsRes.data   || [];
 
-    // Total revenue from completed purchases
     const totalRevenue = purchases
       .filter(p => p.status === 'completed')
       .reduce((sum, p) => sum + Number(p.total_amount), 0);
@@ -42,7 +58,6 @@ router.get('/dashboard', async (req, res) => {
     const scannedTickets = tickets.filter(t => t.scanned).length;
     const activeEvents   = events.filter(e => e.is_active).length;
 
-    // Revenue + ticket count per event
     const revenueByEvent = {};
     purchases
       .filter(p => p.status === 'completed')
@@ -70,11 +85,9 @@ router.get('/dashboard', async (req, res) => {
 });
 
 // ============================================================
-// EVENTS
+// EVENTS — admin only
 // ============================================================
-
-// GET /api/admin/events — ALL events including hidden ones
-router.get('/events', async (req, res) => {
+router.get('/events', requireAdmin, async (req, res) => {
   try {
     const { data, error } = await supabase
       .from('events')
@@ -88,8 +101,7 @@ router.get('/events', async (req, res) => {
   }
 });
 
-// POST /api/admin/events — create new event with seat categories
-router.post('/events', async (req, res) => {
+router.post('/events', requireAdmin, async (req, res) => {
   try {
     const { name, description, image_url, date, venue, categories } = req.body;
 
@@ -97,7 +109,6 @@ router.post('/events', async (req, res) => {
       return res.status(400).json({ error: 'name, date and venue are required' });
     }
 
-    // Insert event
     const { data: event, error: eventError } = await supabase
       .from('events')
       .insert({ name, description, image_url, date, venue })
@@ -106,7 +117,6 @@ router.post('/events', async (req, res) => {
 
     if (eventError) throw eventError;
 
-    // Insert seat categories if provided
     if (categories && categories.length > 0) {
       const rows = categories.map(c => ({
         event_id:    event.id,
@@ -122,7 +132,6 @@ router.post('/events', async (req, res) => {
       if (catError) throw catError;
     }
 
-    // Return full event with categories
     const { data: full } = await supabase
       .from('events')
       .select('*, seat_categories(*)')
@@ -135,12 +144,10 @@ router.post('/events', async (req, res) => {
   }
 });
 
-// PUT /api/admin/events/:id — update event details and categories
-router.put('/events/:id', async (req, res) => {
+router.put('/events/:id', requireAdmin, async (req, res) => {
   try {
     const { name, description, image_url, date, venue, is_active, categories } = req.body;
 
-    // Update event
     const { error: eventError } = await supabase
       .from('events')
       .update({ name, description, image_url, date, venue, is_active })
@@ -148,34 +155,21 @@ router.put('/events/:id', async (req, res) => {
 
     if (eventError) throw eventError;
 
-    // Update or insert categories
     if (categories && categories.length > 0) {
       for (const cat of categories) {
         if (cat.id) {
-          // Existing category — update
           await supabase
             .from('seat_categories')
-            .update({
-              name:        cat.name,
-              price:       cat.price,
-              total_seats: cat.total_seats
-            })
+            .update({ name: cat.name, price: cat.price, total_seats: cat.total_seats })
             .eq('id', cat.id);
         } else {
-          // New category — insert
           await supabase
             .from('seat_categories')
-            .insert({
-              event_id:    req.params.id,
-              name:        cat.name,
-              price:       cat.price,
-              total_seats: cat.total_seats
-            });
+            .insert({ event_id: req.params.id, name: cat.name, price: cat.price, total_seats: cat.total_seats });
         }
       }
     }
 
-    // Return updated event
     const { data: full } = await supabase
       .from('events')
       .select('*, seat_categories(*)')
@@ -188,8 +182,7 @@ router.put('/events/:id', async (req, res) => {
   }
 });
 
-// PATCH /api/admin/events/:id/toggle — show/hide event
-router.patch('/events/:id/toggle', async (req, res) => {
+router.patch('/events/:id/toggle', requireAdmin, async (req, res) => {
   try {
     const { data: event } = await supabase
       .from('events')
@@ -211,11 +204,8 @@ router.patch('/events/:id/toggle', async (req, res) => {
   }
 });
 
-// DELETE /api/admin/events/:id — hard delete
-// Only use for events with no purchases; otherwise use toggle
-router.delete('/events/:id', async (req, res) => {
+router.delete('/events/:id', requireAdmin, async (req, res) => {
   try {
-    // Check if any purchases exist
     const { data: purchases } = await supabase
       .from('purchases')
       .select('id')
@@ -240,8 +230,7 @@ router.delete('/events/:id', async (req, res) => {
   }
 });
 
-// DELETE /api/admin/events/:eventId/categories/:catId — remove a seat category
-router.delete('/events/:eventId/categories/:catId', async (req, res) => {
+router.delete('/events/:eventId/categories/:catId', requireAdmin, async (req, res) => {
   try {
     const { error } = await supabase
       .from('seat_categories')
@@ -257,11 +246,9 @@ router.delete('/events/:eventId/categories/:catId', async (req, res) => {
 });
 
 // ============================================================
-// PURCHASES / TICKET BUYERS
+// PURCHASES — admin only
 // ============================================================
-
-// GET /api/admin/purchases?eventId=xxx
-router.get('/purchases', async (req, res) => {
+router.get('/purchases', requireAdmin, async (req, res) => {
   try {
     const { eventId } = req.query;
 
@@ -285,11 +272,9 @@ router.get('/purchases', async (req, res) => {
 });
 
 // ============================================================
-// PORTFOLIO
+// PORTFOLIO — admin only
 // ============================================================
-
-// GET /api/admin/portfolio
-router.get('/portfolio', async (req, res) => {
+router.get('/portfolio', requireAdmin, async (req, res) => {
   const { data, error } = await supabase
     .from('portfolio_items')
     .select('*')
@@ -299,8 +284,7 @@ router.get('/portfolio', async (req, res) => {
   res.json(data);
 });
 
-// POST /api/admin/portfolio
-router.post('/portfolio', async (req, res) => {
+router.post('/portfolio', requireAdmin, async (req, res) => {
   const { data, error } = await supabase
     .from('portfolio_items')
     .insert(req.body)
@@ -311,8 +295,7 @@ router.post('/portfolio', async (req, res) => {
   res.status(201).json(data);
 });
 
-// PUT /api/admin/portfolio/:id
-router.put('/portfolio/:id', async (req, res) => {
+router.put('/portfolio/:id', requireAdmin, async (req, res) => {
   const { data, error } = await supabase
     .from('portfolio_items')
     .update(req.body)
@@ -324,8 +307,7 @@ router.put('/portfolio/:id', async (req, res) => {
   res.json(data);
 });
 
-// DELETE /api/admin/portfolio/:id
-router.delete('/portfolio/:id', async (req, res) => {
+router.delete('/portfolio/:id', requireAdmin, async (req, res) => {
   const { error } = await supabase
     .from('portfolio_items')
     .delete()

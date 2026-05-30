@@ -1,6 +1,6 @@
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useState }                              from 'react'
-import { getStoredKey }                          from './lib/api'
+import { getStoredKey, getStoredRole }           from './lib/api'
 import Sidebar    from './components/Sidebar'
 import Login      from './pages/Login'
 import Dashboard  from './pages/Dashboard'
@@ -16,6 +16,12 @@ function RequireAuth({ children }) {
   return children
 }
 
+function RequireAdmin({ children }) {
+  const role = getStoredRole()
+  if (role === 'scanner') return <Navigate to="/scan" replace />
+  return children
+}
+
 function AdminShell({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
@@ -23,7 +29,6 @@ function AdminShell({ children }) {
     <div style={{ display: 'flex', minHeight: '100vh' }}>
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      {/* Overlay for mobile */}
       {sidebarOpen && (
         <div
           onClick={() => setSidebarOpen(false)}
@@ -32,7 +37,7 @@ function AdminShell({ children }) {
             inset:      0,
             background: 'rgba(0,0,0,0.6)',
             zIndex:     40,
-            display:    'none', // shown via CSS on mobile
+            display:    'none',
           }}
           className="sidebar-overlay"
         />
@@ -45,21 +50,20 @@ function AdminShell({ children }) {
         background: 'var(--black)',
         overflow:   'auto',
       }}>
-        {/* ── Mobile top bar ── */}
         <div className="mobile-topbar">
           <button
             onClick={() => setSidebarOpen(true)}
             style={{
-              background:   'transparent',
-              border:       '1px solid rgba(255,255,255,0.1)',
-              borderRadius: '6px',
-              color:        'var(--white)',
-              fontSize:     '18px',
-              width:        '36px',
-              height:       '36px',
-              cursor:       'pointer',
-              display:      'flex',
-              alignItems:   'center',
+              background:     'transparent',
+              border:         '1px solid rgba(255,255,255,0.1)',
+              borderRadius:   '6px',
+              color:          'var(--white)',
+              fontSize:       '18px',
+              width:          '36px',
+              height:         '36px',
+              cursor:         'pointer',
+              display:        'flex',
+              alignItems:     'center',
               justifyContent: 'center',
             }}
           >
@@ -73,7 +77,7 @@ function AdminShell({ children }) {
           }}>
             EVENT<span style={{ color: 'var(--white)' }}>FLOW</span>
           </span>
-          <div style={{ width: 36 }} /> {/* spacer to centre the logo */}
+          <div style={{ width: 36 }} />
         </div>
 
         {children}
@@ -88,25 +92,27 @@ export default function App() {
       <Route path="/login" element={<Login />} />
 
       <Route path="/" element={
-        <RequireAuth><AdminShell><Dashboard /></AdminShell></RequireAuth>
+        <RequireAuth><RequireAdmin><AdminShell><Dashboard /></AdminShell></RequireAdmin></RequireAuth>
       } />
       <Route path="/events" element={
-        <RequireAuth><AdminShell><Events /></AdminShell></RequireAuth>
+        <RequireAuth><RequireAdmin><AdminShell><Events /></AdminShell></RequireAdmin></RequireAuth>
       } />
       <Route path="/events/new" element={
-        <RequireAuth><AdminShell><EventForm /></AdminShell></RequireAuth>
+        <RequireAuth><RequireAdmin><AdminShell><EventForm /></AdminShell></RequireAdmin></RequireAuth>
       } />
       <Route path="/events/:id/edit" element={
-        <RequireAuth><AdminShell><EventForm /></AdminShell></RequireAuth>
+        <RequireAuth><RequireAdmin><AdminShell><EventForm /></AdminShell></RequireAdmin></RequireAuth>
       } />
       <Route path="/purchases" element={
-        <RequireAuth><AdminShell><Purchases /></AdminShell></RequireAuth>
-      } />
-      <Route path="/scan" element={
-        <RequireAuth><AdminShell><ScanTicket /></AdminShell></RequireAuth>
+        <RequireAuth><RequireAdmin><AdminShell><Purchases /></AdminShell></RequireAdmin></RequireAuth>
       } />
       <Route path="/portfolio" element={
-        <RequireAuth><AdminShell><Portfolio /></AdminShell></RequireAuth>
+        <RequireAuth><RequireAdmin><AdminShell><Portfolio /></AdminShell></RequireAdmin></RequireAuth>
+      } />
+
+      {/* Scan — open to both roles */}
+      <Route path="/scan" element={
+        <RequireAuth><AdminShell><ScanTicket /></AdminShell></RequireAuth>
       } />
 
       <Route path="*" element={

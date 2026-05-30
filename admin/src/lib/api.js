@@ -1,16 +1,15 @@
 const BASE = (import.meta.env.VITE_API_URL || '') + '/api/admin'
 
 // ── stored key ───────────────────────────────────────────────
-export function getStoredKey() {
-  return localStorage.getItem('admin_key') || ''
-}
+export function getStoredKey()  { return localStorage.getItem('admin_key')  || '' }
+export function getStoredRole() { return localStorage.getItem('admin_role') || '' }
 
-export function setStoredKey(key) {
-  localStorage.setItem('admin_key', key)
-}
+export function setStoredKey(key)   { localStorage.setItem('admin_key',  key)  }
+export function setStoredRole(role) { localStorage.setItem('admin_role', role) }
 
 export function clearStoredKey() {
   localStorage.removeItem('admin_key')
+  localStorage.removeItem('admin_role')
 }
 
 // ── generic fetch helper ─────────────────────────────────────
@@ -38,15 +37,18 @@ async function request(path, options = {}, useAdminBase = true) {
 // AUTH
 // ============================================================
 
-// Ping the dashboard endpoint to verify the key works
 export async function verifyAdminKey(key) {
-  const res = await fetch(`${BASE}/dashboard`, {
+  const res = await fetch(`${BASE}/me`, {
     headers: {
       'Content-Type': 'application/json',
       'x-admin-key':  key,
     },
   })
   return res.ok
+}
+
+export async function getMe() {
+  return request('/me')
 }
 
 // ============================================================

@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { clearStoredKey }                 from '../lib/api'
+import { clearStoredKey, getStoredRole }  from '../lib/api'
 
 const NAV = [
   { path: '/',          icon: '📊', label: 'Dashboard'   },
@@ -12,6 +12,7 @@ const NAV = [
 export default function Sidebar({ isOpen, onClose }) {
   const location = useLocation()
   const navigate = useNavigate()
+  const role     = getStoredRole()
 
   function handleLogout() {
     clearStoredKey()
@@ -24,8 +25,12 @@ export default function Sidebar({ isOpen, onClose }) {
   }
 
   function handleNavClick() {
-    onClose?.() // close drawer on mobile after tapping a link
+    onClose?.()
   }
+
+  const visibleNav = role === 'scanner'
+    ? NAV.filter(item => item.path === '/scan')
+    : NAV
 
   return (
     <aside
@@ -47,11 +52,11 @@ export default function Sidebar({ isOpen, onClose }) {
     >
       {/* ── Logo ── */}
       <div style={{
-        padding:      '28px 24px 20px',
-        borderBottom: '1px solid rgba(255,255,255,0.06)',
-        flexShrink:   0,
-        display:      'flex',
-        alignItems:   'center',
+        padding:        '28px 24px 20px',
+        borderBottom:   '1px solid rgba(255,255,255,0.06)',
+        flexShrink:     0,
+        display:        'flex',
+        alignItems:     'center',
         justifyContent: 'space-between',
       }}>
         <div>
@@ -70,27 +75,26 @@ export default function Sidebar({ isOpen, onClose }) {
             textTransform: 'uppercase',
             marginTop:     '4px',
           }}>
-            Admin Panel
+            {role === 'scanner' ? 'Scanner' : 'Admin Panel'}
           </p>
         </div>
 
-        {/* Close button — only visible on mobile */}
         <button
           onClick={onClose}
           className="sidebar-close-btn"
           style={{
-            background:   'transparent',
-            border:       '1px solid rgba(255,255,255,0.1)',
-            borderRadius: '6px',
-            color:        'var(--gray-mid)',
-            fontSize:     '16px',
-            width:        '30px',
-            height:       '30px',
-            cursor:       'pointer',
-            display:      'none', // shown via CSS on mobile
-            alignItems:   'center',
+            background:     'transparent',
+            border:         '1px solid rgba(255,255,255,0.1)',
+            borderRadius:   '6px',
+            color:          'var(--gray-mid)',
+            fontSize:       '16px',
+            width:          '30px',
+            height:         '30px',
+            cursor:         'pointer',
+            display:        'none',
+            alignItems:     'center',
             justifyContent: 'center',
-            flexShrink:   0,
+            flexShrink:     0,
           }}
         >
           ✕
@@ -105,7 +109,7 @@ export default function Sidebar({ isOpen, onClose }) {
         flexDirection: 'column',
         gap:           '4px',
       }}>
-        {NAV.map(item => {
+        {visibleNav.map(item => {
           const active = isActive(item.path)
           return (
             <Link
@@ -167,33 +171,36 @@ export default function Sidebar({ isOpen, onClose }) {
         flexDirection: 'column',
         gap:           '6px',
       }}>
-        <a
-          href="http://localhost:5173"
-          target="_blank"
-          rel="noreferrer"
-          style={{
-            display:        'flex',
-            alignItems:     'center',
-            gap:            '10px',
-            padding:        '10px 14px',
-            borderRadius:   '8px',
-            textDecoration: 'none',
-            border:         '1px solid transparent',
-            transition:     'all 0.15s',
-          }}
-          onMouseEnter={e => {
-            e.currentTarget.style.background   = 'rgba(255,255,255,0.04)'
-            e.currentTarget.style.borderColor  = 'rgba(255,255,255,0.08)'
-          }}
-          onMouseLeave={e => {
-            e.currentTarget.style.background   = 'transparent'
-            e.currentTarget.style.borderColor  = 'transparent'
-          }}
-        >
-          <span style={{ fontSize: '14px' }}>🌐</span>
-          <span style={{ color: 'var(--gray-mid)', fontSize: '13px' }}>View Client Site</span>
-          <span style={{ marginLeft: 'auto', color: 'var(--gray-dark)', fontSize: '11px' }}>↗</span>
-        </a>
+        {/* Hide client site link for scanner */}
+        {role !== 'scanner' && (
+          <a
+            href="https://faisalabadtimes.vercel.app"
+            target="_blank"
+            rel="noreferrer"
+            style={{
+              display:        'flex',
+              alignItems:     'center',
+              gap:            '10px',
+              padding:        '10px 14px',
+              borderRadius:   '8px',
+              textDecoration: 'none',
+              border:         '1px solid transparent',
+              transition:     'all 0.15s',
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.background  = 'rgba(255,255,255,0.04)'
+              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background  = 'transparent'
+              e.currentTarget.style.borderColor = 'transparent'
+            }}
+          >
+            <span style={{ fontSize: '14px' }}>🌐</span>
+            <span style={{ color: 'var(--gray-mid)', fontSize: '13px' }}>View Client Site</span>
+            <span style={{ marginLeft: 'auto', color: 'var(--gray-dark)', fontSize: '11px' }}>↗</span>
+          </a>
+        )}
 
         <button
           onClick={handleLogout}

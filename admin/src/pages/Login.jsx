@@ -1,6 +1,6 @@
-import { useState }             from 'react'
-import { useNavigate }          from 'react-router-dom'
-import { verifyAdminKey, setStoredKey } from '../lib/api'
+import { useState }                                       from 'react'
+import { useNavigate }                                    from 'react-router-dom'
+import { verifyAdminKey, setStoredKey, setStoredRole, getMe } from '../lib/api'
 
 export default function Login() {
   const [key,     setKey]     = useState('')
@@ -17,12 +17,14 @@ export default function Login() {
     try {
       const ok = await verifyAdminKey(key.trim())
       if (!ok) {
-        setError('Invalid admin key. Please try again.')
+        setError('Invalid key. Please try again.')
         setLoading(false)
         return
       }
       setStoredKey(key.trim())
-      navigate('/')
+      const { role } = await getMe()
+      setStoredRole(role)
+      navigate(role === 'scanner' ? '/scan' : '/')
     } catch (err) {
       setError(err.message || 'Something went wrong.')
       setLoading(false)
