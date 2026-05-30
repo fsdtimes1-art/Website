@@ -131,3 +131,133 @@ select.input option { background: #1a1a1a; color: #fff; }
   to   { opacity: 1; transform: translateY(0); }
 }
 .fade-up { animation: fadeUp 0.4s ease forwards; }
+
+
+
+/* ── Mobile responsive ── */
+@media (max-width: 768px) {
+  :root {
+    --sidebar-w: 0px;
+  }
+
+  /* Page padding for all pages */
+  .page-wrapper {
+    padding: 20px 16px !important;
+  }
+
+  /* Tables: hide less important columns on mobile */
+  .table .hide-mobile {
+    display: none;
+  }
+
+  /* Stack table cells as cards on very small screens */
+  .table-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Page wrapper utility — use on every page's outer div */
+.page-wrapper {
+  padding: 36px 40px;
+}
+
+
+
+/* ════════════════════════════════════════
+   MOBILE / RESPONSIVE
+   ════════════════════════════════════════ */
+
+/* Mobile top bar — hidden on desktop */
+.mobile-topbar {
+  display: none;
+}
+
+/* Sidebar overlay — hidden on desktop */
+.sidebar-overlay {
+  display: none !important;
+}
+
+@media (max-width: 768px) {
+
+  /* Sidebar: slide off-screen by default, slide in when .sidebar--open */
+  .sidebar {
+    transform: translateX(-100%);
+  }
+  .sidebar--open {
+    transform: translateX(0) !important;
+    box-shadow: 4px 0 32px rgba(0, 0, 0, 0.6);
+  }
+
+  /* Show the ✕ close button inside the sidebar */
+  .sidebar-close-btn {
+    display: flex !important;
+  }
+
+  /* Main content: no margin since sidebar is off-canvas */
+  main {
+    margin-left: 0 !important;
+  }
+
+  /* Show the overlay when sidebar is open */
+  .sidebar-overlay {
+    display: block !important;
+  }
+
+  /* Show the mobile top bar */
+  .mobile-topbar {
+    display:        flex;
+    align-items:    center;
+    justify-content: space-between;
+    padding:        12px 16px;
+    background:     var(--black-2);
+    border-bottom:  1px solid rgba(255,255,255,0.06);
+    position:       sticky;
+    top:            0;
+    z-index:        30;
+  }
+
+  /* Tighten page padding on mobile */
+  [style*="padding: 36px 40px"],
+  [style*="padding: '36px 40px'"] {
+    padding: 20px 16px !important;
+  }
+
+  /* Tables: allow horizontal scroll */
+  .table-scroll,
+  div[style*="overflowX: 'auto'"],
+  div[style*="overflow-x: auto"] {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Stat cards: 2 columns on mobile instead of 4 */
+  div[style*="repeat(auto-fit, minmax(220px"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  /* Quick links grid: 2 columns */
+  div[style*="repeat(auto-fit, minmax(200px"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  /* Summary strips: 2 columns */
+  div[style*="repeat(auto-fit, minmax(180px"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  /* Smaller display headings */
+  h1[style*="fontSize: '40px'"] {
+    font-size: 28px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Single column on very small phones */
+  div[style*="repeat(auto-fit, minmax(220px"] {
+    grid-template-columns: 1fr !important;
+  }
+  div[style*="repeat(auto-fit, minmax(200px"] {
+    grid-template-columns: 1fr 1fr !important;
+  }
+}
