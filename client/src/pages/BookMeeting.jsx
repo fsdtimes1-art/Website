@@ -96,7 +96,7 @@ export default function BookMeeting() {
     if (missing) return
 
     const lines = [
-      `👋 *New Meeting Request:EventFlow*`,
+      `👋 *New Meeting Request:FaisalabadTimes.co*`,
       ``,
       `*Name:* ${form.name}`,
       `*Phone:* ${form.phone}`,
@@ -344,7 +344,7 @@ export default function BookMeeting() {
                 </p>
                 {[
                   { icon: '📱', label: 'WhatsApp', value: '+92 300 123 4567' },
-                  { icon: '📧', label: 'Email',    value: 'hello@eventflow.com' },
+                  { icon: '📧', label: 'Email',    value: 'hello@FaisalabadTimes.co.com' },
                   { icon: '📍', label: 'Location', value: 'Karachi, Pakistan' },
                 ].map((c, i) => (
                   <div key={i} style={{

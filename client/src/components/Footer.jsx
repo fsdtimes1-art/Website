@@ -30,7 +30,7 @@ export default function Footer() {
                 letterSpacing: '4px',
                 color:         'var(--gold)',
               }}>
-                EVENT<span style={{ color: 'var(--white)' }}>FLOW</span>
+                FAISALABAD<span style={{ color: 'var(--white)' }}>TIMES.CO</span>
               </span>
             </Link>
             <p style={{
@@ -92,7 +92,7 @@ export default function Footer() {
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {[
-                { icon: '📧', label: 'hello@eventflow.com', href: 'mailto:hello@eventflow.com' },
+                { icon: '📧', label: 'hello@FaisalabadTimes.co.com', href: 'mailto:hello@FaisalabadTimes.co.com' },
                 { icon: '📱', label: '+92 300 123 4567', href: 'tel:+923001234567' },
                 { icon: '📍', label: 'Faisalabad, Pakistan', href: 'https://maps.google.com/?q=Faisalabad,+Pakistan', target: '_blank', rel: 'noreferrer' },
                 { icon: '📸', label: 'Instagram', href: 'https://www.instagram.com/faisalabadtimes/', target: '_blank', rel: 'noreferrer' },
@@ -159,7 +159,7 @@ export default function Footer() {
           gap:            '12px',
         }}>
           <p style={{ color: 'var(--gray-dark)', fontSize: '12px' }}>
-            © {year} EventFlow. All rights reserved.
+            © {year} FaisalabadTimes.co. All rights reserved.
           </p>
           <p style={{ color: 'var(--gray-dark)', fontSize: '12px' }}>
             Built for Pakistan's finest events.
