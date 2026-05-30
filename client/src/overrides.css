@@ -1,0 +1,89 @@
+/* ── FAISALABADTIMES.CO — Global B&W Overrides ── */
+
+/* Scrollbar */
+::-webkit-scrollbar-thumb { background: #374151 !important; }
+
+/* Selection */
+::selection { background: #ffffff !important; color: #0a0a0a !important; }
+
+/* Spinner */
+.spinner {
+  border: 3px solid rgba(255,255,255,0.1) !important;
+  border-top-color: #ffffff !important;
+}
+
+/* Tags / badges */
+.tag {
+  background: rgba(255,255,255,0.06) !important;
+  color: #9ca3af !important;
+  border: 1px solid rgba(255,255,255,0.12) !important;
+}
+
+/* Input focus */
+.input:focus { border-color: rgba(255,255,255,0.5) !important; }
+
+/* Ghost button hover — can't do :hover in !important override easily, use CSS var trick */
+.btn-ghost:hover {
+  border-color: rgba(255,255,255,0.6) !important;
+  color: #ffffff !important;
+  background: rgba(255,255,255,0.04) !important;
+}
+
+/* btn-gold hover — kill yellow glow */
+.btn-gold:hover {
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4) !important;
+}
+
+/* Card hover border */
+.card-dark:hover { border-color: rgba(255,255,255,0.2) !important; }
+
+/* Divider */
+.divider {
+  background: linear-gradient(to right, transparent, rgba(255,255,255,0.12), transparent) !important;
+}
+
+/* Text gold gradient utility — force white */
+.text-gold-gradient {
+  background: none !important;
+  -webkit-background-clip: unset !important;
+  -webkit-text-fill-color: #ffffff !important;
+  background-clip: unset !important;
+  color: #ffffff !important;
+}
+
+/* ── Kill all inline rgba(250,204,21) glows via CSS variables ── */
+/* Re-define the gold vars to neutral values everywhere EXCEPT the logo + btn-gold */
+:root {
+  --gold:       #facc15; /* keep for btn-gold background */
+  --gold-light: #e5e7eb; /* hover becomes light gray */
+  --gold-dark:  #6b7280; /* dark gold becomes mid gray */
+}
+
+/* Active nav states — target common patterns */
+a[style*="var(--gold)"],
+span[style*="var(--gold)"],
+p[style*="var(--gold)"] {
+  color: #ffffff !important;
+}
+
+/* Any element using gold as background (except btn-gold) */
+*:not(.btn-gold):not(.btn-gold *)[style*="background: var(--gold)"],
+*:not(.btn-gold):not(.btn-gold *)[style*="background:var(--gold)"] {
+  background: #ffffff !important;
+  color: #0a0a0a !important;
+}
+
+/* Borders using gold rgba */
+[style*="rgba(250,204,21"] {
+  border-color: rgba(255,255,255,0.12) !important;
+}
+
+/* Backgrounds using gold rgba */
+[style*="background"][style*="rgba(250,204,21"] {
+  background: rgba(255,255,255,0.04) !important;
+}
+
+/* Box shadows using gold */
+[style*="box-shadow"][style*="rgba(250,204,21"] {
+  box-shadow: none !important;
+}

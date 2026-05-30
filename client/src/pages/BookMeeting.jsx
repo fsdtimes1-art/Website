@@ -6,7 +6,7 @@ const WHATSAPP_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER || '923001234567'
 const SERVICE_TYPES = [
   'Restaurant Digital Marketing',
   'FT Page Business Promotion',
-  'Event Ticketing & Management',
+  'Events & Media Coverage',
   'Social Media Management',
   'Paid Advertising',
   'Event Promotion',
@@ -55,7 +55,7 @@ const SERVICES = [
     highlight: true,
   },
   {
-    badge:    'Event Ticketing & Management',
+    badge: 'Events & Media Coverage',
     live:     true,
     headline: 'WE SELL YOUR TICKETS.\nYOU FOCUS ON THE SHOW.',
     desc:     'End-to-end ticket sales, event promotion across FT channels, and WhatsApp-based booking management.',
@@ -283,7 +283,7 @@ export default function BookMeeting() {
                   letterSpacing: '2px',
                   marginBottom:  '16px',
                 }}>
-                  WHY EVENTFLOW?
+                  WHY FAISALABADTIMES.CO?
                 </h2>
                 <p style={{ color: 'var(--gray-light)', fontSize: '15px', lineHeight: '1.7' }}>
                   We've managed over 50 events across Pakistan: from intimate corporate dinners

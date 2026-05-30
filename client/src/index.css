@@ -51,20 +51,14 @@ h1, h2, h3, h4, h5, h6 {
 /* ── Scrollbar ──────────────────────────────────────────────── */
 ::-webkit-scrollbar       { width: 6px; }
 ::-webkit-scrollbar-track { background: var(--black-2); }
-::-webkit-scrollbar-thumb { background: var(--gold-dark); border-radius: 3px; }
-
+::-webkit-scrollbar-thumb { background: var(--gray-dark); border-radius: 3px; }
 /* ── Selection ──────────────────────────────────────────────── */
-::selection {
-  background: var(--gold);
-  color: var(--black);
+::selection { background: var(--white); color: var(--black);
 }
 
 /* ── Gold gradient text utility ─────────────────────────────── */
 .text-gold-gradient {
-  background: linear-gradient(135deg, var(--gold-light), var(--gold-dark));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--white);
 }
 
 /* ── Noise texture overlay utility ──────────────────────────── */
@@ -105,7 +99,7 @@ h1, h2, h3, h4, h5, h6 {
 .btn-gold:hover {
   background:  var(--gold-light);
   transform:   translateY(-2px);
-  box-shadow:  0 8px 24px rgba(245, 158, 11, 0.35);
+  box-shadow:  0 8px 24px rgba(0, 0, 0, 0.4);
 }
 
 .btn-gold:active {
@@ -132,9 +126,9 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .btn-ghost:hover {
-  border-color: var(--gold);
-  color:        var(--gold);
-  background:   rgba(245, 158, 11, 0.06);
+  border-color: rgba(255,255,255,0.6);
+  color:        var(--white);
+  background:   rgba(255,255,255,0.04);
 }
 
 /* ── Card base ──────────────────────────────────────────────── */
@@ -146,10 +140,7 @@ h1, h2, h3, h4, h5, h6 {
   transition:    border-color 0.2s, transform 0.2s;
 }
 
-.card-dark:hover {
-  border-color: rgba(245, 158, 11, 0.3);
-  transform:    translateY(-4px);
-}
+.card-dark:hover { border-color: rgba(255,255,255,0.2); transform: translateY(-4px); }
 
 /* ── Section padding ────────────────────────────────────────── */
 .section {
@@ -171,12 +162,7 @@ h1, h2, h3, h4, h5, h6 {
 /* ── Divider ────────────────────────────────────────────────── */
 .divider {
   height: 1px;
-  background: linear-gradient(
-    to right,
-    transparent,
-    rgba(245, 158, 11, 0.3),
-    transparent
-  );
+  background: linear-gradient(to right, transparent, rgba(255,255,255,0.15), transparent);
 }
 
 /* ── Gold tag / badge ───────────────────────────────────────── */

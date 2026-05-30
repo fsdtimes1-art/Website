@@ -101,7 +101,7 @@ export default function Login() {
             color:         'var(--gold)',
             marginBottom:  '4px',
           }}>
-            EVENT<span style={{ color: 'var(--white)' }}>FLOW</span>
+            FAISALABAD<span style={{ color: 'var(--white)' }}>TIMES.CO</span>
           </p>
           <p style={{
             color:         'var(--gray-mid)',
