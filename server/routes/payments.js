@@ -54,21 +54,18 @@ router.post('/create-checkout', async (req, res) => {
       .eq('id', categoryId);
 
     // Fire emails in background (non-blocking)
-    generateTicketsAndSendEmails({
-      purchaseId:  purchase.id,
-      eventId,
-      categoryId,
-      quantity:    parseInt(quantity),
-      buyerName,
-      buyerEmail,
-      buyerPhone:  buyerPhone || '',
-      totalAmount,
-    }).catch(err => console.error('Ticket generation error:', err));
+  await generateTicketsAndSendEmails({
+    purchaseId:  purchase.id,
+    eventId,
+    categoryId,
+    quantity:    parseInt(quantity),
+    buyerName,
+    buyerEmail,
+    buyerPhone:  buyerPhone || '',
+    totalAmount,
+  });
 
-    res.json({
-      success:    true,
-      purchaseId: purchase.id,
-    });
+  res.json({ success: true, purchaseId: purchase.id });
 
   } catch (err) {
     console.error('Checkout error:', err);
