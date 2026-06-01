@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link }                from 'react-router-dom'
 import { getDashboard }        from '../lib/api'
-import StatCard                from '../Components/StatCard'
+import StatCard                from '../components/StatCard'
 
 export default function Dashboard() {
   const [data,    setData]    = useState(null)
