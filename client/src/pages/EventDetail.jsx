@@ -29,43 +29,31 @@ export default function EventDetail() {
     setForm(f => ({ ...f, [e.target.name]: e.target.value }))
   }
 
-  async function handleCheckout() {
-    if (!selection.category) return setFormError('Please select a seat category.')
-    if (!form.name.trim())    return setFormError('Please enter your full name.')
-    if (!form.email.trim() || !/\S+@\S+\.\S+/.test(form.email))
-      return setFormError('Please enter a valid email address.')
+ async function handleCheckout() {
+  if (!selection.category) return setFormError('Please select a seat category.')
+  if (!form.name.trim())    return setFormError('Please enter your full name.')
+  if (!form.email.trim() || !/\S+@\S+\.\S+/.test(form.email))
+    return setFormError('Please enter a valid email address.')
 
-    setFormError(null)
-    setPaying(true)
+  setFormError(null)
+  setPaying(true)
 
-    try {
-      const { tracker, tbt } = await createCheckout({
-        eventId:    event.id,
-        categoryId: selection.category.id,
-        quantity:   selection.quantity,
-        buyerName:  form.name.trim(),
-        buyerEmail: form.email.trim(),
-        buyerPhone: form.phone.trim(),
-      })
+  try {
+    const result = await createCheckout({
+      eventId:    event.id,
+      categoryId: selection.category.id,
+      quantity:   selection.quantity,
+      buyerName:  form.name.trim(),
+      buyerEmail: form.email.trim(),
+      buyerPhone: form.phone.trim(),
+    })
 
-      const env = import.meta.env.VITE_SAFEPAY_ENV || 'sandbox'
-      const checkoutBase = env === 'production'
-        ? 'https://api.getsafepay.com/components'
-        : 'https://sandbox.api.getsafepay.com/components'
-
-      const params = new URLSearchParams({
-        tracker,
-        tbt,
-        source:     'custom',
-        cancel_url: `${window.location.origin}/events/${event.id}?cancelled=true`,
-      })
-
-      window.location.href = `${checkoutBase}?${params.toString()}`
-    } catch (err) {
-      setFormError(err.message)
-      setPaying(false)
-    }
+    window.location.href = `/payment-success?purchaseId=${result.purchaseId}`
+  } catch (err) {
+    setFormError(err.message)
+    setPaying(false)
   }
+}
 
   if (loading) return (
     <div style={{ display:'flex', justifyContent:'center', alignItems:'center', minHeight:'70vh' }}>

@@ -6,6 +6,7 @@ const eventsRouter    = require('./routes/events');
 const ticketsRouter   = require('./routes/tickets');
 const adminRouter     = require('./routes/admin');
 const portfolioRouter = require('./routes/portfolio');
+const paymentsRouter = require('./routes/payments');
 
 const app = express();
 
@@ -24,6 +25,7 @@ app.use('/api/events',    eventsRouter);
 app.use('/api/tickets',   ticketsRouter);
 app.use('/api/admin',     adminRouter);
 app.use('/api/portfolio', portfolioRouter);
+app.use('/api/payments',  paymentsRouter);
 
 // Health check
 app.get('/api/health', (req, res) => {

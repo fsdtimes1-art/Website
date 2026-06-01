@@ -4,7 +4,8 @@ import { getPaymentSession, getTicketsByPurchase } from '../lib/api'
 
 export default function PaymentSuccess() {
   const [searchParams] = useSearchParams()
-  const tracker = searchParams.get('tracker')
+  const purchaseId = searchParams.get('purchaseId') || searchParams.get('tracker')
+
 
   const [session,  setSession]  = useState(null)
   const [tickets,  setTickets]  = useState([])
@@ -12,25 +13,24 @@ export default function PaymentSuccess() {
   const [error,    setError]    = useState(null)
 
   useEffect(() => {
-    if (!tracker) {
-      setError('No payment reference found.')
-      setLoading(false)
-      return
-    }
+  if (!purchaseId) {
+    setError('No booking reference found.')
+    setLoading(false)
+    return
+  }
 
-    getPaymentSession(tracker)
-      .then(async (data) => {
-        setSession(data)
-        if (data.metadata?.purchaseId) {
-          try {
-            const t = await getTicketsByPurchase(data.metadata.purchaseId)
-            setTickets(t)
-          } catch (_) {}
-        }
-      })
-      .catch(err => setError(err.message))
-      .finally(() => setLoading(false))
-  }, [tracker])
+  getPaymentSession(purchaseId)
+    .then(async (data) => {
+      setSession(data)
+      const pid = data.metadata?.purchaseId || purchaseId
+      try {
+        const t = await getTicketsByPurchase(pid)
+        setTickets(t)
+      } catch (_) {}
+    })
+    .catch(err => setError(err.message))
+    .finally(() => setLoading(false))
+}, [purchaseId])
 
   if (loading) return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
