@@ -1,39 +1,51 @@
 require('dotenv').config();
 const express = require('express');
-const cors = require('cors');
+const cors    = require('cors');
 
 const eventsRouter    = require('./routes/events');
 const ticketsRouter   = require('./routes/tickets');
 const adminRouter     = require('./routes/admin');
 const portfolioRouter = require('./routes/portfolio');
-const paymentsRouter = require('./routes/payments');
+const paymentsRouter  = require('./routes/payments');
 
 const app = express();
 
+// Allow requests from both client and admin frontends
+const allowedOrigins = [
+  'https://faisalabadtimes.vercel.app',
+  process.env.CLIENT_URL,
+  process.env.ADMIN_URL,
+  'http://localhost:5173',
+  'http://localhost:5174',
+].filter(Boolean);
+
 app.use(cors({
-  origin: [
-    process.env.CLIENT_URL || 'http://localhost:5173',
-    process.env.ADMIN_URL  || 'http://localhost:5174'
-  ],
-  credentials: true
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, curl, Postman)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    callback(new Error(`CORS blocked: ${origin}`));
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-admin-key'],
 }));
 
-// Raw body needed for Lemon Squeezy webhook signature verification
+// Handle preflight requests for all routes
+app.options('*', cors());
+
+// Raw body for Lemon Squeezy webhook signature verification
+// Must come BEFORE express.json()
 app.use('/api/payments/webhook', express.raw({ type: 'application/json' }));
+
 app.use(express.json());
+
 // Routes
 app.use('/api/events',    eventsRouter);
 app.use('/api/tickets',   ticketsRouter);
 app.use('/api/admin',     adminRouter);
 app.use('/api/portfolio', portfolioRouter);
-// IMPORTANT: raw body parser for webhook must come BEFORE express.json()
-app.use('/api/payments/webhook', express.raw({ type: 'application/json' }));
-
-// Then your regular JSON middleware
-app.use(express.json());
-
-const paymentsRouter = require('./routes/payments');
-app.use('/api/payments', paymentsRouter);
+app.use('/api/payments',  paymentsRouter);
 
 // Health check
 app.get('/api/health', (req, res) => {
