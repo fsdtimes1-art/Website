@@ -48,7 +48,7 @@ export default function EventDetail() {
       buyerPhone: form.phone.trim(),
     })
 
-    window.location.href = `/payment-success?purchaseId=${result.purchaseId}`
+// redirect is now handled inside createCheckout in api.js
   } catch (err) {
     setFormError(err.message)
     setPaying(false)
