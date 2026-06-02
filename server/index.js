@@ -18,14 +18,22 @@ app.use(cors({
   credentials: true
 }));
 
+// Raw body needed for Lemon Squeezy webhook signature verification
+app.use('/api/payments/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json());
-
 // Routes
 app.use('/api/events',    eventsRouter);
 app.use('/api/tickets',   ticketsRouter);
 app.use('/api/admin',     adminRouter);
 app.use('/api/portfolio', portfolioRouter);
-app.use('/api/payments',  paymentsRouter);
+// IMPORTANT: raw body parser for webhook must come BEFORE express.json()
+app.use('/api/payments/webhook', express.raw({ type: 'application/json' }));
+
+// Then your regular JSON middleware
+app.use(express.json());
+
+const paymentsRouter = require('./routes/payments');
+app.use('/api/payments', paymentsRouter);
 
 // Health check
 app.get('/api/health', (req, res) => {

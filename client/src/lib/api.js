@@ -52,7 +52,7 @@ export async function createCheckout({
   buyerEmail,
   buyerPhone
 }) {
-  return request('/payments/create-checkout', {
+  const data = await request('/payments/create-checkout', {
     method: 'POST',
     body: JSON.stringify({
       eventId,
@@ -63,6 +63,13 @@ export async function createCheckout({
       buyerPhone
     })
   })
+
+  // Redirect to Lemon Squeezy hosted checkout
+  if (data.checkoutUrl) {
+    window.location.href = data.checkoutUrl
+  }
+
+  return data
 }
 
 // Verify payment session on success page

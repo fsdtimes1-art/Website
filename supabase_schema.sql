@@ -99,3 +99,15 @@ $$ language 'plpgsql';
 CREATE TRIGGER update_events_updated_at
   BEFORE UPDATE ON events
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+
+  create table orders (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users(id),
+  event_id uuid references events(id),
+  lemon_order_id text unique,
+  status text default 'pending',   -- pending | paid | failed | refunded
+  amount integer,                  -- in cents
+  currency text default 'USD',
+  created_at timestamptz default now()
+);
