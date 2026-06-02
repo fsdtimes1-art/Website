@@ -60,9 +60,7 @@ router.post('/create-checkout', async (req, res) => {
         data: {
           type: 'checkouts',
           attributes: {
-            checkout_options: [{
-              custom_price: totalAmount * 100,
-            }],
+            custom_price: totalAmount * 100,
             checkout_data: {
               email: buyerEmail,
               name:  buyerName,
