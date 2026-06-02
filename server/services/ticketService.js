@@ -1,15 +1,14 @@
 const { v4: uuidv4 }          = require('uuid');
 const supabase                 = require('../lib/supabase');
 const { generateTicketPDF }    = require('./pdfService');
-const { sendPaymentConfirmation, sendTicketEmail } = require('./emailService');
+const { sendTicketEmail } = require('./emailService');
 
 /**
  * Full ticket generation flow:
  * 1. Generate unique QR token + seat number per ticket
  * 2. Insert ticket rows into DB
  * 3. Build PDF with all tickets
- * 4. Send payment confirmation email
- * 5. Send ticket PDF email
+ * 4. Send ticket PDF email
  */
 async function generateTicketsAndSendEmails({
   purchaseId,
@@ -70,20 +69,7 @@ async function generateTicketsAndSendEmails({
   // ── Generate PDF ────────────────────────────────────────────
   const pdfBuffer = await generateTicketPDF(tickets, event, category);
 
-  // ── Send email 1: payment confirmation ─────────────────────
-  await sendPaymentConfirmation({
-    buyerEmail,
-    buyerName,
-    eventName:    event.name,
-    eventDate:    event.date,
-    eventVenue:   event.venue,
-    quantity,
-    categoryName: category.name,
-    totalAmount,
-    purchaseId
-  });
-
-  // ── Send email 2: ticket PDF ────────────────────────────────
+  // ── Send email: ticket PDF ────────────────────────────────
   await sendTicketEmail({
     buyerEmail,
     buyerName,
