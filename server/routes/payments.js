@@ -75,9 +75,11 @@ router.post('/create-checkout', async (req, res) => {
                 total_amount: String(totalAmount),
               },
             },
+            checkout_options: {
+              embed: true,
+            },
             product_options: {
-              name:         `${category.events.name} — ${category.name}`,
-              redirect_url: `${process.env.CLIENT_URL}/payment-success?purchaseId=${purchase.id}`,
+              name: `${category.events.name} — ${category.name}`,
             },
           },
           relationships: {
@@ -105,7 +107,7 @@ router.post('/create-checkout', async (req, res) => {
     }
 
     const checkoutUrl = lsData.data.attributes.url;
-    res.json({ checkoutUrl });
+    res.json({ checkoutUrl, purchaseId: purchase.id });
 
   } catch (err) {
     console.error('Checkout error:', err);

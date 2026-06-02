@@ -39,7 +39,7 @@ export default function EventDetail() {
   setPaying(true)
 
   try {
-    const result = await createCheckout({
+    const { checkoutUrl, purchaseId } = await createCheckout({
       eventId:    event.id,
       categoryId: selection.category.id,
       quantity:   selection.quantity,
@@ -48,7 +48,21 @@ export default function EventDetail() {
       buyerPhone: form.phone.trim(),
     })
 
-// redirect is now handled inside createCheckout in api.js
+    // Initialize Lemon.js and open as overlay
+    window.createLemonSqueezy()
+
+    window.LemonSqueezy.Setup({
+      eventHandler: (e) => {
+        if (e.event === 'Checkout.Success') {
+          window.LemonSqueezy.closeOverlay()
+          window.location.href = `/payment-success?purchaseId=${purchaseId}`
+        }
+      },
+    })
+
+    window.LemonSqueezy.Url.Open(checkoutUrl)
+    setPaying(false)
+
   } catch (err) {
     setFormError(err.message)
     setPaying(false)
