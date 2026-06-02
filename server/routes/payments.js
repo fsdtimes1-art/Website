@@ -7,7 +7,6 @@ const { generateTicketsAndSendEmails } = require('../services/ticketService');
 const VARIANT_ID = '1738929';
 
 // POST /api/payments/create-checkout
-// Called by EventDetail.jsx → createCheckout() in api.js
 router.post('/create-checkout', async (req, res) => {
   try {
     const { eventId, categoryId, quantity, buyerName, buyerEmail, buyerPhone } = req.body;
@@ -16,7 +15,6 @@ router.post('/create-checkout', async (req, res) => {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    // Validate category & availability
     const { data: category, error: catError } = await supabase
       .from('seat_categories')
       .select('*, events(*)')
@@ -34,12 +32,10 @@ router.post('/create-checkout', async (req, res) => {
 
     const totalAmount = category.price * quantity;
 
-    // Create a pending purchase row first
+    // Save pending purchase first so we have an ID for the redirect URL
     const { data: purchase, error: purchaseError } = await supabase
       .from('purchases')
       .insert({
-        stripe_payment_id: null,
-        stripe_session_id: null,
         buyer_name:   buyerName,
         buyer_email:  buyerEmail,
         buyer_phone:  buyerPhone || '',
@@ -52,7 +48,7 @@ router.post('/create-checkout', async (req, res) => {
 
     if (purchaseError) throw purchaseError;
 
-    // Create Lemon Squeezy checkout
+    // Create Lemon Squeezy checkout session
     const lsResponse = await fetch('https://api.lemonsqueezy.com/v1/checkouts', {
       method: 'POST',
       headers: {
@@ -98,14 +94,16 @@ router.post('/create-checkout', async (req, res) => {
     const lsData = await lsResponse.json();
 
     if (!lsResponse.ok) {
-      console.error('Lemon Squeezy error:', JSON.stringify(lsData));
+      // Log the real error so you can see it in server logs
+      console.error('Lemon Squeezy error:', JSON.stringify(lsData, null, 2));
       // Clean up the pending purchase
       await supabase.from('purchases').delete().eq('id', purchase.id);
-      return res.status(500).json({ error: 'Could not create payment link' });
+      // Return the actual LS error message to help debug
+      const lsError = lsData?.errors?.[0]?.detail || 'Could not create payment link';
+      return res.status(500).json({ error: lsError });
     }
 
     const checkoutUrl = lsData.data.attributes.url;
-
     res.json({ checkoutUrl });
 
   } catch (err) {
@@ -115,8 +113,7 @@ router.post('/create-checkout', async (req, res) => {
 });
 
 
-// GET /api/payments/session/:id
-// Called by PaymentSuccess.jsx → getPaymentSession()
+// GET /api/payments/session/:id — used by PaymentSuccess page
 router.get('/session/:id', async (req, res) => {
   try {
     const { data: purchase, error } = await supabase
@@ -147,8 +144,7 @@ router.get('/session/:id', async (req, res) => {
 
 
 // POST /api/payments/webhook
-// Lemon Squeezy calls this after payment is confirmed
-// Must be registered BEFORE express.json() in index.js
+// Lemon Squeezy calls this after payment — needs raw body (set in index.js)
 router.post('/webhook', async (req, res) => {
   const secret    = process.env.LEMONSQUEEZY_WEBHOOK_SECRET;
   const signature = req.headers['x-signature'];
@@ -178,17 +174,11 @@ router.post('/webhook', async (req, res) => {
 
   if (eventName === 'order_created' && orderData?.status === 'paid') {
     const {
-      purchase_id,
-      event_id,
-      category_id,
-      quantity,
-      buyer_name,
-      buyer_email,
-      buyer_phone,
-      total_amount,
+      purchase_id, event_id, category_id,
+      quantity, buyer_name, buyer_email, buyer_phone, total_amount,
     } = customData || {};
 
-    // Mark purchase as completed
+    // Mark purchase completed
     await supabase
       .from('purchases')
       .update({
@@ -198,20 +188,20 @@ router.post('/webhook', async (req, res) => {
       .eq('id', purchase_id);
 
     // Increment sold_seats
-    const { data: category } = await supabase
+    const { data: cat } = await supabase
       .from('seat_categories')
       .select('sold_seats')
       .eq('id', category_id)
       .single();
 
-    if (category) {
+    if (cat) {
       await supabase
         .from('seat_categories')
-        .update({ sold_seats: category.sold_seats + parseInt(quantity) })
+        .update({ sold_seats: cat.sold_seats + parseInt(quantity) })
         .eq('id', category_id);
     }
 
-    // Generate tickets & send emails (non-blocking)
+    // Generate tickets & send emails
     generateTicketsAndSendEmails({
       purchaseId:  purchase_id,
       eventId:     event_id,
