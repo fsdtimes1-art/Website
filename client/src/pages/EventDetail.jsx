@@ -93,7 +93,7 @@ export default function EventDetail() {
   const totalSeats     = event.seat_categories.reduce((s, c) => s + c.total_seats, 0)
   const soldSeats      = event.seat_categories.reduce((s, c) => s + c.sold_seats,  0)
   const totalRemaining = totalSeats - soldSeats
-  const soldPct        = Math.round((soldSeats / totalSeats) * 100)
+  const soldPct = Math.max(0, Math.round(50 - (soldSeats / totalSeats) * 50))
   const orderTotal     = selection.category
     ? Number(selection.category.price) * selection.quantity : 0
 
@@ -281,7 +281,7 @@ export default function EventDetail() {
                 <div style={{
                   height:'100%', borderRadius:'4px',
                   width:`${soldPct}%`,
-                  background: soldPct >= 90 ? '#ef4444' : soldPct >= 65 ? 'var(--gold)' : '#22c55e',
+                  background: soldPct <= 10 ? '#ef4444' : soldPct <= 25 ? 'var(--gold)' : '#22c55e',
                   transition:'width 0.6s ease',
                 }} />
               </div>
