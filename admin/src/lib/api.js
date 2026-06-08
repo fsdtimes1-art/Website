@@ -102,6 +102,13 @@ export async function getPurchases(eventId) {
   return request(`/purchases${qs}`)
 }
 
+export async function createManualSale(payload) {
+  return request('/purchases/manual', {
+    method: 'POST',
+    body:   JSON.stringify(payload),
+  })
+}
+
 // ============================================================
 // PORTFOLIO
 // ============================================================
