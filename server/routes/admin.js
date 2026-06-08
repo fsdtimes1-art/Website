@@ -9,10 +9,11 @@ const adminAuth = (req, res, next) => {
   const key = req.headers['x-admin-key'];
   if (!key) return res.status(401).json({ error: 'Unauthorized' });
 
-  if (key === process.env.ADMIN_SECRET_KEY) {
+  if (key === process.env.ADMIN_SECRET_KEY || key === process.env.ADMIN2_SECRET_KEY) {
     req.role = 'admin';
     return next();
   }
+  
   if (key === process.env.SCANNER_SECRET_KEY) {
     req.role = 'scanner';
     return next();
