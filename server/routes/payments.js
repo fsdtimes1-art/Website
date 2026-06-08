@@ -186,7 +186,7 @@ router.post('/webhook', async (req, res) => {
       .from('purchases')
       .update({
         status:            'completed',
-        stripe_payment_id: String(payload.data.id),
+        lemon_order_id: String(payload.data.id),
       })
       .eq('id', purchase_id);
 
