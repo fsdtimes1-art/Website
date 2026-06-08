@@ -325,8 +325,8 @@ router.post('/purchases/manual', requireAdmin, async (req, res) => {
       .update({ sold_seats: category.sold_seats + parseInt(quantity) })
       .eq('id', categoryId);
 
-    // Generate tickets and send email (non-blocking — errors logged)
-    generateTicketsAndSendEmails({
+    // Generate tickets and send email — await so errors surface to the frontend
+    await generateTicketsAndSendEmails({
       purchaseId:  purchase.id,
       eventId,
       categoryId,
@@ -335,7 +335,7 @@ router.post('/purchases/manual', requireAdmin, async (req, res) => {
       buyerEmail,
       buyerPhone:  buyerPhone || '',
       totalAmount: 0,
-    }).catch(console.error);
+    });
 
     res.status(201).json({ success: true, purchaseId: purchase.id });
   } catch (err) {
