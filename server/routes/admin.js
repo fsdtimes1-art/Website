@@ -9,11 +9,17 @@ const adminAuth = (req, res, next) => {
   const key = req.headers['x-admin-key'];
   if (!key) return res.status(401).json({ error: 'Unauthorized' });
 
-  if (key === process.env.ADMIN_SECRET_KEY || key === process.env.ADMIN2_SECRET_KEY) {
+  if (key === process.env.ADMIN_SECRET_KEY) {
     req.role = 'admin';
+    req.adminAccount = 'admin';
     return next();
   }
-  
+  if (key === process.env.ADMIN2_SECRET_KEY) {
+    req.role = 'admin';
+    req.adminAccount = 'admin2';
+    return next();
+  }
+
   if (key === process.env.SCANNER_SECRET_KEY) {
     req.role = 'scanner';
     return next();
@@ -258,7 +264,7 @@ router.get('/purchases', requireAdmin, async (req, res) => {
       .select(`
         *,
         events (name, date, venue),
-        tickets (id, seat_number, scanned, seat_categories(name))
+        tickets (id, seat_number, scanned, seat_categories(name, price))
       `)
       .order('created_at', { ascending: false });
 
@@ -313,6 +319,8 @@ router.post('/purchases/manual', requireAdmin, async (req, res) => {
         buyer_phone:  buyerPhone || '',
         event_id:     eventId,
         total_amount: 0,
+        status:       'completed',
+        added_by:     req.adminAccount,
         status:       'completed',
       })
       .select()

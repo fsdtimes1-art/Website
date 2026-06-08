@@ -261,6 +261,7 @@ export default function Purchases() {
                     purchase={p}
                     expanded={expanded === p.id}
                     onToggle={() => setExpanded(prev => prev === p.id ? null : p.id)}
+                    displayAmount={getDisplayAmount(p)}
                   />
                 ))}
               </tbody>
@@ -445,7 +446,16 @@ export default function Purchases() {
   )
 }
 
-function PurchaseRow({ purchase: p, expanded, onToggle }) {
+function getDisplayAmount(p) {
+  if (p.added_by === 'admin2') {
+    const tickets = p.tickets || []
+    const price = tickets[0]?.seat_categories?.price || 0
+    return price * tickets.length
+  }
+  return Number(p.total_amount)
+}
+
+function PurchaseRow({ purchase: p, expanded, onToggle, displayAmount }) {
   const tickets = p.tickets || []
   const scanned = tickets.filter(t => t.scanned).length
 
@@ -505,7 +515,7 @@ function PurchaseRow({ purchase: p, expanded, onToggle }) {
             fontFamily: 'var(--font-display)', fontSize: '16px',
             letterSpacing: '1px', color: 'var(--gold)',
           }}>
-            PKR {Number(p.total_amount).toLocaleString()}
+            PKR {displayAmount.toLocaleString()}
           </p>
         </td>
 
