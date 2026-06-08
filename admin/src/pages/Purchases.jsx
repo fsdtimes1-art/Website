@@ -1,6 +1,6 @@
 // admin/src/pages/Purchases.jsx
 import { useEffect, useState } from 'react'
-import { getPurchases, getAdminEvents } from '../lib/api'
+import { getPurchases, getAdminEvents, createManualSale } from '../lib/api'
 
 export default function Purchases() {
   const [purchases, setPurchases] = useState([])
@@ -10,6 +10,18 @@ export default function Purchases() {
   const [eventId,   setEventId]   = useState('')
   const [search,    setSearch]    = useState('')
   const [expanded,  setExpanded]  = useState(null)
+
+  // ── Manual-sale modal state ──
+  const [showModal,   setShowModal]   = useState(false)
+  const [submitting,  setSubmitting]  = useState(false)
+  const [modalError,  setModalError]  = useState(null)
+  const [form, setForm] = useState({
+    eventId: '', categoryId: '', quantity: 1,
+    buyerName: '', buyerEmail: '', buyerPhone: '',
+  })
+
+  const selectedEvent      = events.find(ev => ev.id === form.eventId)
+  const availableCategories = selectedEvent?.seat_categories || []
 
   useEffect(() => {
     getAdminEvents()
@@ -51,6 +63,22 @@ export default function Purchases() {
   const totalTickets = filtered.reduce(
     (s, p) => s + (p.tickets?.length || 0), 0
   )
+
+  async function handleManualSale(e) {
+    e.preventDefault()
+    setModalError(null)
+    setSubmitting(true)
+    try {
+      await createManualSale({ ...form, quantity: Number(form.quantity) })
+      setShowModal(false)
+      setForm({ eventId: '', categoryId: '', quantity: 1, buyerName: '', buyerEmail: '', buyerPhone: '' })
+      fetchPurchases()
+    } catch (err) {
+      setModalError(err.message)
+    } finally {
+      setSubmitting(false)
+    }
+  }
 
   return (
     <div style={{ padding: '36px 40px', maxWidth: '1400px' }}>
@@ -137,11 +165,27 @@ export default function Purchases() {
           />
         </div>
 
+        {/* Add Sale */}
+        <button
+          onClick={() => { setModalError(null); setShowModal(true) }}
+          style={{
+            marginLeft: 'auto',
+            background: 'var(--gold)', border: 'none',
+            color: '#000', fontSize: '12px', fontWeight: '700',
+            padding: '8px 16px', borderRadius: '20px', cursor: 'pointer',
+            letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '6px',
+            transition: 'opacity 0.15s',
+          }}
+          onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
+          onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+        >
+          + Add Sale
+        </button>
+
         {/* Refresh */}
         <button
           onClick={fetchPurchases}
           style={{
-            marginLeft: 'auto',
             background: 'transparent', border: '1px solid rgba(255,255,255,0.08)',
             color: 'var(--gray-mid)', fontSize: '12px', padding: '8px 14px',
             borderRadius: '20px', cursor: 'pointer', transition: 'all 0.15s',
@@ -224,6 +268,178 @@ export default function Purchases() {
           </div>
         )}
       </div>
+
+      {/* ── Add Sale Modal ── */}
+      {showModal && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 9999,
+          background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: '20px',
+        }}>
+          <div style={{
+            background: 'var(--black-2)', border: '1px solid rgba(255,255,255,0.08)',
+            borderRadius: '16px', width: '100%', maxWidth: '480px',
+            padding: '32px', position: 'relative',
+          }}>
+            {/* Close */}
+            <button
+              onClick={() => setShowModal(false)}
+              style={{
+                position: 'absolute', top: '16px', right: '16px',
+                background: 'transparent', border: 'none',
+                color: 'var(--gray-mid)', fontSize: '18px', cursor: 'pointer',
+              }}
+            >✕</button>
+
+            {/* Header */}
+            <p style={{ color: 'var(--gray-mid)', fontSize: '10px', fontWeight: '600', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '4px' }}>
+              Complimentary
+            </p>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '26px', letterSpacing: '2px', color: 'var(--white)', marginBottom: '24px' }}>
+              ADD SALE
+            </h2>
+
+            <form onSubmit={handleManualSale} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+
+              {/* Event */}
+              <div>
+                <label style={{ color: 'var(--gray-mid)', fontSize: '10px', fontWeight: '600', letterSpacing: '1px', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>Event *</label>
+                <select
+                  className="input"
+                  value={form.eventId}
+                  onChange={e => setForm(f => ({ ...f, eventId: e.target.value, categoryId: '' }))}
+                  required
+                  style={{ width: '100%', cursor: 'pointer' }}
+                >
+                  <option value="">Select event…</option>
+                  {events.map(ev => (
+                    <option key={ev.id} value={ev.id}>{ev.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Category */}
+              <div>
+                <label style={{ color: 'var(--gray-mid)', fontSize: '10px', fontWeight: '600', letterSpacing: '1px', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>Ticket Category *</label>
+                <select
+                  className="input"
+                  value={form.categoryId}
+                  onChange={e => setForm(f => ({ ...f, categoryId: e.target.value }))}
+                  required
+                  disabled={!form.eventId}
+                  style={{ width: '100%', cursor: form.eventId ? 'pointer' : 'not-allowed', opacity: form.eventId ? 1 : 0.5 }}
+                >
+                  <option value="">Select category…</option>
+                  {availableCategories.map(cat => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.name} ({cat.total_seats - cat.sold_seats} left)
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Quantity */}
+              <div>
+                <label style={{ color: 'var(--gray-mid)', fontSize: '10px', fontWeight: '600', letterSpacing: '1px', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>Quantity *</label>
+                <input
+                  className="input"
+                  type="number" min="1" max="20"
+                  value={form.quantity}
+                  onChange={e => setForm(f => ({ ...f, quantity: e.target.value }))}
+                  required
+                  style={{ width: '100%' }}
+                />
+              </div>
+
+              {/* Divider */}
+              <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '4px 0' }} />
+
+              {/* Buyer name */}
+              <div>
+                <label style={{ color: 'var(--gray-mid)', fontSize: '10px', fontWeight: '600', letterSpacing: '1px', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>Full Name *</label>
+                <input
+                  className="input"
+                  placeholder="e.g. Ahmed Khan"
+                  value={form.buyerName}
+                  onChange={e => setForm(f => ({ ...f, buyerName: e.target.value }))}
+                  required
+                  style={{ width: '100%' }}
+                />
+              </div>
+
+              {/* Buyer email */}
+              <div>
+                <label style={{ color: 'var(--gray-mid)', fontSize: '10px', fontWeight: '600', letterSpacing: '1px', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>Email *</label>
+                <input
+                  className="input"
+                  type="email"
+                  placeholder="e.g. ahmed@email.com"
+                  value={form.buyerEmail}
+                  onChange={e => setForm(f => ({ ...f, buyerEmail: e.target.value }))}
+                  required
+                  style={{ width: '100%' }}
+                />
+              </div>
+
+              {/* Buyer phone */}
+              <div>
+                <label style={{ color: 'var(--gray-mid)', fontSize: '10px', fontWeight: '600', letterSpacing: '1px', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>Phone (optional)</label>
+                <input
+                  className="input"
+                  placeholder="e.g. 0300-1234567"
+                  value={form.buyerPhone}
+                  onChange={e => setForm(f => ({ ...f, buyerPhone: e.target.value }))}
+                  style={{ width: '100%' }}
+                />
+              </div>
+
+              {/* Error */}
+              {modalError && (
+                <div style={{
+                  background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)',
+                  borderRadius: '8px', padding: '10px 14px', color: '#f87171', fontSize: '13px',
+                }}>
+                  ⚠️ {modalError}
+                </div>
+              )}
+
+              {/* Note */}
+              <p style={{ color: 'var(--gray-dark)', fontSize: '11px', lineHeight: '1.5' }}>
+                Tickets will be issued immediately and a confirmation email with PDFs will be sent to the buyer. No payment required.
+              </p>
+
+              {/* Actions */}
+              <div style={{ display: 'flex', gap: '10px', marginTop: '4px' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  style={{
+                    flex: 1, background: 'transparent',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    color: 'var(--gray-mid)', fontSize: '13px', padding: '11px',
+                    borderRadius: '8px', cursor: 'pointer',
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  style={{
+                    flex: 2, background: submitting ? 'rgba(245,158,11,0.5)' : 'var(--gold)',
+                    border: 'none', color: '#000', fontSize: '13px', fontWeight: '700',
+                    padding: '11px', borderRadius: '8px', cursor: submitting ? 'not-allowed' : 'pointer',
+                    letterSpacing: '0.5px',
+                  }}
+                >
+                  {submitting ? 'Creating…' : 'Create & Send Tickets'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
     </div>
   )
