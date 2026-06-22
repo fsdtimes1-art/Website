@@ -11,8 +11,15 @@ const adminAuth = (req, res, next) => {
 
   if (key === process.env.ADMIN_SECRET_KEY) {
     req.role = 'admin';
+    req.adminAccount = 'admin';
     return next();
   }
+  if (key === process.env.ADMIN2_SECRET_KEY) {
+    req.role = 'admin';
+    req.adminAccount = 'admin2';
+    return next();
+  }
+
   if (key === process.env.SCANNER_SECRET_KEY) {
     req.role = 'scanner';
     return next();
@@ -257,7 +264,7 @@ router.get('/purchases', requireAdmin, async (req, res) => {
       .select(`
         *,
         events (name, date, venue),
-        tickets (id, seat_number, scanned, seat_categories(name))
+        tickets (id, seat_number, scanned, seat_categories(name, price))
       `)
       .order('created_at', { ascending: false });
 
@@ -267,79 +274,6 @@ router.get('/purchases', requireAdmin, async (req, res) => {
     if (error) throw error;
     res.json(data);
   } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// ============================================================
-// MANUAL SALE — admin creates a free / comp purchase
-// ============================================================
-router.post('/purchases/manual', requireAdmin, async (req, res) => {
-  const { generateTicketsAndSendEmails } = require('../services/ticketService');
-
-  try {
-    const {
-      eventId, categoryId, quantity,
-      buyerName, buyerEmail, buyerPhone,
-    } = req.body;
-
-    if (!eventId || !categoryId || !quantity || !buyerName || !buyerEmail) {
-      return res.status(400).json({ error: 'Missing required fields' });
-    }
-
-    // Validate category & availability
-    const { data: category, error: catError } = await supabase
-      .from('seat_categories')
-      .select('*, events(*)')
-      .eq('id', categoryId)
-      .single();
-
-    if (catError || !category) {
-      return res.status(404).json({ error: 'Category not found' });
-    }
-
-    const available = category.total_seats - category.sold_seats;
-    if (quantity > available) {
-      return res.status(400).json({ error: `Only ${available} seat(s) available` });
-    }
-
-    // Insert a completed purchase with amount = 0
-    const { data: purchase, error: purchaseError } = await supabase
-      .from('purchases')
-      .insert({
-        buyer_name:   buyerName,
-        buyer_email:  buyerEmail,
-        buyer_phone:  buyerPhone || '',
-        event_id:     eventId,
-        total_amount: 0,
-        status:       'completed',
-      })
-      .select()
-      .single();
-
-    if (purchaseError) throw purchaseError;
-
-    // Increment sold_seats
-    await supabase
-      .from('seat_categories')
-      .update({ sold_seats: category.sold_seats + parseInt(quantity) })
-      .eq('id', categoryId);
-
-    // Generate tickets and send email (non-blocking — errors logged)
-    generateTicketsAndSendEmails({
-      purchaseId:  purchase.id,
-      eventId,
-      categoryId,
-      quantity:    parseInt(quantity),
-      buyerName,
-      buyerEmail,
-      buyerPhone:  buyerPhone || '',
-      totalAmount: 0,
-    }).catch(console.error);
-
-    res.status(201).json({ success: true, purchaseId: purchase.id });
-  } catch (err) {
-    console.error('Manual sale error:', err);
     res.status(500).json({ error: err.message });
   }
 });
