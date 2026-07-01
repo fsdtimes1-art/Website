@@ -92,9 +92,9 @@ export default function Footer() {
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {[
-                { icon: '📧', label: 'hello@FaisalabadTimes.co.com', href: 'mailto:hello@FaisalabadTimes.co.com' },
-                { icon: '📱', label: '+92 300 123 4567', href: 'tel:+923001234567' },
-                { icon: '📍', label: 'Faisalabad, Pakistan', href: 'https://maps.google.com/?q=Faisalabad,+Pakistan', target: '_blank', rel: 'noreferrer' },
+                { icon: '📧', label: 'fsdtimes1@gmail.com', href: 'mailto:fsdtimes1@gmail.com' },
+                { icon: '📱', label: '+92 322 222 6677', href: 'tel:+923222226677' },
+                { icon: '📍', label: 'P-35 Chenab Market Susan Road Madina Town, Faisalabad, Pakistan', href: 'https://www.google.com/maps/search/P-35+Chenab+Market+Susan+Road+Madina+Town+Faisalabad/@31.419991,73.1150521,17z?entry=ttu&g_ep=EgoyMDI2MDYyOC4wIKXMDSoASAFQAw%3D%3D', target: '_blank', rel: 'noreferrer' },
                 { icon: '📸', label: 'Instagram', href: 'https://www.instagram.com/faisalabadtimes/', target: '_blank', rel: 'noreferrer' },
               ].map((item, i) => (
                 <a
