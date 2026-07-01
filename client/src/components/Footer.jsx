@@ -119,6 +119,43 @@ export default function Footer() {
             </div>
           </div>
 
+          {/* Legal */}
+          <div>
+            <p style={{
+              fontFamily:    'var(--font-display)',
+              fontSize:      '16px',
+              letterSpacing: '2px',
+              color:         'var(--white)',
+              marginBottom:  '16px',
+            }}>
+              LEGAL
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {[
+                { label: 'Privacy Policy',            file: 'privacy-policy.pdf' },
+                { label: 'Terms & Conditions',         file: 'terms-and-conditions.pdf' },
+                { label: 'Return & Refund Policy',     file: 'return-refund-policy.pdf' },
+              ].map(doc => (
+                <a
+                  key={doc.file}
+                  href={`/legal/${doc.file}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{
+                    color:          'var(--gray-mid)',
+                    fontSize:       '14px',
+                    textDecoration: 'none',
+                    transition:     'color 0.2s',
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.color = 'var(--gold)'}
+                  onMouseLeave={e => e.currentTarget.style.color = 'var(--gray-mid)'}
+                >
+                  {doc.label}
+                </a>
+              ))}
+            </div>
+          </div>
+
           {/* CTA */}
           <div>
             <p style={{
