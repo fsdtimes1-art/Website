@@ -116,9 +116,9 @@ export default function SeatSelector({ categories, onSelectionChange }) {
                     </div>
 
                     {!catSoldOut && (
-                      <p style={{ color:'var(--gray-mid)', fontSize:'12px', marginTop:'3px' }}>
-                        {catAvailable} of {cat.total_seats} remaining
-                      </p>
+                     <p style={{ color:'var(--gray-mid)', fontSize:'12px', marginTop:'3px' }}>
+                      {catAvailable} tickets remaining
+                     </p>
                     )}
                   </div>
                 </div>

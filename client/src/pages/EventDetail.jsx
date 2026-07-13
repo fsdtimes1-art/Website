@@ -285,9 +285,6 @@ export default function EventDetail() {
                   transition:'width 0.6s ease',
                 }} />
               </div>
-              <p style={{ color:'var(--gray-mid)', fontSize:'12px', marginTop:'8px' }}>
-                {soldSeats} sold · {totalRemaining} remaining of {totalSeats} total
-              </p>
             </div>
 
             {/* Description */}
