@@ -1,6 +1,7 @@
 const express  = require('express');
 const router   = express.Router();
 const supabase = require('../lib/supabase');
+const { generateTicketsAndSendEmails } = require('../services/ticketService');
 
 // ============================================================
 // AUTH MIDDLEWARE
@@ -274,6 +275,74 @@ router.get('/purchases', requireAdmin, async (req, res) => {
     if (error) throw error;
     res.json(data);
   } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /admin/purchases/manual — comp/manual ticket, no payment
+router.post('/purchases/manual', requireAdmin, async (req, res) => {
+  try {
+    const { eventId, categoryId, quantity, buyerName, buyerEmail, buyerPhone } = req.body;
+
+    if (!eventId || !categoryId || !quantity || !buyerName || !buyerEmail) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    const { data: category, error: catError } = await supabase
+      .from('seat_categories')
+      .select('*, events(*)')
+      .eq('id', categoryId)
+      .single();
+
+    if (catError || !category) {
+      return res.status(404).json({ error: 'Category not found' });
+    }
+
+    const available = category.total_seats - category.sold_seats;
+    if (Number(quantity) > available) {
+      return res.status(400).json({ error: `Only ${available} seat(s) available` });
+    }
+
+    // Create a completed purchase record (no payment — comp ticket)
+    const { data: purchase, error: purchaseError } = await supabase
+      .from('purchases')
+      .insert({
+        buyer_name:   buyerName,
+        buyer_email:  buyerEmail,
+        buyer_phone:  buyerPhone || '',
+        event_id:     eventId,
+        total_amount: 0,
+        status:       'completed',
+        added_by:     req.adminAccount,
+      })
+      .select()
+      .single();
+
+    if (purchaseError) throw purchaseError;
+
+    // Increment sold_seats
+    const { error: seatError } = await supabase
+      .from('seat_categories')
+      .update({ sold_seats: category.sold_seats + Number(quantity) })
+      .eq('id', categoryId);
+
+    if (seatError) throw seatError;
+
+    // Generate tickets, PDF, and send confirmation email
+    const tickets = await generateTicketsAndSendEmails({
+      purchaseId:  purchase.id,
+      eventId,
+      categoryId,
+      quantity:    Number(quantity),
+      buyerName,
+      buyerEmail,
+      buyerPhone:  buyerPhone || '',
+      totalAmount: 0,
+    });
+
+    res.status(201).json({ ...purchase, tickets });
+  } catch (err) {
+    console.error('Manual sale error:', err);
     res.status(500).json({ error: err.message });
   }
 });
