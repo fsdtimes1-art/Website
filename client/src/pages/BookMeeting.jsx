@@ -211,8 +211,8 @@ export default function BookMeeting() {
                     {svc.features.map((f, j) => <li key={j}>{f}</li>)}
                   </ul>
 
-                  <div className="service-footer">
-                    {svc.price ? (
+                  <div className="service-footer" style={{ justifyContent: svc.price ? 'space-between' : 'center' }}>
+                    {svc.price && (
                       <div>
                         <p style={{ color: 'var(--gray-mid)', fontSize: '10px', fontWeight: '600', letterSpacing: '1px', textTransform: 'uppercase' }}>
                           Starting From
@@ -221,7 +221,7 @@ export default function BookMeeting() {
                           {svc.price}
                         </p>
                       </div>
-                    ) : <div />}
+                    )}
                     <button
                       onClick={() => {
                         document.getElementById('booking-form')?.scrollIntoView({
