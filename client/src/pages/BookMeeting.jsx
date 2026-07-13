@@ -36,7 +36,6 @@ const SERVICES = [
       'Monthly Performance Reports',
       'Photography Coordination',
     ],
-    price:    'PKR 15,000 / mo',
     highlight: false,
   },
   {
@@ -51,7 +50,6 @@ const SERVICES = [
       '100K+ local Faisalabad audience',
       'Guaranteed reach reporting',
     ],
-    price:    'PKR 3,000 / mo',
     highlight: true,
   },
   {
