@@ -232,7 +232,7 @@ export default function BookMeeting() {
                       className="btn-gold"
                       style={{
                         fontSize: '13px',
-                        padding: '10px 10px',
+                        padding: '10px 20px',
                         whiteSpace: 'nowrap',
                         border: 'none',
                         cursor: 'pointer',
