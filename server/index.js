@@ -14,6 +14,7 @@ const app = express();
 // Allow requests from both client and admin frontends
 const allowedOrigins = [
   'https://faisalabadtimes.vercel.app',
+  'https://www.faisalabadtimes.co',
   process.env.CLIENT_URL,
   process.env.ADMIN_URL,
   'http://localhost:5173',
