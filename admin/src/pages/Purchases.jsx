@@ -1,6 +1,6 @@
 // admin/src/pages/Purchases.jsx
 import { useEffect, useState } from 'react'
-import { getPurchases, getAdminEvents, createManualSale } from '../lib/api'
+import { getPurchases, getAdminEvents, createManualSale, verifyWhatsappPurchase } from '../lib/api'
 
 export default function Purchases() {
   const [purchases, setPurchases] = useState([])
@@ -10,6 +10,8 @@ export default function Purchases() {
   const [eventId,   setEventId]   = useState('')
   const [search,    setSearch]    = useState('')
   const [expanded,  setExpanded]  = useState(null)
+  const [statusFilter, setStatusFilter] = useState('all') // all | whatsapp | completed
+  const [verifyingId,  setVerifyingId]  = useState(null)
 
   // ── Manual-sale modal state ──
   const [showModal,   setShowModal]   = useState(false)
@@ -46,7 +48,9 @@ export default function Purchases() {
     }
   }
 
-  const filtered = purchases.filter(p => {
+ const filtered = purchases.filter(p => {
+    if (statusFilter === 'whatsapp'  && p.status !== 'whatsapp_pending') return false
+    if (statusFilter === 'completed' && p.status !== 'completed')        return false
     if (!search.trim()) return true
     const q = search.toLowerCase()
     return (
@@ -77,6 +81,18 @@ export default function Purchases() {
       setModalError(err.message)
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  async function handleVerify(id) {
+    setVerifyingId(id)
+    try {
+      await verifyWhatsappPurchase(id)
+      await fetchPurchases()
+    } catch (err) {
+      alert(`Failed to verify: ${err.message}`)
+    } finally {
+      setVerifyingId(null)
     }
   }
 
@@ -128,6 +144,32 @@ export default function Purchases() {
               </p>
             </div>
           </div>
+        ))}
+      </div>
+
+{/* ── Status filter tabs ── */}
+      <div style={{ display: 'flex', gap: '6px', marginBottom: '16px', flexWrap: 'wrap' }}>
+        {[
+          { key: 'all',       label: 'All'             },
+          { key: 'whatsapp',  label: 'WhatsApp Pending' },
+          { key: 'completed', label: 'Completed'        },
+        ].map(f => (
+          <button
+            key={f.key}
+            onClick={() => setStatusFilter(f.key)}
+            style={{
+              background:   statusFilter === f.key ? 'var(--gold)' : 'transparent',
+              color:        statusFilter === f.key ? '#000' : 'var(--gray-light)',
+              border:       statusFilter === f.key ? '1px solid var(--gold)' : '1px solid rgba(255,255,255,0.1)',
+              borderRadius: '20px',
+              fontSize:     '13px',
+              fontWeight:   statusFilter === f.key ? '700' : '400',
+              padding:      '6px 14px',
+              cursor:       'pointer',
+            }}
+          >
+            {f.label}
+          </button>
         ))}
       </div>
 
@@ -262,6 +304,8 @@ export default function Purchases() {
                     expanded={expanded === p.id}
                     onToggle={() => setExpanded(prev => prev === p.id ? null : p.id)}
                     displayAmount={getDisplayAmount(p)}
+                    onVerify={() => handleVerify(p.id)}
+                    verifying={verifyingId === p.id}
                   />
                 ))}
               </tbody>
@@ -455,8 +499,8 @@ function getDisplayAmount(p) {
   return Number(p.total_amount)
 }
 
-function PurchaseRow({ purchase: p, expanded, onToggle, displayAmount }) {
-  const tickets = p.tickets || []
+function PurchaseRow({ purchase: p, expanded, onToggle, displayAmount, onVerify, verifying }) {
+    const tickets = p.tickets || []
   const scanned = tickets.filter(t => t.scanned).length
 
   const formattedDate = new Date(p.created_at).toLocaleDateString('en-PK', {
@@ -518,23 +562,38 @@ function PurchaseRow({ purchase: p, expanded, onToggle, displayAmount }) {
             PKR {displayAmount.toLocaleString()}
           </p>
         </td>
-
-        {/* Status */}
-        <td style={{ minWidth: '100px' }}>
+{/* Status */}
+        <td style={{ minWidth: '160px' }}>
           <span style={{
             display: 'inline-flex', alignItems: 'center', gap: '5px',
-            background: p.status === 'completed' ? 'rgba(34,197,94,0.1)' : 'rgba(245,158,11,0.1)',
-            border: p.status === 'completed' ? '1px solid rgba(34,197,94,0.3)' : '1px solid rgba(245,158,11,0.3)',
-            color: p.status === 'completed' ? '#4ade80' : 'var(--gold)',
+            background: p.status === 'completed' ? 'rgba(34,197,94,0.1)' : p.status === 'whatsapp_pending' ? 'rgba(37,211,102,0.1)' : 'rgba(245,158,11,0.1)',
+            border: p.status === 'completed' ? '1px solid rgba(34,197,94,0.3)' : p.status === 'whatsapp_pending' ? '1px solid rgba(37,211,102,0.35)' : '1px solid rgba(245,158,11,0.3)',
+            color: p.status === 'completed' ? '#4ade80' : p.status === 'whatsapp_pending' ? '#25D366' : 'var(--gold)',
             fontSize: '10px', fontWeight: '700', letterSpacing: '0.5px',
             padding: '4px 10px', borderRadius: '20px',
           }}>
             <span style={{
               width: '5px', height: '5px', borderRadius: '50%',
-              background: p.status === 'completed' ? '#4ade80' : 'var(--gold)',
+              background: p.status === 'completed' ? '#4ade80' : p.status === 'whatsapp_pending' ? '#25D366' : 'var(--gold)',
             }} />
-            {p.status?.toUpperCase() || 'UNKNOWN'}
+            {p.status === 'whatsapp_pending' ? 'WHATSAPP PENDING' : (p.status?.toUpperCase() || 'UNKNOWN')}
           </span>
+
+          {p.status === 'whatsapp_pending' && (
+            <button
+              onClick={e => { e.stopPropagation(); onVerify() }}
+              disabled={verifying}
+              style={{
+                display: 'block', marginTop: '6px',
+                background: verifying ? 'rgba(37,211,102,0.4)' : '#25D366',
+                border: 'none', color: '#000', fontSize: '11px', fontWeight: '700',
+                padding: '5px 12px', borderRadius: '14px',
+                cursor: verifying ? 'not-allowed' : 'pointer',
+              }}
+            >
+              {verifying ? 'Verifying…' : '✓ Verify Payment'}
+            </button>
+          )}
         </td>
 
         {/* Expand toggle */}

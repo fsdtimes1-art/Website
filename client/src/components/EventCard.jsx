@@ -231,19 +231,21 @@ export default function EventCard({ event }) {
               Sold Out
             </span>
           ) : (
-          <Link
-            to={`/events/${id}`}
+<Link
+            to={`/events/${id}/whatsapp`}
             style={{
-              display: 'inline-block',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
               padding: '9px 20px',
-              background: 'gold',
+              background: '#25D366',
               color: '#000',
               fontWeight: 'bold',
               borderRadius: '6px',
               textDecoration: 'none',
             }}
           >
-            Get Tickets →
+            💬 Get Tickets
           </Link>
           )}
         </div>

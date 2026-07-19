@@ -347,6 +347,72 @@ router.post('/purchases/manual', requireAdmin, async (req, res) => {
   }
 });
 
+
+// PATCH /admin/purchases/:id/verify-whatsapp
+// Confirms a WhatsApp-based manual payment, mints tickets, sends emails.
+router.patch('/purchases/:id/verify-whatsapp', requireAdmin, async (req, res) => {
+  try {
+    const { data: purchase, error: purchaseError } = await supabase
+      .from('purchases')
+      .select('*')
+      .eq('id', req.params.id)
+      .single();
+
+    if (purchaseError || !purchase) {
+      return res.status(404).json({ error: 'Purchase not found' });
+    }
+
+    if (purchase.status !== 'whatsapp_pending') {
+      return res.status(400).json({ error: 'Purchase is not pending WhatsApp verification' });
+    }
+
+    const { data: category, error: catError } = await supabase
+      .from('seat_categories')
+      .select('*')
+      .eq('id', purchase.category_id)
+      .single();
+
+    if (catError || !category) {
+      return res.status(404).json({ error: 'Seat category not found' });
+    }
+
+    const available = category.total_seats - category.sold_seats;
+    if (purchase.quantity > available) {
+      return res.status(400).json({ error: `Only ${available} seat(s) left — cannot verify this order` });
+    }
+
+    const { error: updateError } = await supabase
+      .from('purchases')
+      .update({ status: 'completed' })
+      .eq('id', purchase.id);
+
+    if (updateError) throw updateError;
+
+    const { error: seatError } = await supabase
+      .from('seat_categories')
+      .update({ sold_seats: category.sold_seats + purchase.quantity })
+      .eq('id', category.id);
+
+    if (seatError) throw seatError;
+
+    const tickets = await generateTicketsAndSendEmails({
+      purchaseId:  purchase.id,
+      eventId:     purchase.event_id,
+      categoryId:  purchase.category_id,
+      quantity:    purchase.quantity,
+      buyerName:   purchase.buyer_name,
+      buyerEmail:  purchase.buyer_email,
+      buyerPhone:  purchase.buyer_phone || '',
+      totalAmount: purchase.total_amount,
+    });
+
+    res.json({ ...purchase, status: 'completed', tickets });
+  } catch (err) {
+    console.error('Verify WhatsApp order error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ============================================================
 // PORTFOLIO — admin only
 // ============================================================

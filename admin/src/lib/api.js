@@ -109,6 +109,10 @@ export async function createManualSale(payload) {
   })
 }
 
+export async function verifyWhatsappPurchase(id) {
+  return request(`/purchases/${id}/verify-whatsapp`, { method: 'PATCH' })
+}
+
 // ============================================================
 // PORTFOLIO
 // ============================================================

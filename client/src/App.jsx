@@ -5,6 +5,7 @@ import Footer                          from './components/Footer'
 import Home                            from './pages/Home'
 import Events                          from './pages/Events'
 import EventDetail                     from './pages/EventDetail'
+import EventDetailWhatsApp             from './pages/EventDetailWhatsApp'
 import PaymentSuccess                  from './pages/PaymentSuccess'
 import Portfolio                       from './pages/Portfolio'
 import BookMeeting                     from './pages/BookMeeting'
@@ -29,7 +30,8 @@ export default function App() {
         <Routes>
           <Route path="/"                  element={<Home />} />
           <Route path="/events"            element={<Events />} />
-          <Route path="/events/:id"        element={<EventDetail />} />
+          <Route path="/events/:id"          element={<EventDetail />} />
+          <Route path="/events/:id/whatsapp" element={<EventDetailWhatsApp />} />
           <Route path="/payment-success"   element={<PaymentSuccess />} />
           <Route path="/portfolio"         element={<Portfolio />} />
           <Route path="/book-meeting"      element={<BookMeeting />} />

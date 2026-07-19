@@ -180,11 +180,11 @@ function HeroSlider({ events }) {
             }}
           >
             <Link
-              to={`/events/${events[current]?.id}`}
+              to={`/events/${events[current]?.id}/whatsapp`}
               className="btn-gold"
-              style={{ fontSize: '15px' }}
+              style={{ fontSize: '15px', background: '#25D366', color: '#000' }}
             >
-              Get Tickets →
+              💬 Get Tickets
             </Link>
             <Link to="/events" className="btn-ghost" style={{ fontSize: '15px' }}>
               All Events

@@ -115,6 +115,58 @@ router.post('/create-checkout', async (req, res) => {
   }
 });
 
+// POST /api/payments/create-whatsapp-order
+// Creates a pending purchase with no payment gateway involved.
+// Admin verifies manually after receiving payment via WhatsApp.
+router.post('/create-whatsapp-order', async (req, res) => {
+  try {
+    const { eventId, categoryId, quantity, buyerName, buyerEmail, buyerPhone } = req.body;
+
+    if (!eventId || !categoryId || !quantity || !buyerName || !buyerEmail) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    const { data: category, error: catError } = await supabase
+      .from('seat_categories')
+      .select('*, events(*)')
+      .eq('id', categoryId)
+      .single();
+
+    if (catError || !category) {
+      return res.status(404).json({ error: 'Category not found' });
+    }
+
+    const available = category.total_seats - category.sold_seats;
+    if (quantity > available) {
+      return res.status(400).json({ error: `Only ${available} seat(s) available` });
+    }
+
+    const totalAmount = category.price * quantity;
+
+    const { data: purchase, error: purchaseError } = await supabase
+      .from('purchases')
+      .insert({
+        buyer_name:   buyerName,
+        buyer_email:  buyerEmail,
+        buyer_phone:  buyerPhone || '',
+        event_id:     eventId,
+        category_id:  categoryId,
+        quantity:     quantity,
+        total_amount: totalAmount,
+        status:       'whatsapp_pending',
+      })
+      .select()
+      .single();
+
+    if (purchaseError) throw purchaseError;
+
+    res.json({ purchaseId: purchase.id, totalAmount });
+  } catch (err) {
+    console.error('WhatsApp order error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 
 // GET /api/payments/session/:id — used by PaymentSuccess page
 router.get('/session/:id', async (req, res) => {
