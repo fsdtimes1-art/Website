@@ -65,6 +65,29 @@ export async function createCheckout({
   })
 }
 
+// Create a WhatsApp-based manual order (no online payment)
+// Returns { purchaseId, totalAmount }
+export async function createWhatsappOrder({
+  eventId,
+  categoryId,
+  quantity,
+  buyerName,
+  buyerEmail,
+  buyerPhone
+}) {
+  return request('/payments/create-whatsapp-order', {
+    method: 'POST',
+    body: JSON.stringify({
+      eventId,
+      categoryId,
+      quantity,
+      buyerName,
+      buyerEmail,
+      buyerPhone
+    })
+  })
+}
+
 // Verify payment session on success page
 export async function getPaymentSession(sessionId) {
   return request(`/payments/session/${sessionId}`)
