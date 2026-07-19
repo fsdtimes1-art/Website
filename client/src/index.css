@@ -10,13 +10,13 @@
   --gold:         #f59e0b;
   --gold-light:   #fcd34d;
   --gold-dark:    #d97706;
-  --black:        #0a0a0a;
-  --black-2:      #111111;
-  --black-3:      #1a1a1a;
-  --gray-dark:    #374151;
+  --black:        #ffffff;
+  --black-2:      #f6f6f7;
+  --black-3:      #eeeeef;
+  --gray-dark:    #d1d5db;
   --gray-mid:     #6b7280;
-  --gray-light:   #9ca3af;
-  --white:        #ffffff;
+  --gray-light:   #374151;
+  --white:        #0a0a0a;
 }
 
 /* ── Base ───────────────────────────────────────────────────── */
