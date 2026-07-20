@@ -3,6 +3,7 @@ import { useEffect }                  from 'react'
 import Navbar                          from './components/Navbar'
 import Footer                          from './components/Footer'
 import Home                            from './pages/Home'
+import HowItWorks                      from './pages/HowItWorks'
 import Events                          from './pages/Events'
 import EventDetail                     from './pages/EventDetail'
 import EventDetailWhatsApp             from './pages/EventDetailWhatsApp'
@@ -29,6 +30,7 @@ export default function App() {
       <main style={{ flex: 1 }}>
         <Routes>
           <Route path="/"                  element={<Home />} />
+          <Route path="/how-it-works"      element={<HowItWorks />} />
           <Route path="/events"            element={<Events />} />
           <Route path="/events/:id"          element={<EventDetail />} />
           <Route path="/events/:id/whatsapp" element={<EventDetailWhatsApp />} />

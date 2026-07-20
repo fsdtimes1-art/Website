@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { Link }                                      from 'react-router-dom'
-import { getEvents }                                 from '../lib/api'
+import { getEvents, getPortfolio }                   from '../lib/api'
 import EventCard                                     from '../components/EventCard'
 
 // ── Hero Slider ──────────────────────────────────────────────
@@ -97,8 +97,13 @@ function HeroSlider({ events }) {
 
           <div
             key={`tag-${current}`}
-            className="tag slide-in"
-            style={{ marginBottom: '20px' }}
+            className="slide-in"
+            style={{
+              marginBottom: '20px', display: 'inline-block',
+              background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.4)',
+              color: '#fcd34d', fontSize: '11px', fontWeight: '600', letterSpacing: '1.5px',
+              textTransform: 'uppercase', padding: '4px 12px', borderRadius: '20px',
+            }}
           >
             Upcoming Event
           </div>
@@ -111,6 +116,7 @@ function HeroSlider({ events }) {
               fontSize:          'clamp(48px, 7vw, 96px)',
               lineHeight:        '0.95',
               marginBottom:      '20px',
+              color:             '#fff',
               animationDelay:    '0.1s',
               opacity:           0,
               animationFillMode: 'forwards',
