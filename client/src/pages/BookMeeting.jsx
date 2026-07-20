@@ -361,9 +361,9 @@ export default function BookMeeting() {
                   CONTACT US DIRECTLY
                 </p>
                 {[
-                  { icon: '📱', label: 'WhatsApp', value: '+92 300 123 4567' },
-                  { icon: '📧', label: 'Email',    value: 'hello@FaisalabadTimes.co.com' },
-                  { icon: '📍', label: 'Location', value: 'Karachi, Pakistan' },
+                  { icon: '📱', label: 'WhatsApp', value: '+92 322 222 6677' },
+                  { icon: '📧', label: 'Email',    value: 'fsdtimes1@gmail.com' },
+                  { icon: '📍', label: 'Location', value: 'P-35 Chenab Market Susan Road Madina Town, Faisalabad, Pakistan' },
                 ].map((c, i) => (
                   <div key={i} style={{
                     display:       'flex',
