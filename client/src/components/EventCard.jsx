@@ -123,7 +123,7 @@ export default function EventCard({ event }) {
             fontFamily:    'var(--font-display)',
             fontSize:      '13px',
             letterSpacing: '1px',
-            color:         'var(--gold)',
+            color:         '#fcd34d',
           }}>
             {formattedDate}
           </p>
