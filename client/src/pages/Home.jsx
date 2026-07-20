@@ -10,7 +10,6 @@ function HeroSlider({ events }) {
   const timerRef                  = useRef(null)
   const currentRef                = useRef(0)
 
-  // Keep ref in sync so the interval callback always sees latest value
   useEffect(() => { currentRef.current = current }, [current])
 
   const goTo = useCallback((idx) => {
@@ -20,7 +19,6 @@ function HeroSlider({ events }) {
     setTimeout(() => setAnimating(false), 700)
   }, [animating])
 
-  // Stable interval never re-registers, reads currentRef instead of stale closure
   useEffect(() => {
     timerRef.current = setInterval(() => {
       const next = (currentRef.current + 1) % events.length
@@ -29,7 +27,7 @@ function HeroSlider({ events }) {
       setTimeout(() => setAnimating(false), 700)
     }, 5000)
     return () => clearInterval(timerRef.current)
-  }, [events.length]) // only re-run if number of events changes
+  }, [events.length])
 
   if (!events.length) return null
 
@@ -58,7 +56,6 @@ function HeroSlider({ events }) {
             zIndex:     i === current ? 1 : 0,
           }}
         >
-          {/* Background image NO zoom/scale */}
           {ev.image_url ? (
             <div style={{
               position:           'absolute',
@@ -66,13 +63,11 @@ function HeroSlider({ events }) {
               backgroundImage:    `url(${ev.image_url})`,
               backgroundSize:     'cover',
               backgroundPosition: 'center',
-              // zoom effect removed intentionally
             }} />
           ) : (
-            <div style={{ position: 'absolute', inset: 0, background: 'var(--black-2)' }} />
+            <div style={{ position: 'absolute', inset: 0, background: '#111111' }} />
           )}
 
-          {/* Overlay reduced opacity for a lighter shade */}
           <div style={{
             position:   'absolute',
             inset:      0,
@@ -84,7 +79,7 @@ function HeroSlider({ events }) {
         </div>
       ))}
 
-      {/* Content */}
+      {/* Content — hardcoded light colors, this section is always dark regardless of site theme */}
       <div className="container" style={{
         position:   'relative',
         zIndex:     2,
@@ -116,7 +111,7 @@ function HeroSlider({ events }) {
               fontSize:          'clamp(48px, 7vw, 96px)',
               lineHeight:        '0.95',
               marginBottom:      '20px',
-              color:             '#fff',
+              color:             '#ffffff',
               animationDelay:    '0.1s',
               opacity:           0,
               animationFillMode: 'forwards',
@@ -139,12 +134,12 @@ function HeroSlider({ events }) {
             }}
           >
             {events[current]?.date && (
-              <span style={{ color: 'var(--gold)', fontSize: '14px', fontWeight: '500' }}>
+              <span style={{ color: '#fcd34d', fontSize: '14px', fontWeight: '500' }}>
                 📅 {formatDate(events[current].date)}
               </span>
             )}
             {events[current]?.venue && (
-              <span style={{ color: 'var(--gray-light)', fontSize: '14px' }}>
+              <span style={{ color: 'rgba(255,255,255,0.8)', fontSize: '14px' }}>
                 📍 {events[current].venue}
               </span>
             )}
@@ -155,7 +150,7 @@ function HeroSlider({ events }) {
               key={`desc-${current}`}
               className="slide-in"
               style={{
-                color:             'var(--gray-light)',
+                color:             'rgba(255,255,255,0.75)',
                 fontSize:          '15px',
                 lineHeight:        '1.6',
                 marginBottom:      '36px',
@@ -192,7 +187,7 @@ function HeroSlider({ events }) {
             >
               💬 Get Tickets
             </Link>
-            <Link to="/events" className="btn-ghost" style={{ fontSize: '15px' }}>
+            <Link to="/events" className="btn-ghost" style={{ fontSize: '15px', color: '#ffffff', borderColor: 'rgba(255,255,255,0.5)' }}>
               All Events
             </Link>
           </div>
@@ -215,7 +210,6 @@ function HeroSlider({ events }) {
             onClick={() => {
               clearInterval(timerRef.current)
               goTo(i)
-              // restart interval from this point
               timerRef.current = setInterval(() => {
                 const next = (currentRef.current + 1) % events.length
                 setAnimating(true)
@@ -227,7 +221,7 @@ function HeroSlider({ events }) {
               width:        i === current ? '28px' : '8px',
               height:       '8px',
               borderRadius: '4px',
-              background:   i === current ? 'var(--gold)' : 'rgba(255,255,255,0.3)',
+              background:   i === current ? '#f59e0b' : 'rgba(255,255,255,0.3)',
               border:       'none',
               cursor:       'pointer',
               padding:      0,
@@ -251,14 +245,14 @@ function HeroSlider({ events }) {
         {String(current + 1).padStart(2, '0')} / {String(events.length).padStart(2, '0')}
       </div>
 
-      {/* Bottom fade */}
+      {/* Bottom fade — fades into black regardless of theme, this hero is always dark */}
       <div style={{
         position:      'absolute',
         bottom:        0,
         left:          0,
         right:         0,
         height:        '120px',
-        background:    'linear-gradient(to bottom, transparent, var(--black))',
+        background:    'linear-gradient(to bottom, transparent, #0a0a0a)',
         zIndex:        1,
         pointerEvents: 'none',
       }} />
@@ -276,18 +270,54 @@ function HeroSlider({ events }) {
   )
 }
 
+// ── Small portfolio card used only on Home ──────────────────
+function PortfolioPreviewCard({ item }) {
+  const { client_name, event_name, image_url, is_featured } = item
+  return (
+    <Link to="/portfolio" className="card-dark" style={{ display: 'flex', flexDirection: 'column', textDecoration: 'none' }}>
+      <div style={{ position: 'relative', height: '200px', overflow: 'hidden' }}>
+        {image_url ? (
+          <img src={image_url} alt={event_name} style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'brightness(0.8)' }} />
+        ) : (
+          <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, var(--black-3), var(--black-2))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '44px' }}>
+            🏆
+          </div>
+        )}
+        {is_featured && (
+          <span style={{
+            position: 'absolute', top: '10px', right: '10px',
+            background: 'rgba(245,158,11,0.9)', color: '#000',
+            fontSize: '9px', fontWeight: '700', letterSpacing: '1px', padding: '3px 8px', borderRadius: '20px',
+          }}>
+            FEATURED
+          </span>
+        )}
+      </div>
+      <div style={{ padding: '18px' }}>
+        <p style={{ color: 'var(--gray-mid)', fontSize: '10px', fontWeight: '600', letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: '4px' }}>
+          {client_name}
+        </p>
+        <p style={{ fontFamily: 'var(--font-display)', fontSize: '19px', letterSpacing: '1px', color: 'var(--white)' }}>
+          {event_name}
+        </p>
+      </div>
+    </Link>
+  )
+}
+
 // ── Main Home Page ───────────────────────────────────────────
 export default function Home() {
-  const [events,       setEvents]       = useState([])
-  const [loading,      setLoading]      = useState(true)
-  const [fontsReady,   setFontsReady]   = useState(false)
+  const [events,           setEvents]           = useState([])
+  const [portfolio,        setPortfolio]        = useState([])
+  const [loading,          setLoading]          = useState(true)
+  const [portfolioLoading, setPortfolioLoading] = useState(true)
+  const [fontsReady,       setFontsReady]       = useState(false)
 
-  // Wait for fonts to load before rendering prevents FOUT flash
   useEffect(() => {
     if (document.fonts && document.fonts.ready) {
       document.fonts.ready.then(() => setFontsReady(true))
     } else {
-      setFontsReady(true) // fallback for browsers without Font Loading API
+      setFontsReady(true)
     }
   }, [])
 
@@ -298,10 +328,17 @@ export default function Home() {
       .finally(() => setLoading(false))
   }, [])
 
-  const sliderEvents = events.slice(0, 5)
-  const gridEvents   = events.slice(0, 3)
+  useEffect(() => {
+    getPortfolio()
+      .then(data => setPortfolio(data))
+      .catch(console.error)
+      .finally(() => setPortfolioLoading(false))
+  }, [])
 
-  // Keep layout stable while fonts load invisible until ready
+  const sliderEvents  = events.slice(0, 5)
+  const gridEvents    = events.slice(0, 3)
+  const gridPortfolio = portfolio.slice(0, 3)
+
   const visibilityStyle = fontsReady ? {} : { visibility: 'hidden' }
 
   return (
@@ -371,6 +408,85 @@ export default function Home() {
         </section>
       )}
 
+      {/* ── Our Portfolio (preview) ──────────────────── */}
+      <section className="section">
+        <div className="container">
+          <div style={{
+            display:        'flex',
+            justifyContent: 'space-between',
+            alignItems:     'flex-end',
+            marginBottom:   '48px',
+            flexWrap:       'wrap',
+            gap:            '16px',
+          }}>
+            <div>
+              <span className="tag" style={{ marginBottom: '12px', display: 'inline-block' }}>
+                Our Work
+              </span>
+              <h2 style={{
+                fontFamily:    'var(--font-display)',
+                fontSize:      'clamp(36px, 5vw, 56px)',
+                letterSpacing: '2px',
+              }}>
+                OUR PORTFOLIO
+              </h2>
+            </div>
+            <Link to="/portfolio" className="btn-ghost">View Full Portfolio →</Link>
+          </div>
+
+          {portfolioLoading ? (
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
+              <div className="spinner" />
+            </div>
+          ) : gridPortfolio.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '80px 0', color: 'var(--gray-mid)' }}>
+              <p style={{ fontSize: '48px', marginBottom: '16px' }}>🏆</p>
+              <p style={{ fontSize: '16px' }}>No portfolio items yet. Check back soon!</p>
+            </div>
+          ) : (
+            <div style={{
+              display:             'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+              gap:                 '24px',
+            }}>
+              {gridPortfolio.map(item => (
+                <PortfolioPreviewCard key={item.id} item={item} />
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* ── Book a Meeting (CTA) ─────────────────────── */}
+      <section style={{
+        padding:      '80px 0',
+        background:   'linear-gradient(135deg, rgba(245,158,11,0.12), rgba(245,158,11,0.04))',
+        borderTop:    '1px solid rgba(245,158,11,0.15)',
+        borderBottom: '1px solid rgba(245,158,11,0.15)',
+      }}>
+        <div className="container" style={{ textAlign: 'center' }}>
+          <h2 style={{
+            fontFamily:    'var(--font-display)',
+            fontSize:      'clamp(36px, 5vw, 64px)',
+            letterSpacing: '2px',
+            marginBottom:  '16px',
+          }}>
+            PLANNING AN EVENT?
+          </h2>
+          <p style={{
+            color:       'var(--gray-light)',
+            fontSize:    '16px',
+            margin:      '0 auto 36px',
+            maxWidth:    '480px',
+          }}>
+            Let us handle everything: From ticketing to on-ground management.
+          </p>
+          <Link to="/book-meeting" className="btn-gold" style={{ fontSize: '15px' }}>
+            Book a Free Consultation →
+          </Link>
+        </div>
+      </section>
+
       {/* ── Upcoming Events Grid ─────────────────────── */}
       <section className="section">
         <div className="container">
@@ -420,98 +536,21 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── How It Works ─────────────────────────────── */}
-      <section className="section" style={{ background: 'var(--black-2)' }}>
+      {/* ── Link to How It Works ─────────────────────── */}
+      <section className="section" style={{ background: 'var(--black-2)', textAlign: 'center' }}>
         <div className="container">
-          <div style={{ textAlign: 'center', marginBottom: '64px' }}>
-            <span className="tag" style={{ marginBottom: '12px', display: 'inline-block' }}>
-              Simple Process
-            </span>
-            <h2 style={{
-              fontFamily:    'var(--font-display)',
-              fontSize:      'clamp(36px, 5vw, 56px)',
-              letterSpacing: '2px',
-            }}>
-              HOW IT WORKS
-            </h2>
-          </div>
-
-          <div style={{
-            display:             'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-            gap:                 '32px',
-          }}>
-            {[
-              { step: '01', icon: '🎟️', title: 'Browse Events',   desc: 'Explore upcoming events and find the ones that excite you most.' },
-              { step: '02', icon: '💺', title: 'Choose Your Seat', desc: 'Pick your preferred category: VIP, Premium, or General.' },
-              { step: '03', icon: '💳', title: 'Secure Payment',   desc: 'Pay safely via card through our Stripe-powered checkout.' },
-              { step: '04', icon: '📧', title: 'Get Your Ticket',  desc: 'Receive a PDF ticket with QR code instantly in your inbox.' },
-            ].map((item, i) => (
-              <div key={i} style={{
-                position:     'relative',
-                padding:      '32px 24px',
-                background:   'var(--black-3)',
-                borderRadius: '12px',
-                border:       '1px solid rgba(255,255,255,0.06)',
-              }}>
-                <div style={{
-                  position:   'absolute',
-                  top:        '16px',
-                  right:      '20px',
-                  fontFamily: 'var(--font-display)',
-                  fontSize:   '52px',
-                  color:      'var(--gold)',
-                  lineHeight: '1',
-                  userSelect: 'none',
-                }}>
-                  {item.step}
-                </div>
-                <div style={{ fontSize: '36px', marginBottom: '16px' }}>{item.icon}</div>
-                <h3 style={{
-                  fontFamily:    'var(--font-display)',
-                  fontSize:      '20px',
-                  letterSpacing: '1px',
-                  color:         'var(--white)',
-                  marginBottom:  '10px',
-                }}>
-                  {item.title}
-                </h3>
-                <p style={{ color: 'var(--gray-mid)', fontSize: '14px', lineHeight: '1.6' }}>
-                  {item.desc}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── CTA Banner ───────────────────────────────── */}
-      <section style={{
-        padding:      '80px 0',
-        background:   'linear-gradient(135deg, rgba(245,158,11,0.12), rgba(245,158,11,0.04))',
-        borderTop:    '1px solid rgba(245,158,11,0.15)',
-        borderBottom: '1px solid rgba(245,158,11,0.15)',
-      }}>
-        <div className="container" style={{ textAlign: 'center' }}>
           <h2 style={{
             fontFamily:    'var(--font-display)',
-            fontSize:      'clamp(36px, 5vw, 64px)',
+            fontSize:      'clamp(28px, 4vw, 44px)',
             letterSpacing: '2px',
             marginBottom:  '16px',
           }}>
-            PLANNING AN EVENT?
+            CURIOUS HOW BOOKING WORKS?
           </h2>
-          <p style={{
-            color:       'var(--gray-light)',
-            fontSize:    '16px',
-            margin:      '0 auto 36px',
-            maxWidth:    '480px',
-          }}>
-            Let us handle everything: From ticketing to on-ground management.
+          <p style={{ color: 'var(--gray-mid)', fontSize: '15px', marginBottom: '28px' }}>
+            See our simple 4-step process from browsing to entry.
           </p>
-          <Link to="/book-meeting" className="btn-gold" style={{ fontSize: '15px' }}>
-            Book a Free Consultation →
-          </Link>
+          <Link to="/how-it-works" className="btn-ghost">See How It Works →</Link>
         </div>
       </section>
 
