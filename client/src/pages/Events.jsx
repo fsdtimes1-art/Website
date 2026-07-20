@@ -116,7 +116,7 @@ export default function Events() {
             lineHeight:'1.65',
           }}>
             Secure your seat before they're gone. All events include instant
-            e-ticket delivery with QR code entry.
+            e-ticket delivery.
           </p>
         </div>
       </section>

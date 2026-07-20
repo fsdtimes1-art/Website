@@ -6,7 +6,6 @@ export default function Portfolio() {
   const [items,   setItems]   = useState([])
   const [loading, setLoading] = useState(true)
   const [error,   setError]   = useState(null)
-  const [filter,  setFilter]  = useState('all')
 
   useEffect(() => {
     getPortfolio()
@@ -14,11 +13,6 @@ export default function Portfolio() {
       .catch(err => setError(err.message))
       .finally(() => setLoading(false))
   }, [])
-
-  const featured  = items.filter(i => i.is_featured)
-  const displayed = filter === 'featured'
-    ? featured
-    : items
 
   return (
     <div>
@@ -48,7 +42,7 @@ export default function Portfolio() {
             letterSpacing: '3px',
             marginBottom:  '16px',
           }}>
-            PAST EVENTS
+            OUR PORTFOLIO
           </h1>
           <p className="fade-up fade-up-delay-2" style={{
             color:    'var(--gray-light)',
@@ -56,95 +50,12 @@ export default function Portfolio() {
             maxWidth: '520px',
             lineHeight: '1.6',
           }}>
-            A track record of unforgettable experiences. From intimate private gatherings
-            to large-scale productions here's what we've delivered.
+            Explore some of our recent projects across event coverage, brand campaigns,
+            content creation, business promotions, and digital marketing. Every project
+            reflects our commitment to creativity, quality, and measurable results.
           </p>
         </div>
       </section>
-
-      {/* ── Stats strip ── */}
-      <div style={{
-        borderTop:    '1px solid rgba(255,255,255,0.06)',
-        borderBottom: '1px solid rgba(255,255,255,0.06)',
-        background:   'var(--black-2)',
-      }}>
-        <div className="container" style={{
-          display:  'flex',
-          padding:  '28px 24px',
-          gap:      '0',
-          flexWrap: 'wrap',
-        }}>
-          {[
-            { number: items.length || '—', label: 'Events Managed' },
-            { number: items.reduce((s, i) => s + (i.attendees || 0), 0).toLocaleString() || '—', label: 'Total Attendees' },
-            { number: featured.length || '—', label: 'Featured Projects' },
-          ].map((stat, i) => (
-            <div key={i} style={{
-              flex:        '1 1 160px',
-              padding:     '0 32px',
-              borderRight: i < 2 ? '1px solid rgba(255,255,255,0.06)' : 'none',
-            }}>
-              <p style={{
-                fontFamily:    'var(--font-display)',
-                fontSize:      '40px',
-                letterSpacing: '2px',
-                color:         'var(--gold)',
-                lineHeight:    '1',
-              }}>
-                {stat.number}
-              </p>
-              <p style={{ color: 'var(--gray-mid)', fontSize: '12px', marginTop: '4px' }}>
-                {stat.label}
-              </p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* ── Filter bar ── */}
-      <div style={{
-        borderBottom: '1px solid rgba(255,255,255,0.06)',
-        background:   'var(--black-2)',
-        position:     'sticky',
-        top:          '70px',
-        zIndex:       10,
-      }}>
-        <div className="container" style={{
-          display:    'flex',
-          alignItems: 'center',
-          gap:        '8px',
-          padding:    '14px 24px',
-        }}>
-          <span style={{ color: 'var(--gray-mid)', fontSize: '13px', marginRight: '8px' }}>
-            Show:
-          </span>
-          {[
-            { key: 'all',      label: 'All Events' },
-            { key: 'featured', label: 'Featured Only' },
-          ].map(f => (
-            <button
-              key={f.key}
-              onClick={() => setFilter(f.key)}
-              style={{
-                background:   filter === f.key ? 'var(--gold)' : 'transparent',
-                color:        filter === f.key ? 'var(--black)' : 'var(--gray-light)',
-                border:       filter === f.key ? '1px solid var(--gold)' : '1px solid rgba(255,255,255,0.1)',
-                borderRadius: '20px',
-                fontSize:     '13px',
-                fontWeight:   filter === f.key ? '700' : '400',
-                padding:      '6px 16px',
-                cursor:       'pointer',
-                transition:   'all 0.2s',
-              }}
-            >
-              {f.label}
-            </button>
-          ))}
-          <span style={{ marginLeft: 'auto', color: 'var(--gray-mid)', fontSize: '13px' }}>
-            {displayed.length} project{displayed.length !== 1 ? 's' : ''}
-          </span>
-        </div>
-      </div>
 
       {/* ── Grid ── */}
       <section className="section">
@@ -169,7 +80,7 @@ export default function Portfolio() {
             </div>
           )}
 
-          {!loading && !error && displayed.length === 0 && (
+          {!loading && !error && items.length === 0 && (
             <div style={{ textAlign: 'center', padding: '100px 0', color: 'var(--gray-mid)' }}>
               <p style={{ fontSize: '56px', marginBottom: '20px' }}>🏆</p>
               <p style={{ fontSize: '18px', color: 'var(--white)', marginBottom: '8px' }}>
@@ -179,13 +90,13 @@ export default function Portfolio() {
             </div>
           )}
 
-          {!loading && !error && displayed.length > 0 && (
+          {!loading && !error && items.length > 0 && (
             <div style={{
               display:             'grid',
               gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
               gap:                 '28px',
             }}>
-              {displayed.map((item, i) => (
+              {items.map((item, i) => (
                 <PortfolioCard key={item.id} item={item} index={i} />
               ))}
             </div>
@@ -313,7 +224,7 @@ function PortfolioCard({ item, index }) {
             borderRadius:   '6px',
             padding:        '5px 12px',
           }}>
-            <p style={{ fontFamily: 'var(--font-display)', fontSize: '12px', letterSpacing: '1px', color: 'var(--gold)' }}>
+            <p style={{ fontFamily: 'var(--font-display)', fontSize: '12px', letterSpacing: '1px', color: '#fcd34d' }}>
               {formattedDate}
             </p>
           </div>

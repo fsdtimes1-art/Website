@@ -40,7 +40,7 @@ export default function Footer() {
               marginTop:  '12px',
               maxWidth:   '240px',
             }}>
-              Premium event experiences, flawlessly managed from first ticket to final curtain.
+              The city’s platform for business promotion, event marketing, media coverage, and digital growth.
             </p>
           </div>
 
@@ -154,33 +154,6 @@ export default function Footer() {
                 </a>
               ))}
             </div>
-          </div>
-
-          {/* CTA */}
-          <div>
-            <p style={{
-              fontFamily:    'var(--font-display)',
-              fontSize:      '16px',
-              letterSpacing: '2px',
-              color:         'var(--white)',
-              marginBottom:  '16px',
-            }}>
-              READY TO START?
-            </p>
-            <p style={{
-              color:        'var(--gray-mid)',
-              fontSize:     '14px',
-              lineHeight:   '1.6',
-              marginBottom: '20px',
-            }}>
-              Planning an event? Let's make it unforgettable together.
-            </p>
-            <Link to="/book-meeting" className="btn-gold" style={{
-              fontSize: '13px',
-              padding:  '10px 22px',
-            }}>
-              Book a Meeting
-            </Link>
           </div>
         </div>
 
