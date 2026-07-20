@@ -232,7 +232,6 @@ export default function EventDetailWhatsApp() {
                 { label:'Date',     value: eventDate.toLocaleDateString('en-PK', { month:'short', day:'numeric', year:'numeric' }), icon:'📅' },
                 { label:'Time',     value: formattedTime,   icon:'🕐' },
                 { label:'Venue',    value: event.venue,     icon:'📍' },
-                { label:'Capacity', value: `${totalRemaining}/${totalSeats} left`, icon:'🎟️' },
               ].map((item, i) => (
                 <div key={i} style={{
                   background:'var(--black-2)', border:'1px solid rgba(255,255,255,0.06)',
