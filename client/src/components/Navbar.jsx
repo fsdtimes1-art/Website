@@ -46,9 +46,9 @@ export default function Navbar() {
               fontFamily:    'var(--font-display)',
               fontSize:      '24px',
               letterSpacing: '4px',
-              color:         'var(--gold)',
+              color:         '#f59e0b',
             }}>
-              Faisalabad<span style={{ color: 'var(--white)' }}>Times.co</span>
+              Faisalabad<span style={{ color: '#ffffff' }}>Times.co</span>
             </span>
           </Link>
 
@@ -64,19 +64,20 @@ export default function Navbar() {
                   style={{
                     fontFamily:     'var(--font-body)',
                     fontSize:       '14px',
-                    fontWeight:     '500',
-                    color:          active ? 'var(--gold)' : 'var(--gray-light)',
+                    fontWeight:     active ? '700' : '500',
+                    color:          active ? '#fcd34d' : 'rgba(255,255,255,0.75)',
                     textDecoration: 'none',
                     padding:        '8px 16px',
                     borderRadius:   '4px',
-                    transition:     'color 0.2s, background 0.2s',
-                    background:     active ? 'rgba(245,158,11,0.08)' : 'transparent',
+                    transition:     'color 0.2s, background 0.2s, border-color 0.2s',
+                    background:     active ? 'rgba(245,158,11,0.22)' : 'transparent',
+                    border:         active ? '1px solid rgba(245,158,11,0.5)' : '1px solid transparent',
                   }}
                   onMouseEnter={e => {
-                    if (!active) e.currentTarget.style.color = 'var(--white)'
+                    if (!active) e.currentTarget.style.color = '#ffffff'
                   }}
                   onMouseLeave={e => {
-                    if (!active) e.currentTarget.style.color = 'var(--gray-light)'
+                    if (!active) e.currentTarget.style.color = 'rgba(255,255,255,0.75)'
                   }}
                 >
                   {link.label}
@@ -113,7 +114,7 @@ export default function Navbar() {
                 display:      'block',
                 width:        '24px',
                 height:       '2px',
-                background:   'var(--white)',
+                background:   '#ffffff',
                 borderRadius: '2px',
                 transition:   'transform 0.3s, opacity 0.3s',
                 transform:
@@ -145,26 +146,28 @@ export default function Navbar() {
         visibility:     menuOpen ? 'visible' : 'hidden',
       }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-          {links.map(link => (
-            <Link
-              key={link.path}
-              to={link.path}
-              style={{
-                fontFamily:     'var(--font-body)',
-                fontSize:       '16px',
-                fontWeight:     '500',
-                color:          location.pathname === link.path ? 'var(--gold)' : 'var(--white)',
-                textDecoration: 'none',
-                padding:        '14px 16px',
-                borderRadius:   '6px',
-                background:     location.pathname === link.path
-                                  ? 'rgba(245,158,11,0.08)'
-                                  : 'transparent',
-              }}
-            >
-              {link.label}
-            </Link>
-          ))}
+          {links.map(link => {
+            const active = location.pathname === link.path
+            return (
+              <Link
+                key={link.path}
+                to={link.path}
+                style={{
+                  fontFamily:     'var(--font-body)',
+                  fontSize:       '16px',
+                  fontWeight:     active ? '700' : '500',
+                  color:          active ? '#fcd34d' : '#ffffff',
+                  textDecoration: 'none',
+                  padding:        '14px 16px',
+                  borderRadius:   '6px',
+                  background:     active ? 'rgba(245,158,11,0.22)' : 'transparent',
+                  border:         active ? '1px solid rgba(245,158,11,0.5)' : '1px solid transparent',
+                }}
+              >
+                {link.label}
+              </Link>
+            )
+          })}
           <Link
             to="/events"
             className="btn-gold"
