@@ -71,6 +71,22 @@ const SERVICES = [
     price:    null,
     highlight: false,
   },
+  {
+    badge:    'Event Partnerships',
+    live:     true,
+    headline: 'NEED A MEDIA PARTNER OR\nTICKETING PLATFORM?',
+    desc:     'Promote your event with Faisalabad Times and let us help you reach the right audience. From official media partnerships to online ticket sales, we simplify event promotion from start to finish.',
+    features: [
+      'Official Media Partnership',
+      'Ticket Sales via FaisalabadTimes.co',
+      'Event Listing on Our Website',
+      'Promotion Across Social Media Channels',
+      'WhatsApp Registration Support',
+      'Digital E Ticket Management',
+      'Event Performance Insights',
+    ],
+    highlight: false,
+  },
 ]
 
 export default function BookMeeting() {
@@ -493,7 +509,7 @@ export default function BookMeeting() {
         /* Services grid */
         .services-grid {
           display: grid;
-          grid-template-columns: repeat(3, 1fr);
+          grid-template-columns: repeat(2, 1fr);
           gap: 24px;
           align-items: stretch;
         }
