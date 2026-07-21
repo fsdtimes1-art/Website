@@ -41,15 +41,12 @@ export default function Navbar() {
         }}>
 
           {/* Logo */}
-          <Link to="/" style={{ textDecoration: 'none' }}>
-            <span style={{
-              fontFamily:    'var(--font-display)',
-              fontSize:      '24px',
-              letterSpacing: '4px',
-              color:         '#f59e0b',
-            }}>
-              Faisalabad<span style={{ color: '#ffffff' }}>Times.co</span>
-            </span>
+          <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
+            <img
+              src="/favicon.png"
+              alt="FaisalabadTimes.co"
+              style={{ height: '40px', width: 'auto' }}
+            />
           </Link>
 
           {/* Desktop links */}

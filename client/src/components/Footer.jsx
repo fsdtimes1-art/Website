@@ -27,7 +27,7 @@ export default function Footer() {
               <img
                 src="/favicon.png"
                 alt="FaisalabadTimes.co"
-                style={{ height: '48px', width: 'auto' }}
+                style={{ height: '64px', width: 'auto' }}
               />
             </Link>
             <p style={{
