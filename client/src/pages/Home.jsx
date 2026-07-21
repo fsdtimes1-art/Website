@@ -87,9 +87,6 @@ export default function Home() {
             gap:            '16px',
           }}>
             <div>
-              <span className="tag" style={{ marginBottom: '12px', display: 'inline-block' }}>
-                Our Work
-              </span>
               <h2 style={{
                 fontFamily:    'var(--font-display)',
                 fontSize:      'clamp(36px, 5vw, 56px)',

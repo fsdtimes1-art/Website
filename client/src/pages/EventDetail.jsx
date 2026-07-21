@@ -157,11 +157,11 @@ export default function EventDetail() {
         }} />
 
         {/* Back button */}
-        <button className="back-btn" onClick={() => navigate('/events')} style={{
+       <button className="back-btn" onClick={() => navigate('/events')} style={{
           position:'absolute', top:'24px', left:'24px',
           background:'rgba(0,0,0,0.6)', backdropFilter:'blur(10px)',
-          border:'1px solid rgba(255,255,255,0.1)', borderRadius:'8px',
-          color:'var(--white)', fontSize:'13px', padding:'9px 18px',
+          border:'1px solid rgba(255,255,255,0.2)', borderRadius:'8px',
+          color:'#fff', fontSize:'13px', padding:'9px 18px',
           cursor:'pointer', display:'flex', alignItems:'center', gap:'6px',
           transition:'background 0.2s',
         }}>
@@ -195,6 +195,7 @@ export default function EventDetail() {
               fontFamily:'var(--font-display)',
               fontSize:'clamp(32px, 4.5vw, 60px)',
               letterSpacing:'2px', lineHeight:'1.1',
+              color:'#fff',
               textShadow:'0 2px 20px rgba(0,0,0,0.5)',
             }}>
               {event.name}
@@ -268,7 +269,7 @@ export default function EventDetail() {
             }}>
               <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'10px' }}>
                 <span style={{ color:'var(--gray-light)', fontSize:'13px', fontWeight:'600' }}>
-                  Seat Availability
+                  Ticket Availability
                 </span>
                 <span style={{ color:'var(--gold)', fontSize:'13px', fontWeight:'700' }}>
                   {soldPct}% filled
@@ -311,7 +312,7 @@ export default function EventDetail() {
                 letterSpacing:'2.5px', marginBottom:'20px', color:'var(--white)',
                 display:'flex', alignItems:'center', gap:'12px',
               }}>
-                SELECT YOUR SEATS
+                SELECT YOUR TICKETS
                 <span style={{ flex:1, height:'1px', background:'rgba(255,255,255,0.06)' }} />
               </h2>
               <SeatSelector
