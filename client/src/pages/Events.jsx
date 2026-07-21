@@ -93,9 +93,6 @@ export default function Events() {
               animation: 'pulse 2s ease-in-out infinite',
             }} />
             <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }`}</style>
-            <span style={{ color:'var(--gold)', fontSize:'12px', fontWeight:'700', letterSpacing:'1.5px' }}>
-              LIVE NOW
-            </span>
           </div>
 
           <h1 style={{

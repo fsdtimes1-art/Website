@@ -254,7 +254,7 @@ export default function EventDetailWhatsApp() {
             }}>
               <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'10px' }}>
                 <span style={{ color:'var(--gray-light)', fontSize:'13px', fontWeight:'600' }}>
-                  Seat Availability
+                  Ticket Availability
                 </span>
                 <span style={{ color:'var(--gold)', fontSize:'13px', fontWeight:'700' }}>
                   {soldPct}% filled
@@ -295,7 +295,7 @@ export default function EventDetailWhatsApp() {
                 letterSpacing:'2.5px', marginBottom:'20px', color:'var(--white)',
                 display:'flex', alignItems:'center', gap:'12px',
               }}>
-                SELECT YOUR SEATS
+                SELECT YOUR TICKETS
                 <span style={{ flex:1, height:'1px', background:'rgba(255,255,255,0.06)' }} />
               </h2>
               <SeatSelector
@@ -496,7 +496,7 @@ export default function EventDetailWhatsApp() {
                         Preparing Order...
                       </>
                     ) : (
-                      '💬  Send Order via WhatsApp'
+                      'Send Order via WhatsApp'
                     )}
                   </button>
 

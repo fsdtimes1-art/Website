@@ -245,7 +245,7 @@ export default function EventCard({ event }) {
               textDecoration: 'none',
             }}
           >
-            💬 Get Tickets
+            Get Tickets
           </Link>
           )}
         </div>

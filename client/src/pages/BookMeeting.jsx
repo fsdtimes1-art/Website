@@ -147,9 +147,6 @@ export default function BookMeeting() {
           `,
         }} />
         <div className="container" style={{ position: 'relative', zIndex: 1 }}>
-          <span className="tag fade-up" style={{ marginBottom: '16px', display: 'inline-block' }}>
-            Let's Talk
-          </span>
           <h1 className="fade-up fade-up-delay-1" style={{
             fontFamily:    'var(--font-display)',
             fontSize:      'clamp(48px, 7vw, 88px)',
@@ -174,9 +171,6 @@ export default function BookMeeting() {
         <div className="container">
 
           <div style={{ marginBottom: '48px' }}>
-            <span className="tag" style={{ marginBottom: '12px', display: 'inline-block' }}>
-              What We Offer
-            </span>
             <h2 style={{
               fontFamily:    'var(--font-display)',
               fontSize:      'clamp(32px, 5vw, 56px)',
@@ -197,13 +191,9 @@ export default function BookMeeting() {
 
                   {/* Top meta row */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
-                    <span className="service-badge">Faisalabad Times Verified</span>
                     {svc.live && (
                       <>
                         <span className="service-live-dot" />
-                        <span style={{ color: 'var(--gold)', fontSize: '10px', fontWeight: '700', letterSpacing: '1px', textTransform: 'uppercase' }}>
-                          Active Channel
-                        </span>
                       </>
                     )}
                   </div>
@@ -274,9 +264,6 @@ export default function BookMeeting() {
         <div className="container">
 
           <div style={{ marginBottom: '48px' }}>
-            <span className="tag" style={{ marginBottom: '12px', display: 'inline-block' }}>
-              Get In Touch
-            </span>
             <h2 style={{
               fontFamily:    'var(--font-display)',
               fontSize:      'clamp(32px, 5vw, 56px)',
@@ -488,7 +475,6 @@ export default function BookMeeting() {
                         gap:     '10px',
                       }}
                     >
-                      <span>💬</span>
                       Send via WhatsApp
                     </button>
 
