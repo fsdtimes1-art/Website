@@ -45,7 +45,7 @@ export default function Navbar() {
             <img
               src="/favicon.png"
               alt="FaisalabadTimes.co"
-              style={{ height: '40px', width: 'auto' }}
+              style={{ height: '96px', width: 'auto' }}
             />
           </Link>
 
