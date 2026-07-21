@@ -41,7 +41,7 @@ export default function SeatSelector({ categories, onSelectionChange }) {
                 background:   isSelected
                   ? 'linear-gradient(135deg, rgba(245,158,11,0.1), rgba(245,158,11,0.05))'
                   : 'var(--black-3)',
-                border:       `1.5px solid ${isSelected ? 'var(--gold)' : 'rgba(255,255,255,0.07)'}`,
+                border: `1.5px solid ${isSelected ? 'var(--gold)' : 'rgba(0,0,0,0.7)'}`,
                 borderRadius: '12px',
                 padding:      '18px 20px',
                 cursor:       catSoldOut ? 'not-allowed' : 'pointer',
@@ -58,7 +58,7 @@ export default function SeatSelector({ categories, onSelectionChange }) {
               }}
               onMouseLeave={e => {
                 if (!isSelected)
-                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'
+                  e.currentTarget.style.borderColor = 'rgba(0,0,0,0.7)'
               }}
             >
               {/* Selected glow */}

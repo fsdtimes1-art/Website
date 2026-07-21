@@ -1,5 +1,5 @@
 // admin/src/pages/Portfolio.jsx
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import {
   getAdminPortfolio, createPortfolioItem,
   updatePortfolioItem, deletePortfolioItem
@@ -288,7 +288,20 @@ function PortfolioModal({ item, onClose, onSaved }) {
 
   const [saving, setSaving] = useState(false)
   const [error,  setError]  = useState(null)
+const [dragOver, setDragOver] = useState(false)
+const fileInputRef = useRef(null)
 
+function handleImageFile(file) {
+  if (!file || !file.type.startsWith('image/')) return
+  const reader = new FileReader()
+  reader.onload = e => setForm(f => ({ ...f, image_url: e.target.result }))
+  reader.readAsDataURL(file)
+}
+
+function handleDrop(e) {
+  e.preventDefault(); setDragOver(false)
+  handleImageFile(e.dataTransfer.files[0])
+}
   function handleField(e) {
     const { name, value, type, checked } = e.target
     setForm(f => ({ ...f, [name]: type === 'checkbox' ? checked : value }))
@@ -394,13 +407,76 @@ function PortfolioModal({ item, onClose, onSaved }) {
             </MField>
           </div>
 
-          <MField label="Image URL">
-            <input className="input" name="image_url" placeholder="https://..." value={form.image_url} onChange={handleField} />
-            {form.image_url && (
-              <div style={{ marginTop: '8px', borderRadius: '6px', overflow: 'hidden', height: '100px', border: '1px solid rgba(255,255,255,0.08)' }}>
-                <img src={form.image_url} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => e.currentTarget.style.display = 'none'} />
-              </div>
-            )}
+         <MField label="Event Image">
+            <div
+              onDragOver={e => { e.preventDefault(); setDragOver(true) }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={handleDrop}
+              onClick={() => !form.image_url && fileInputRef.current?.click()}
+              style={{
+                border: `2px dashed ${dragOver ? 'var(--gold)' : 'rgba(255,255,255,0.12)'}`,
+                borderRadius: '10px',
+                background: dragOver ? 'rgba(245,158,11,0.05)' : 'var(--black-3)',
+                transition: 'all 0.2s',
+                cursor: form.image_url ? 'default' : 'pointer',
+                overflow: 'hidden', minHeight: '100px',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}
+            >
+              {form.image_url ? (
+                <div style={{ position: 'relative', width: '100%' }}>
+                  <img
+                    src={form.image_url}
+                    alt="preview"
+                    style={{ width: '100%', height: '100px', objectFit: 'cover', display: 'block' }}
+                    onError={e => (e.currentTarget.style.display = 'none')}
+                  />
+                  <div style={{ position: 'absolute', top: '8px', right: '8px', display: 'flex', gap: '6px' }}>
+                    <button
+                      onClick={e => { e.stopPropagation(); fileInputRef.current?.click() }}
+                      style={{
+                        background: 'rgba(0,0,0,0.75)', border: '1px solid rgba(255,255,255,0.2)',
+                        color: 'var(--white)', fontSize: '11px', padding: '5px 12px',
+                        borderRadius: '6px', cursor: 'pointer', backdropFilter: 'blur(6px)',
+                      }}
+                    >
+                      Change
+                    </button>
+                    <button
+                      onClick={e => { e.stopPropagation(); setForm(f => ({ ...f, image_url: '' })) }}
+                      style={{
+                        background: 'rgba(239,68,68,0.8)', border: 'none',
+                        color: '#fff', fontSize: '11px', padding: '5px 12px',
+                        borderRadius: '6px', cursor: 'pointer',
+                      }}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ textAlign: 'center', padding: '24px 20px' }}>
+                  <div style={{ fontSize: '26px', marginBottom: '8px', opacity: 0.4 }}>🖼️</div>
+                  <p style={{ color: 'var(--gray-light)', fontSize: '13px', marginBottom: '4px' }}>
+                    Drag & drop an image here, or{' '}
+                    <span
+                      style={{ color: 'var(--gold)', textDecoration: 'underline', cursor: 'pointer' }}
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      browse
+                    </span>
+                  </p>
+                  <p style={{ color: 'var(--gray-mid)', fontSize: '11px' }}>PNG, JPG, WEBP</p>
+                </div>
+              )}
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              style={{ display: 'none' }}
+              onChange={e => handleImageFile(e.target.files[0])}
+            />
           </MField>
 
           <MField label="Description">
