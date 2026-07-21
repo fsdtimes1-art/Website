@@ -35,8 +35,11 @@ export default function EventCard({ event }) {
     minute: '2-digit',
   })
 
+  const CardWrapper  = soldOut ? 'div' : Link
+  const wrapperProps = soldOut ? {} : { to: `/events/${id}/whatsapp` }
+
   return (
-    <div className="card-dark" style={{ display: 'flex', flexDirection: 'column' }}>
+    <CardWrapper {...wrapperProps} className="card-dark" style={{ display: 'flex', flexDirection: 'column', textDecoration: 'none', cursor: soldOut ? 'default' : 'pointer' }}>
 
       {/* Image */}
       <div style={{
@@ -231,8 +234,7 @@ export default function EventCard({ event }) {
               Sold Out
             </span>
           ) : (
-<Link
-            to={`/events/${id}/whatsapp`}
+<span
             style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -242,15 +244,14 @@ export default function EventCard({ event }) {
               color: '#000',
               fontWeight: 'bold',
               borderRadius: '6px',
-              textDecoration: 'none',
             }}
           >
             Get Tickets
-          </Link>
+          </span>
           )}
         </div>
 
-      </div>
-    </div>
+     </div>
+    </CardWrapper>
   )
 }

@@ -210,11 +210,6 @@ export default function Home() {
             {SERVICES.map((svc, i) => (
               <div key={i} className={`service-card${svc.highlight ? ' service-card--highlight' : ''}`}>
                 <div className="service-card-inner">
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
-                    {svc.live && <span className="service-live-dot" />}
-                  </div>
-
                   <p style={{ color: 'var(--gray-mid)', fontSize: '11px', fontWeight: '600', letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: '12px' }}>
                     {svc.badge}
                   </p>
@@ -299,19 +294,6 @@ export default function Home() {
             display: flex;
             flex-direction: column;
             flex: 1;
-          }
-          .service-live-dot {
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background: #22c55e;
-            box-shadow: 0 0 6px #22c55e;
-            animation: pulse-dot 2s ease-in-out infinite;
-            flex-shrink: 0;
-          }
-          @keyframes pulse-dot {
-            0%, 100% { opacity: 1; }
-            50%       { opacity: 0.4; }
           }
           .service-features {
             list-style: none;

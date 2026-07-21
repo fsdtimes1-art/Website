@@ -39,10 +39,11 @@ export default function Events() {
           transition: all 0.2s;
         }
         .filter-btn:hover {
-          border-color: rgba(245,158,11,0.5) !important;
-          color: var(--white) !important;
+        border-color: #000 !important;
+        color: #000 !important;
         }
-      `}</style>
+      `
+      }</style>
 
       {/* ── Hero Header ── */}
       <section style={{
@@ -75,26 +76,6 @@ export default function Events() {
         }} />
 
         <div className="container" style={{ position: 'relative', zIndex: 1 }}>
-          <div style={{
-            display:    'inline-flex',
-            alignItems: 'center',
-            gap:        '8px',
-            background: 'rgba(245,158,11,0.1)',
-            border:     '1px solid rgba(245,158,11,0.25)',
-            borderRadius:'20px',
-            padding:    '5px 14px',
-            marginBottom:'20px',
-          }}>
-            <span style={{
-              width:'7px', height:'7px', borderRadius:'50%',
-              background:'var(--gold)',
-              boxShadow: '0 0 8px var(--gold)',
-              display:   'inline-block',
-              animation: 'pulse 2s ease-in-out infinite',
-            }} />
-            <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }`}</style>
-          </div>
-
           <h1 style={{
             fontFamily:    'var(--font-display)',
             fontSize:      'clamp(44px, 6vw, 80px)',
@@ -120,9 +101,9 @@ export default function Events() {
 
       {/* ── Filter Bar ── */}
       <div style={{
-        borderTop:    '1px solid rgba(255,255,255,0.05)',
-        borderBottom: '1px solid rgba(255,255,255,0.05)',
-        background:   'rgba(10,10,10,0.9)',
+        borderTop:    '1px solid rgba(0,0,0,0.15)',
+        borderBottom: '1px solid rgba(0,0,0,0.15)',
+        background:   'rgba(255,255,255,0.95)',
         backdropFilter:'blur(12px)',
         position:     'sticky',
         top:          '70px',
@@ -145,9 +126,9 @@ export default function Events() {
             { key: 'soldout',   label: 'Sold Out'   },
           ].map(f => (
             <button key={f.key} className="filter-btn" onClick={() => setFilter(f.key)} style={{
-              background:   filter === f.key ? 'var(--gold)' : 'transparent',
-              color:        filter === f.key ? '#000' : 'var(--gray-light)',
-              border:       filter === f.key ? '1px solid var(--gold)' : '1px solid rgba(255,255,255,0.1)',
+              background:   filter === f.key ? '#000' : 'transparent',
+              color:        filter === f.key ? '#fff' : 'var(--gray-light)',
+              border:       filter === f.key ? '1px solid #000' : '1px solid rgba(0,0,0,0.2)',
               borderRadius: '20px',
               fontSize:     '13px',
               fontWeight:   filter === f.key ? '700' : '400',

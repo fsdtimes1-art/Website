@@ -23,15 +23,12 @@ export default function Footer() {
 
           {/* Brand */}
           <div>
-            <Link to="/" style={{ textDecoration: 'none' }}>
-              <span style={{
-                fontFamily:    'var(--font-display)',
-                fontSize:      '28px',
-                letterSpacing: '4px',
-                color:         'var(--gold)',
-              }}>
-                FAISALABAD<span style={{ color: 'var(--white)' }}>TIMES.CO</span>
-              </span>
+            <Link to="/" style={{ textDecoration: 'none', display: 'inline-block' }}>
+              <img
+                src="/favicon.png"
+                alt="FaisalabadTimes.co"
+                style={{ height: '48px', width: 'auto' }}
+              />
             </Link>
             <p style={{
               color:      'var(--gray-mid)',
