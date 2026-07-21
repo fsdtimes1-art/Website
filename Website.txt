@@ -10,6 +10,8 @@ Root: C:\Users\mahds\OneDrive\Desktop\Faisalabadtimes\Website
 Website/
 ├── .git/  [skipped]
 ├── admin/
+│   ├── public/
+│   │   └── favicon.png
 │   ├── src/
 │   │   ├── components/
 │   │   │   ├── EventTable.jsx
@@ -36,10 +38,11 @@ Website/
 │   └── vite.config.js
 ├── client/
 │   ├── public/
-│   │   └── legal/
-│   │       ├── privacy-policy.pdf
-│   │       ├── return-refund-policy.pdf
-│   │       └── terms-and-conditions.pdf
+│   │   ├── legal/
+│   │   │   ├── privacy-policy.pdf
+│   │   │   ├── return-refund-policy.pdf
+│   │   │   └── terms-and-conditions.pdf
+│   │   └── favicon.png
 │   ├── src/
 │   │   ├── components/
 │   │   │   ├── EventCard.jsx
@@ -91,11 +94,16 @@ Website/
 ├── .gitignore
 └── supabase_schema.sql
 
-Total files: 65
+Total files: 67
 
 ================================================================================
 FILE CONTENTS
 ================================================================================
+
+--------------------------------------------------------------------------------
+FILE: /admin/public/favicon.png
+--------------------------------------------------------------------------------
+[binary / skipped]
 
 --------------------------------------------------------------------------------
 FILE: /admin/src/components/EventTable.jsx
@@ -2625,7 +2633,7 @@ export default function Login() {
 FILE: /admin/src/pages/Portfolio.jsx
 --------------------------------------------------------------------------------
 // admin/src/pages/Portfolio.jsx
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import {
   getAdminPortfolio, createPortfolioItem,
   updatePortfolioItem, deletePortfolioItem
@@ -2914,7 +2922,20 @@ function PortfolioModal({ item, onClose, onSaved }) {
 
   const [saving, setSaving] = useState(false)
   const [error,  setError]  = useState(null)
+const [dragOver, setDragOver] = useState(false)
+const fileInputRef = useRef(null)
 
+function handleImageFile(file) {
+  if (!file || !file.type.startsWith('image/')) return
+  const reader = new FileReader()
+  reader.onload = e => setForm(f => ({ ...f, image_url: e.target.result }))
+  reader.readAsDataURL(file)
+}
+
+function handleDrop(e) {
+  e.preventDefault(); setDragOver(false)
+  handleImageFile(e.dataTransfer.files[0])
+}
   function handleField(e) {
     const { name, value, type, checked } = e.target
     setForm(f => ({ ...f, [name]: type === 'checkbox' ? checked : value }))
@@ -3020,13 +3041,76 @@ function PortfolioModal({ item, onClose, onSaved }) {
             </MField>
           </div>
 
-          <MField label="Image URL">
-            <input className="input" name="image_url" placeholder="https://..." value={form.image_url} onChange={handleField} />
-            {form.image_url && (
-              <div style={{ marginTop: '8px', borderRadius: '6px', overflow: 'hidden', height: '100px', border: '1px solid rgba(255,255,255,0.08)' }}>
-                <img src={form.image_url} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => e.currentTarget.style.display = 'none'} />
-              </div>
-            )}
+         <MField label="Event Image">
+            <div
+              onDragOver={e => { e.preventDefault(); setDragOver(true) }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={handleDrop}
+              onClick={() => !form.image_url && fileInputRef.current?.click()}
+              style={{
+                border: `2px dashed ${dragOver ? 'var(--gold)' : 'rgba(255,255,255,0.12)'}`,
+                borderRadius: '10px',
+                background: dragOver ? 'rgba(245,158,11,0.05)' : 'var(--black-3)',
+                transition: 'all 0.2s',
+                cursor: form.image_url ? 'default' : 'pointer',
+                overflow: 'hidden', minHeight: '100px',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}
+            >
+              {form.image_url ? (
+                <div style={{ position: 'relative', width: '100%' }}>
+                  <img
+                    src={form.image_url}
+                    alt="preview"
+                    style={{ width: '100%', height: '100px', objectFit: 'cover', display: 'block' }}
+                    onError={e => (e.currentTarget.style.display = 'none')}
+                  />
+                  <div style={{ position: 'absolute', top: '8px', right: '8px', display: 'flex', gap: '6px' }}>
+                    <button
+                      onClick={e => { e.stopPropagation(); fileInputRef.current?.click() }}
+                      style={{
+                        background: 'rgba(0,0,0,0.75)', border: '1px solid rgba(255,255,255,0.2)',
+                        color: 'var(--white)', fontSize: '11px', padding: '5px 12px',
+                        borderRadius: '6px', cursor: 'pointer', backdropFilter: 'blur(6px)',
+                      }}
+                    >
+                      Change
+                    </button>
+                    <button
+                      onClick={e => { e.stopPropagation(); setForm(f => ({ ...f, image_url: '' })) }}
+                      style={{
+                        background: 'rgba(239,68,68,0.8)', border: 'none',
+                        color: '#fff', fontSize: '11px', padding: '5px 12px',
+                        borderRadius: '6px', cursor: 'pointer',
+                      }}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ textAlign: 'center', padding: '24px 20px' }}>
+                  <div style={{ fontSize: '26px', marginBottom: '8px', opacity: 0.4 }}>🖼️</div>
+                  <p style={{ color: 'var(--gray-light)', fontSize: '13px', marginBottom: '4px' }}>
+                    Drag & drop an image here, or{' '}
+                    <span
+                      style={{ color: 'var(--gold)', textDecoration: 'underline', cursor: 'pointer' }}
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      browse
+                    </span>
+                  </p>
+                  <p style={{ color: 'var(--gray-mid)', fontSize: '11px' }}>PNG, JPG, WEBP</p>
+                </div>
+              )}
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              style={{ display: 'none' }}
+              onChange={e => handleImageFile(e.target.files[0])}
+            />
           </MField>
 
           <MField label="Description">
@@ -4752,7 +4836,7 @@ FILE: /admin/index.html
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>FaisalabadTimes Admin</title>
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚙️</text></svg>" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
@@ -5854,6 +5938,11 @@ FILE: /client/public/legal/terms-and-conditions.pdf
 [binary / skipped]
 
 --------------------------------------------------------------------------------
+FILE: /client/public/favicon.png
+--------------------------------------------------------------------------------
+[binary / skipped]
+
+--------------------------------------------------------------------------------
 FILE: /client/src/components/EventCard.jsx
 --------------------------------------------------------------------------------
 import { Link } from 'react-router-dom'
@@ -6103,7 +6192,7 @@ export default function EventCard({ event }) {
               textDecoration: 'none',
             }}
           >
-            💬 Get Tickets
+            Get Tickets
           </Link>
           )}
         </div>
@@ -6541,7 +6630,7 @@ export default function SeatSelector({ categories, onSelectionChange }) {
                 background:   isSelected
                   ? 'linear-gradient(135deg, rgba(245,158,11,0.1), rgba(245,158,11,0.05))'
                   : 'var(--black-3)',
-                border:       `1.5px solid ${isSelected ? 'var(--gold)' : 'rgba(255,255,255,0.07)'}`,
+                border: `1.5px solid ${isSelected ? 'var(--gold)' : 'rgba(0,0,0,0.7)'}`,
                 borderRadius: '12px',
                 padding:      '18px 20px',
                 cursor:       catSoldOut ? 'not-allowed' : 'pointer',
@@ -6558,7 +6647,7 @@ export default function SeatSelector({ categories, onSelectionChange }) {
               }}
               onMouseLeave={e => {
                 if (!isSelected)
-                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'
+                  e.currentTarget.style.borderColor = 'rgba(0,0,0,0.7)'
               }}
             >
               {/* Selected glow */}
@@ -6577,7 +6666,7 @@ export default function SeatSelector({ categories, onSelectionChange }) {
                   {/* Radio */}
                   <div style={{
                     width:'20px', height:'20px', borderRadius:'50%', flexShrink:0,
-                    border:`2px solid ${isSelected ? 'var(--gold)' : 'rgba(255,255,255,0.2)'}`,
+                    border:'2px solid #000',
                     display:'flex', alignItems:'center', justifyContent:'center',
                     transition:'border-color 0.2s',
                   }}>
@@ -7000,9 +7089,6 @@ export default function BookMeeting() {
           `,
         }} />
         <div className="container" style={{ position: 'relative', zIndex: 1 }}>
-          <span className="tag fade-up" style={{ marginBottom: '16px', display: 'inline-block' }}>
-            Let's Talk
-          </span>
           <h1 className="fade-up fade-up-delay-1" style={{
             fontFamily:    'var(--font-display)',
             fontSize:      'clamp(48px, 7vw, 88px)',
@@ -7027,9 +7113,6 @@ export default function BookMeeting() {
         <div className="container">
 
           <div style={{ marginBottom: '48px' }}>
-            <span className="tag" style={{ marginBottom: '12px', display: 'inline-block' }}>
-              What We Offer
-            </span>
             <h2 style={{
               fontFamily:    'var(--font-display)',
               fontSize:      'clamp(32px, 5vw, 56px)',
@@ -7050,13 +7133,9 @@ export default function BookMeeting() {
 
                   {/* Top meta row */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
-                    <span className="service-badge">Faisalabad Times Verified</span>
                     {svc.live && (
                       <>
                         <span className="service-live-dot" />
-                        <span style={{ color: 'var(--gold)', fontSize: '10px', fontWeight: '700', letterSpacing: '1px', textTransform: 'uppercase' }}>
-                          Active Channel
-                        </span>
                       </>
                     )}
                   </div>
@@ -7127,9 +7206,6 @@ export default function BookMeeting() {
         <div className="container">
 
           <div style={{ marginBottom: '48px' }}>
-            <span className="tag" style={{ marginBottom: '12px', display: 'inline-block' }}>
-              Get In Touch
-            </span>
             <h2 style={{
               fontFamily:    'var(--font-display)',
               fontSize:      'clamp(32px, 5vw, 56px)',
@@ -7341,7 +7417,6 @@ export default function BookMeeting() {
                         gap:     '10px',
                       }}
                     >
-                      <span>💬</span>
                       Send via WhatsApp
                     </button>
 
@@ -7720,11 +7795,11 @@ export default function EventDetail() {
         }} />
 
         {/* Back button */}
-        <button className="back-btn" onClick={() => navigate('/events')} style={{
+       <button className="back-btn" onClick={() => navigate('/events')} style={{
           position:'absolute', top:'24px', left:'24px',
           background:'rgba(0,0,0,0.6)', backdropFilter:'blur(10px)',
-          border:'1px solid rgba(255,255,255,0.1)', borderRadius:'8px',
-          color:'var(--white)', fontSize:'13px', padding:'9px 18px',
+          border:'1px solid rgba(255,255,255,0.2)', borderRadius:'8px',
+          color:'#fff', fontSize:'13px', padding:'9px 18px',
           cursor:'pointer', display:'flex', alignItems:'center', gap:'6px',
           transition:'background 0.2s',
         }}>
@@ -7758,6 +7833,7 @@ export default function EventDetail() {
               fontFamily:'var(--font-display)',
               fontSize:'clamp(32px, 4.5vw, 60px)',
               letterSpacing:'2px', lineHeight:'1.1',
+              color:'#fff',
               textShadow:'0 2px 20px rgba(0,0,0,0.5)',
             }}>
               {event.name}
@@ -7831,7 +7907,7 @@ export default function EventDetail() {
             }}>
               <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'10px' }}>
                 <span style={{ color:'var(--gray-light)', fontSize:'13px', fontWeight:'600' }}>
-                  Seat Availability
+                  Ticket Availability
                 </span>
                 <span style={{ color:'var(--gold)', fontSize:'13px', fontWeight:'700' }}>
                   {soldPct}% filled
@@ -7874,7 +7950,7 @@ export default function EventDetail() {
                 letterSpacing:'2.5px', marginBottom:'20px', color:'var(--white)',
                 display:'flex', alignItems:'center', gap:'12px',
               }}>
-                SELECT YOUR SEATS
+                SELECT YOUR TICKETS
                 <span style={{ flex:1, height:'1px', background:'rgba(255,255,255,0.06)' }} />
               </h2>
               <SeatSelector
@@ -8353,7 +8429,7 @@ export default function EventDetailWhatsApp() {
             }}>
               <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'10px' }}>
                 <span style={{ color:'var(--gray-light)', fontSize:'13px', fontWeight:'600' }}>
-                  Seat Availability
+                  Ticket Availability
                 </span>
                 <span style={{ color:'var(--gold)', fontSize:'13px', fontWeight:'700' }}>
                   {soldPct}% filled
@@ -8394,7 +8470,7 @@ export default function EventDetailWhatsApp() {
                 letterSpacing:'2.5px', marginBottom:'20px', color:'var(--white)',
                 display:'flex', alignItems:'center', gap:'12px',
               }}>
-                SELECT YOUR SEATS
+                SELECT YOUR TICKETS
                 <span style={{ flex:1, height:'1px', background:'rgba(255,255,255,0.06)' }} />
               </h2>
               <SeatSelector
@@ -8595,7 +8671,7 @@ export default function EventDetailWhatsApp() {
                         Preparing Order...
                       </>
                     ) : (
-                      '💬  Send Order via WhatsApp'
+                      'Send Order via WhatsApp'
                     )}
                   </button>
 
@@ -8718,9 +8794,6 @@ export default function Events() {
               animation: 'pulse 2s ease-in-out infinite',
             }} />
             <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }`}</style>
-            <span style={{ color:'var(--gold)', fontSize:'12px', fontWeight:'700', letterSpacing:'1.5px' }}>
-              LIVE NOW
-            </span>
           </div>
 
           <h1 style={{
@@ -8926,56 +8999,6 @@ export default function Home() {
 
   return (
     <div style={visibilityStyle}>
-
-      {/* ── Hero (static, no slideshow) ─────────────────── */}
-      <section style={{
-        position:   'relative',
-        minHeight:  '100vh',
-        display:    'flex',
-        alignItems: 'center',
-        overflow:   'hidden',
-      }}>
-        <div style={{
-          position:   'absolute',
-          inset:      0,
-          background: `
-            radial-gradient(ellipse 80% 60% at 60% 40%, rgba(245,158,11,0.12) 0%, transparent 70%),
-            var(--black)
-          `,
-        }} />
-        <div className="container" style={{ position: 'relative', zIndex: 1, paddingTop: '70px' }}>
-          <div style={{ maxWidth: '680px' }}>
-            <div className="tag fade-up" style={{ marginBottom: '24px' }}>
-              Pakistan's Premier Event Platform
-            </div>
-            <h1 className="fade-up fade-up-delay-1" style={{
-              fontFamily:   'var(--font-display)',
-              fontSize:     'clamp(52px, 8vw, 110px)',
-              lineHeight:   '0.95',
-              marginBottom: '24px',
-            }}>
-              MAKE EVERY{' '}
-              <span className="text-gold-gradient">EVENT</span>
-              {' '}UNFORGETTABLE
-            </h1>
-            <p className="fade-up fade-up-delay-2" style={{
-              color:        'var(--gray-light)',
-              fontSize:     'clamp(15px, 2vw, 18px)',
-              lineHeight:   '1.6',
-              marginBottom: '40px',
-              maxWidth:     '520px',
-            }}>
-              From intimate gatherings to grand spectacles, We manage every detail
-              so you can simply experience the moment.
-            </p>
-            <div className="fade-up fade-up-delay-3" style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-              <Link to="/events" className="btn-gold" style={{ fontSize: '15px' }}>Browse Events →</Link>
-              <Link to="/book-meeting" className="btn-ghost" style={{ fontSize: '15px' }}>Work With Us</Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* ── Our Portfolio (preview) ──────────────────── */}
       <section className="section">
         <div className="container">
@@ -8988,9 +9011,6 @@ export default function Home() {
             gap:            '16px',
           }}>
             <div>
-              <span className="tag" style={{ marginBottom: '12px', display: 'inline-block' }}>
-                Our Work
-              </span>
               <h2 style={{
                 fontFamily:    'var(--font-display)',
                 fontSize:      'clamp(36px, 5vw, 56px)',
@@ -10661,7 +10681,7 @@ FILE: /client/index.html
     <meta name="description" content="FaisalabadTimes.co — Premium Event Ticketing & Management" />
     <title>FaisalabadTimes.co</title>
 
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎟️</text></svg>" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
 
     <!-- Critical styles applied before JS loads — prevents white flash + font jump -->
     <style>

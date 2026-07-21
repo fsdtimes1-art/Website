@@ -77,7 +77,7 @@ export default function SeatSelector({ categories, onSelectionChange }) {
                   {/* Radio */}
                   <div style={{
                     width:'20px', height:'20px', borderRadius:'50%', flexShrink:0,
-                    border:`2px solid ${isSelected ? 'var(--gold)' : 'rgba(255,255,255,0.2)'}`,
+                    border:'2px solid #000',
                     display:'flex', alignItems:'center', justifyContent:'center',
                     transition:'border-color 0.2s',
                   }}>
