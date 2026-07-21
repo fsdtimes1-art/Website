@@ -75,56 +75,6 @@ export default function Home() {
 
   return (
     <div style={visibilityStyle}>
-
-      {/* ── Hero (static, no slideshow) ─────────────────── */}
-      <section style={{
-        position:   'relative',
-        minHeight:  '100vh',
-        display:    'flex',
-        alignItems: 'center',
-        overflow:   'hidden',
-      }}>
-        <div style={{
-          position:   'absolute',
-          inset:      0,
-          background: `
-            radial-gradient(ellipse 80% 60% at 60% 40%, rgba(245,158,11,0.12) 0%, transparent 70%),
-            var(--black)
-          `,
-        }} />
-        <div className="container" style={{ position: 'relative', zIndex: 1, paddingTop: '70px' }}>
-          <div style={{ maxWidth: '680px' }}>
-            <div className="tag fade-up" style={{ marginBottom: '24px' }}>
-              Pakistan's Premier Event Platform
-            </div>
-            <h1 className="fade-up fade-up-delay-1" style={{
-              fontFamily:   'var(--font-display)',
-              fontSize:     'clamp(52px, 8vw, 110px)',
-              lineHeight:   '0.95',
-              marginBottom: '24px',
-            }}>
-              MAKE EVERY{' '}
-              <span className="text-gold-gradient">EVENT</span>
-              {' '}UNFORGETTABLE
-            </h1>
-            <p className="fade-up fade-up-delay-2" style={{
-              color:        'var(--gray-light)',
-              fontSize:     'clamp(15px, 2vw, 18px)',
-              lineHeight:   '1.6',
-              marginBottom: '40px',
-              maxWidth:     '520px',
-            }}>
-              From intimate gatherings to grand spectacles, We manage every detail
-              so you can simply experience the moment.
-            </p>
-            <div className="fade-up fade-up-delay-3" style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-              <Link to="/events" className="btn-gold" style={{ fontSize: '15px' }}>Browse Events →</Link>
-              <Link to="/book-meeting" className="btn-ghost" style={{ fontSize: '15px' }}>Work With Us</Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* ── Our Portfolio (preview) ──────────────────── */}
       <section className="section">
         <div className="container">
