@@ -32,7 +32,6 @@ export default function SeatSelector({ categories, discounts = [], onSelectionCh
           const catSoldOut    = catAvailable <= 0
           const catAlmostGone = !catSoldOut && catAvailable <= 10
           const isSelected    = selectedCategoryId === cat.id
-          const soldPct       = Math.round((cat.sold_seats / cat.total_seats) * 100)
 
           return (
             <button
@@ -136,19 +135,6 @@ export default function SeatSelector({ categories, discounts = [], onSelectionCh
                   </p>
                   <p style={{ color:'var(--gray-mid)', fontSize:'11px', marginTop:'3px' }}>per ticket</p>
                 </div>
-              </div>
-
-              {/* Availability bar */}
-              <div style={{
-                height:'3px', background:'rgba(255,255,255,0.06)',
-                borderRadius:'2px', overflow:'hidden', marginLeft:'32px',
-              }}>
-                <div style={{
-                  height:'100%', borderRadius:'2px',
-                  width:`${soldPct}%`,
-                  background: soldPct > 85 ? '#ef4444' : soldPct > 60 ? 'var(--gold)' : '#22c55e',
-                  transition:'width 0.5s ease',
-                }} />
               </div>
             </button>
           )
