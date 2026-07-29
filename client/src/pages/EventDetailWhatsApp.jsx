@@ -31,47 +31,60 @@ export default function EventDetailWhatsApp() {
   }
 
   async function handleSendWhatsapp() {
-    if (!selection.category) return setFormError('Please select a seat category.')
-    if (!form.name.trim())    return setFormError('Please enter your full name.')
-    if (!form.email.trim() || !/\S+@\S+\.\S+/.test(form.email))
-      return setFormError('Please enter a valid email address.')
+  if (!selection.category) return setFormError('Please select a seat category.')
+  if (!form.name.trim())    return setFormError('Please enter your full name.')
+  if (!form.email.trim() || !/\S+@\S+\.\S+/.test(form.email))
+    return setFormError('Please enter a valid email address.')
 
-    setFormError(null)
-    setSending(true)
+  setFormError(null)
+  setSending(true)
 
-    try {
-      const { purchaseId } = await createWhatsappOrder({
-        eventId:    event.id,
-        categoryId: selection.category.id,
-        quantity:   selection.quantity,
-        buyerName:  form.name.trim(),
-        buyerEmail: form.email.trim(),
-        buyerPhone: form.phone.trim(),
-      })
+  // Open the tab SYNCHRONOUSLY, right inside the click handler — before any await.
+  // iOS Safari only allows window.open without being blocked if it happens
+  // in direct response to the user gesture, with no async gap.
+  const waTab = window.open('', '_blank')
 
-      const lines = [
-        `🎟️ *New Ticket Order — ${event.name}*`,
-        ``,
-        `*Name:* ${form.name.trim()}`,
-        `*Email:* ${form.email.trim()}`,
-        form.phone.trim() ? `*Phone:* ${form.phone.trim()}` : null,
-        `*Category:* ${selection.category.name}`,
-        `*Quantity:* ${selection.quantity}`,
-        `*Total:* PKR ${orderTotal.toLocaleString()}`,
-        ``,
-        `*Order Ref:* ${purchaseId}`,
-      ].filter(Boolean).join('\n')
+  try {
+    const { purchaseId } = await createWhatsappOrder({
+      eventId:    event.id,
+      categoryId: selection.category.id,
+      quantity:   selection.quantity,
+      buyerName:  form.name.trim(),
+      buyerEmail: form.email.trim(),
+      buyerPhone: form.phone.trim(),
+    })
 
-      const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(lines)}`
-      setSubmitted(true)
-      setTimeout(() => window.open(url, '_blank'), 400)
+    const lines = [
+      `🎟️ *New Ticket Order — ${event.name}*`,
+      ``,
+      `*Name:* ${form.name.trim()}`,
+      `*Email:* ${form.email.trim()}`,
+      form.phone.trim() ? `*Phone:* ${form.phone.trim()}` : null,
+      `*Category:* ${selection.category.name}`,
+      `*Quantity:* ${selection.quantity}`,
+      `*Total:* PKR ${orderTotal.toLocaleString()}`,
+      ``,
+      `*Order Ref:* ${purchaseId}`,
+    ].filter(Boolean).join('\n')
 
-    } catch (err) {
-      setFormError(err.message)
-    } finally {
-      setSending(false)
+    const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(lines)}`
+
+    if (waTab) {
+      waTab.location.href = url
+    } else {
+      // popup was blocked anyway (e.g. user has strict blocker) — fall back to same-tab nav
+      window.location.href = url
     }
+
+    setSubmitted(true)
+
+  } catch (err) {
+    if (waTab) waTab.close() // clean up the blank tab if the order failed
+    setFormError(err.message)
+  } finally {
+    setSending(false)
   }
+}
 
   if (loading) return (
     <div style={{ display:'flex', justifyContent:'center', alignItems:'center', minHeight:'70vh' }}>
