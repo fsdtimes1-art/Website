@@ -97,13 +97,31 @@ router.get('/dashboard', requireAdmin, async (req, res) => {
 // ============================================================
 router.get('/events', requireAdmin, async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('events')
-      .select('*, seat_categories(*)')
-      .order('date', { ascending: false });
+    const [eventsRes, purchasesRes] = await Promise.all([
+      supabase
+        .from('events')
+        .select('*, seat_categories(*)')
+        .order('date', { ascending: false }),
+      supabase
+        .from('purchases')
+        .select('event_id, total_amount, status')
+        .eq('status', 'completed'),
+    ]);
 
-    if (error) throw error;
-    res.json(data);
+    if (eventsRes.error) throw eventsRes.error;
+    if (purchasesRes.error) throw purchasesRes.error;
+
+    const revenueByEvent = {};
+    (purchasesRes.data || []).forEach(p => {
+      revenueByEvent[p.event_id] = (revenueByEvent[p.event_id] || 0) + Number(p.total_amount);
+    });
+
+    const events = (eventsRes.data || []).map(e => ({
+      ...e,
+      revenue: revenueByEvent[e.id] || 0,
+    }));
+
+    res.json(events);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

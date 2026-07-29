@@ -59,7 +59,7 @@ function EventRow({ event, onToggle, onDelete }) {
   const totalSeats  = cats.reduce((s, c) => s + c.total_seats, 0)
   const soldSeats   = cats.reduce((s, c) => s + c.sold_seats,  0)
   const soldPct     = totalSeats > 0 ? Math.round((soldSeats / totalSeats) * 100) : 0
-  const revenue     = cats.reduce((s, c) => s + (c.sold_seats * Number(c.price)), 0)
+  const revenue     = event.revenue ?? cats.reduce((s, c) => s + (c.sold_seats * Number(c.price)), 0)
   const isPast      = new Date(event.date) < new Date()
 
   const formattedDate = new Date(event.date).toLocaleDateString('en-PK', {
