@@ -53,7 +53,7 @@ async function generateTicketsAndSendEmails({
       event_id:         eventId,
       seat_category_id: categoryId,
       seat_number:      `${prefix}-${String(nextNum + i).padStart(3, '0')}`,
-      buyer_name:       buyerName,
+      buyer_name:       (ticketNames && ticketNames[i] && ticketNames[i].trim()) || buyerName,
       buyer_email:      buyerEmail,
       buyer_phone:      buyerPhone || null,
       qr_code:          uuidv4()   // unique token stored in DB and embedded in QR

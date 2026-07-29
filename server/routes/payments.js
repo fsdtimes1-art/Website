@@ -6,13 +6,23 @@ const { generateTicketsAndSendEmails } = require('../services/ticketService');
 
 const VARIANT_ID = '1738929';
 
+// Must mirror client/src/lib/api.js TICKET_FEES
+const TICKET_FEES = { booking: 80, processing: 70, platform: 70 };
+function feesFor(quantity) {
+  return (TICKET_FEES.booking + TICKET_FEES.processing + TICKET_FEES.platform) * quantity;
+}
+
 // POST /api/payments/create-checkout
 router.post('/create-checkout', async (req, res) => {
   try {
-    const { eventId, categoryId, quantity, buyerName, buyerEmail, buyerPhone } = req.body;
+    const { eventId, categoryId, quantity, buyerName, buyerEmail, buyerPhone, ticketNames } = req.body;
 
     if (!eventId || !categoryId || !quantity || !buyerName || !buyerEmail) {
       return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    if (!Array.isArray(ticketNames) || ticketNames.length !== Number(quantity) || ticketNames.some(n => !n || !n.trim())) {
+      return res.status(400).json({ error: 'A name is required for each ticket' });
     }
 
     const { data: category, error: catError } = await supabase
@@ -30,7 +40,7 @@ router.post('/create-checkout', async (req, res) => {
       return res.status(400).json({ error: `Only ${available} seat(s) available` });
     }
 
-    const totalAmount = category.price * quantity;
+    const totalAmount = category.price * quantity + feesFor(quantity);
 
     // Save pending purchase first so we have an ID for the redirect URL
     const { data: purchase, error: purchaseError } = await supabase
@@ -73,6 +83,7 @@ router.post('/create-checkout', async (req, res) => {
                 buyer_email:  buyerEmail,
                 buyer_phone:  buyerPhone || '',
                 total_amount: String(totalAmount),
+                ticket_names: JSON.stringify(ticketNames),
               },
             },
             checkout_options: {
@@ -120,10 +131,14 @@ router.post('/create-checkout', async (req, res) => {
 // Admin verifies manually after receiving payment via WhatsApp.
 router.post('/create-whatsapp-order', async (req, res) => {
   try {
-    const { eventId, categoryId, quantity, buyerName, buyerEmail, buyerPhone } = req.body;
+    const { eventId, categoryId, quantity, buyerName, buyerEmail, buyerPhone, ticketNames } = req.body;
 
     if (!eventId || !categoryId || !quantity || !buyerName || !buyerEmail) {
       return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    if (!Array.isArray(ticketNames) || ticketNames.length !== Number(quantity) || ticketNames.some(n => !n || !n.trim())) {
+      return res.status(400).json({ error: 'A name is required for each ticket' });
     }
 
     const { data: category, error: catError } = await supabase
@@ -141,7 +156,7 @@ router.post('/create-whatsapp-order', async (req, res) => {
       return res.status(400).json({ error: `Only ${available} seat(s) available` });
     }
 
-    const totalAmount = category.price * quantity;
+    const totalAmount = category.price * quantity + feesFor(quantity);
 
     const { data: purchase, error: purchaseError } = await supabase
       .from('purchases')
@@ -154,6 +169,7 @@ router.post('/create-whatsapp-order', async (req, res) => {
         quantity:     quantity,
         total_amount: totalAmount,
         status:       'whatsapp_pending',
+        ticket_names: ticketNames,
       })
       .select()
       .single();
@@ -230,8 +246,14 @@ router.post('/webhook', async (req, res) => {
   if (eventName === 'order_created' && orderData?.status === 'paid') {
     const {
       purchase_id, event_id, category_id,
-      quantity, buyer_name, buyer_email, buyer_phone, total_amount,
+      quantity, buyer_name, buyer_email, buyer_phone, total_amount, ticket_names,
     } = customData || {};
+
+    let parsedTicketNames = [];
+    try { parsedTicketNames = JSON.parse(ticket_names || '[]'); } catch (_) {}
+
+    let parsedExtraNames = [];
+    try { parsedExtraNames = JSON.parse(extra_names || '[]'); } catch (_) {}
 
     // Mark purchase completed
     await supabase
@@ -266,6 +288,7 @@ router.post('/webhook', async (req, res) => {
       buyerEmail:  buyer_email,
       buyerPhone:  buyer_phone || '',
       totalAmount: parseInt(total_amount),
+      ticketNames: parsedTicketNames,
     }).catch(console.error);
   }
 

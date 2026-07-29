@@ -14,7 +14,7 @@ export default function EventDetail() {
   const [error,     setError]     = useState(null)
   const [selection, setSelection] = useState({ category: null, quantity: 1 })
   const [form,      setForm]      = useState({ name: '', email: '', phone: '' })
-  const [ticketNames, setTicketNames] = useState([''])
+  const [extraNames, setExtraNames] = useState([])
   const [formError, setFormError] = useState(null)
   const [paying,    setPaying]    = useState(false)
   const [focused,   setFocused]   = useState(null)
@@ -32,15 +32,16 @@ export default function EventDetail() {
 
   function handleSelectionChange(sel) {
     setSelection(sel)
-    setTicketNames(prev => {
-      const next = [...prev]
-      next.length = sel.quantity
-      return next.map(n => n || '')
+    setExtraNames(prev => {
+      const needed = Math.max(sel.quantity - 1, 0)
+      const next = prev.slice(0, needed)
+      while (next.length < needed) next.push('')
+      return next
     })
   }
 
-  function handleTicketNameChange(index, value) {
-    setTicketNames(prev => prev.map((n, i) => i === index ? value : n))
+  function handleExtraNameChange(index, value) {
+    setExtraNames(prev => prev.map((n, i) => i === index ? value : n))
   }
 
  async function handleCheckout() {
@@ -48,11 +49,13 @@ export default function EventDetail() {
   if (!form.name.trim())    return setFormError('Please enter your full name.')
   if (!form.email.trim() || !/\S+@\S+\.\S+/.test(form.email))
     return setFormError('Please enter a valid email address.')
-  if (ticketNames.some(n => !n.trim()))
-    return setFormError('Please enter a name for every ticket.')
+  if (extraNames.some(n => !n.trim()))
+    return setFormError('Please enter a name for every additional ticket.')
 
   setFormError(null)
   setPaying(true)
+
+  const ticketNames = [form.name.trim(), ...extraNames.map(n => n.trim())]
 
   try {
     const { checkoutUrl, purchaseId } = await createCheckout({
@@ -62,7 +65,7 @@ export default function EventDetail() {
       buyerName:  form.name.trim(),
       buyerEmail: form.email.trim(),
       buyerPhone: form.phone.trim(),
-      ticketNames: ticketNames.map(n => n.trim()),
+      ticketNames,
     })
 
     // Initialize Lemon.js and open as overlay

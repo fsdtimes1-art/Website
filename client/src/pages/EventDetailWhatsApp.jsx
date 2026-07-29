@@ -14,7 +14,7 @@ export default function EventDetailWhatsApp() {
   const [error,     setError]     = useState(null)
   const [selection, setSelection] = useState({ category: null, quantity: 1 })
   const [form,      setForm]      = useState({ name: '', email: '', phone: '' })
-  const [ticketNames, setTicketNames] = useState([''])
+  const [extraNames, setExtraNames] = useState([])
   const [formError, setFormError] = useState(null)
   const [sending,   setSending]   = useState(false)
   const [submitted, setSubmitted] = useState(false)
@@ -33,15 +33,16 @@ export default function EventDetailWhatsApp() {
 
   function handleSelectionChange(sel) {
     setSelection(sel)
-    setTicketNames(prev => {
-      const next = [...prev]
-      next.length = sel.quantity
-      return next.map(n => n || '')
+    setExtraNames(prev => {
+      const needed = Math.max(sel.quantity - 1, 0)
+      const next = prev.slice(0, needed)
+      while (next.length < needed) next.push('')
+      return next
     })
   }
 
-  function handleTicketNameChange(index, value) {
-    setTicketNames(prev => prev.map((n, i) => i === index ? value : n))
+  function handleExtraNameChange(index, value) {
+    setExtraNames(prev => prev.map((n, i) => i === index ? value : n))
   }
 
   async function handleSendWhatsapp() {
@@ -49,11 +50,13 @@ export default function EventDetailWhatsApp() {
   if (!form.name.trim())    return setFormError('Please enter your full name.')
   if (!form.email.trim() || !/\S+@\S+\.\S+/.test(form.email))
     return setFormError('Please enter a valid email address.')
-  if (ticketNames.some(n => !n.trim()))
-    return setFormError('Please enter a name for every ticket.')
+  if (extraNames.some(n => !n.trim()))
+    return setFormError('Please enter a name for every additional ticket.')
 
   setFormError(null)
   setSending(true)
+
+  const ticketNames = [form.name.trim(), ...extraNames.map(n => n.trim())]
 
   // Open the tab SYNCHRONOUSLY, right inside the click handler — before any await.
   // iOS Safari only allows window.open without being blocked if it happens
@@ -68,7 +71,7 @@ export default function EventDetailWhatsApp() {
       buyerName:  form.name.trim(),
       buyerEmail: form.email.trim(),
       buyerPhone: form.phone.trim(),
-      ticketNames: ticketNames.map(n => n.trim()),
+      ticketNames,
     })
 
     const feesForOrder = (TICKET_FEES.booking + TICKET_FEES.processing + TICKET_FEES.platform) * selection.quantity
@@ -81,7 +84,7 @@ export default function EventDetailWhatsApp() {
       form.phone.trim() ? `*Phone:* ${form.phone.trim()}` : null,
       `*Category:* ${selection.category.name}`,
       `*Quantity:* ${selection.quantity}`,
-      `*Attendees:* ${ticketNames.map(n => n.trim()).join(', ')}`,
+      `*Attendees:* ${ticketNames.join(', ')}`,
       `*Ticket Price:* PKR ${(Number(selection.category.price) * selection.quantity).toLocaleString()}`,
       `*Fees (Booking + Processing + Platform):* PKR ${feesForOrder.toLocaleString()}`,
       `*Total:* PKR ${orderTotal.toLocaleString()}`,
@@ -340,7 +343,7 @@ export default function EventDetailWhatsApp() {
                 </p>
                 <button
                   className="btn-ghost"
-                  onClick={() => { setSubmitted(false); setSelection({ category:null, quantity:1 }); setForm({ name:'', email:'', phone:'' }) }}
+                  onClick={() => { setSubmitted(false); setSelection({ category:null, quantity:1 }); setForm({ name:'', email:'', phone:'' }); setExtraNames([]) }}
                   style={{ width:'100%' }}
                 >
                   Start a New Order
@@ -409,20 +412,20 @@ export default function EventDetailWhatsApp() {
                     />
                   </div>
 
-                  {selection.category && (
+                  {selection.category && extraNames.length > 0 && (
                     <div>
                       <label style={labelStyle}>
-                        Attendee Name{ticketNames.length > 1 ? 's' : ''} *
+                        Additional Attendee Name{extraNames.length > 1 ? 's' : ''} *
                       </label>
                       <div style={{ display:'flex', flexDirection:'column', gap:'8px' }}>
-                        {ticketNames.map((name, i) => (
+                        {extraNames.map((name, i) => (
                           <input
                             key={i}
                             className="input"
                             type="text"
-                            placeholder={`Ticket ${i + 1} — full name`}
+                            placeholder={`Ticket ${i + 2} — full name`}
                             value={name}
-                            onChange={e => handleTicketNameChange(i, e.target.value)}
+                            onChange={e => handleExtraNameChange(i, e.target.value)}
                             onFocus={() => setFocused(`ticket-${i}`)}
                             onBlur={() => setFocused(null)}
                             style={inputStyle(`ticket-${i}`)}
@@ -430,7 +433,7 @@ export default function EventDetailWhatsApp() {
                         ))}
                       </div>
                       <p style={{ color:'var(--gray-mid)', fontSize:'11px', marginTop:'5px' }}>
-                        Each ticket needs the name of the person attending
+                        Ticket 1 uses the name above. Add a name for each additional ticket.
                       </p>
                     </div>
                   )}
