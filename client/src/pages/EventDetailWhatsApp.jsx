@@ -54,6 +54,8 @@ export default function EventDetailWhatsApp() {
       buyerPhone: form.phone.trim(),
     })
 
+    const feesForOrder = (TICKET_FEES.booking + TICKET_FEES.processing + TICKET_FEES.platform) * selection.quantity
+
     const lines = [
       `🎟️ *New Ticket Order — ${event.name}*`,
       ``,
@@ -62,6 +64,8 @@ export default function EventDetailWhatsApp() {
       form.phone.trim() ? `*Phone:* ${form.phone.trim()}` : null,
       `*Category:* ${selection.category.name}`,
       `*Quantity:* ${selection.quantity}`,
+      `*Ticket Price:* PKR ${(Number(selection.category.price) * selection.quantity).toLocaleString()}`,
+      `*Fees (Booking + Processing + Platform):* PKR ${feesForOrder.toLocaleString()}`,
       `*Total:* PKR ${orderTotal.toLocaleString()}`,
       ``,
       `*Order Ref:* ${purchaseId}`,
@@ -171,53 +175,6 @@ export default function EventDetailWhatsApp() {
         }}>
           ← Events
         </button>
-
-        <div style={{ position:'absolute', bottom:'40px', left:0, right:0, padding:'0 24px' }}>
-          <div className="container">
-            <div style={{
-              display:'inline-flex', alignItems:'center', gap:'6px',
-              background: totalRemaining === 0 ? 'rgba(239,68,68,0.15)' : 'rgba(34,197,94,0.12)',
-              border: `1px solid ${totalRemaining === 0 ? 'rgba(239,68,68,0.3)' : 'rgba(34,197,94,0.25)'}`,
-              borderRadius:'20px', padding:'4px 12px', marginBottom:'12px',
-            }}>
-              <span style={{
-                width:'6px', height:'6px', borderRadius:'50%',
-                background: totalRemaining === 0 ? '#ef4444' : '#22c55e',
-                display:'inline-block',
-              }} />
-              <span style={{
-                color: totalRemaining === 0 ? '#f87171' : '#4ade80',
-                fontSize:'11px', fontWeight:'700', letterSpacing:'1px',
-              }}>
-                {totalRemaining === 0 ? 'SOLD OUT' : `${totalRemaining} SEATS LEFT`}
-              </span>
-            </div>
-
-            <h1 className="hero-title" style={{
-              fontFamily:'var(--font-display)',
-              fontSize:'clamp(32px, 4.5vw, 60px)',
-              letterSpacing:'2px', lineHeight:'1.1',
-              textShadow:'0 2px 20px rgba(0,0,0,0.5)',
-            }}>
-              {event.name}
-            </h1>
-
-            <div style={{ display:'flex', gap:'20px', marginTop:'14px', flexWrap:'wrap' }}>
-              {[
-                { icon:'📅', text: formattedDate },
-                { icon:'🕐', text: formattedTime },
-                { icon:'📍', text: event.venue   },
-              ].map((item, i) => (
-                <span key={i} style={{
-                  display:'flex', alignItems:'center', gap:'6px',
-                  color:'rgba(255,255,255,0.7)', fontSize:'13px',
-                }}>
-                  <span>{item.icon}</span> {item.text}
-                </span>
-              ))}
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* ── Body ── */}
@@ -228,7 +185,16 @@ export default function EventDetailWhatsApp() {
         }}>
 
           {/* ── Left column ── */}
-          <div style={{ display:'flex', flexDirection:'column', gap:'44px' }}>
+          <div style={{ display:'flex', flexDirection:'column', gap:'44px', paddingTop:'24px' }}>
+
+            <h1 className="hero-title" style={{
+              fontFamily:'var(--font-display)',
+              fontSize:'clamp(28px, 3.5vw, 44px)',
+              letterSpacing:'2px', lineHeight:'1.1',
+              color:'var(--white)',
+            }}>
+              {event.name}
+            </h1>
 
             <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(160px, 1fr))', gap:'12px' }}>
               {[
