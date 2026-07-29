@@ -1,6 +1,6 @@
 import { useEffect, useState }         from 'react'
 import { useParams, useNavigate }      from 'react-router-dom'
-import { getEvent, createWhatsappOrder, getOrderTotal, TICKET_FEES } from '../lib/api'
+import { getEvent, createWhatsappOrder, getOrderTotal, getOrderTotals, TICKET_FEES } from '../lib/api'
 import SeatSelector                    from '../components/SeatSelector'
 
 const WHATSAPP_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER || '923001234567'
