@@ -288,7 +288,6 @@ export default function EventForm() {
     setError(null); setSaving(true)
     const datetime = new Date(`${form.date}T${form.time}:00`).toISOString()
     const payload = {
-      
       name:        form.name.trim(),
       description: form.description.trim() || null,
       image_url:   form.image_url || null,
@@ -300,12 +299,12 @@ export default function EventForm() {
         name:        c.name.trim(),
         price:       Number(c.price),
         total_seats: Number(c.total_seats),
-        discounts: form.discounts.map(d => ({
-          id:    d.id,
-          label: d.label.trim(),
-          type:  d.type,
-          value: Number(d.value),
-        })),
+      })),
+      discounts: form.discounts.map(d => ({
+        id:    d.id,
+        label: d.label.trim(),
+        type:  d.type,
+        value: Number(d.value),
       })),
     }
     try {
