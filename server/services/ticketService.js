@@ -18,7 +18,8 @@ async function generateTicketsAndSendEmails({
   buyerName,
   buyerEmail,
   buyerPhone,
-  totalAmount
+  totalAmount,
+  ticketNames
 }) {
   // ── Fetch event and category ────────────────────────────────
   const { data: category, error: catError } = await supabase

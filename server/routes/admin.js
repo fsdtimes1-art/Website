@@ -404,6 +404,7 @@ router.patch('/purchases/:id/verify-whatsapp', requireAdmin, async (req, res) =>
       buyerEmail:  purchase.buyer_email,
       buyerPhone:  purchase.buyer_phone || '',
       totalAmount: purchase.total_amount,
+      ticketNames: purchase.ticket_names || [],
     });
 
     res.json({ ...purchase, status: 'completed', tickets });

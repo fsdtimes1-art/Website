@@ -50,7 +50,8 @@ export async function createCheckout({
   quantity,
   buyerName,
   buyerEmail,
-  buyerPhone
+  buyerPhone,
+  ticketNames
 }) {
   return request('/payments/create-checkout', {
     method: 'POST',
@@ -60,7 +61,8 @@ export async function createCheckout({
       quantity,
       buyerName,
       buyerEmail,
-      buyerPhone
+      buyerPhone,
+      ticketNames
     })
   })
 }
@@ -73,7 +75,8 @@ export async function createWhatsappOrder({
   quantity,
   buyerName,
   buyerEmail,
-  buyerPhone
+  buyerPhone,
+  ticketNames
 }) {
   return request('/payments/create-whatsapp-order', {
     method: 'POST',
@@ -83,7 +86,8 @@ export async function createWhatsappOrder({
       quantity,
       buyerName,
       buyerEmail,
-      buyerPhone
+      buyerPhone,
+      ticketNames
     })
   })
 }

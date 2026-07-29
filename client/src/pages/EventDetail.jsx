@@ -14,6 +14,7 @@ export default function EventDetail() {
   const [error,     setError]     = useState(null)
   const [selection, setSelection] = useState({ category: null, quantity: 1 })
   const [form,      setForm]      = useState({ name: '', email: '', phone: '' })
+  const [ticketNames, setTicketNames] = useState([''])
   const [formError, setFormError] = useState(null)
   const [paying,    setPaying]    = useState(false)
   const [focused,   setFocused]   = useState(null)
@@ -29,11 +30,26 @@ export default function EventDetail() {
     setForm(f => ({ ...f, [e.target.name]: e.target.value }))
   }
 
+  function handleSelectionChange(sel) {
+    setSelection(sel)
+    setTicketNames(prev => {
+      const next = [...prev]
+      next.length = sel.quantity
+      return next.map(n => n || '')
+    })
+  }
+
+  function handleTicketNameChange(index, value) {
+    setTicketNames(prev => prev.map((n, i) => i === index ? value : n))
+  }
+
  async function handleCheckout() {
   if (!selection.category) return setFormError('Please select a seat category.')
   if (!form.name.trim())    return setFormError('Please enter your full name.')
   if (!form.email.trim() || !/\S+@\S+\.\S+/.test(form.email))
     return setFormError('Please enter a valid email address.')
+  if (ticketNames.some(n => !n.trim()))
+    return setFormError('Please enter a name for every ticket.')
 
   setFormError(null)
   setPaying(true)
@@ -46,6 +62,7 @@ export default function EventDetail() {
       buyerName:  form.name.trim(),
       buyerEmail: form.email.trim(),
       buyerPhone: form.phone.trim(),
+      ticketNames: ticketNames.map(n => n.trim()),
     })
 
     // Initialize Lemon.js and open as overlay
@@ -307,7 +324,7 @@ export default function EventDetail() {
               </h2>
               <SeatSelector
                 categories={event.seat_categories}
-                onSelectionChange={setSelection}
+                onSelectionChange={handleSelectionChange}
               />
             </div>
           </div>
@@ -405,6 +422,33 @@ export default function EventDetail() {
                   />
                 </div>
 
+                {/* Per-ticket names */}
+                {selection.category && (
+                  <div>
+                    <label style={labelStyle}>
+                      Attendee Name{ticketNames.length > 1 ? 's' : ''} *
+                    </label>
+                    <div style={{ display:'flex', flexDirection:'column', gap:'8px' }}>
+                      {ticketNames.map((name, i) => (
+                        <input
+                          key={i}
+                          className="input"
+                          type="text"
+                          placeholder={`Ticket ${i + 1} — full name`}
+                          value={name}
+                          onChange={e => handleTicketNameChange(i, e.target.value)}
+                          onFocus={() => setFocused(`ticket-${i}`)}
+                          onBlur={() => setFocused(null)}
+                          style={inputStyle(`ticket-${i}`)}
+                        />
+                      ))}
+                    </div>
+                    <p style={{ color:'var(--gray-mid)', fontSize:'11px', marginTop:'5px' }}>
+                      Each ticket needs the name of the person attending
+                    </p>
+                  </div>
+                )}
+
                 {/* Divider */}
                 <div style={{ height:'1px', background:'rgba(255,255,255,0.05)' }} />
 
@@ -422,6 +466,24 @@ export default function EventDetail() {
                         PKR {Number(selection.category.price).toLocaleString()} × {selection.quantity}
                       </span>
                     </div>
+                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                      <span style={{ color:'var(--gray-mid)', fontSize:'12px' }}>Booking Fee</span>
+                      <span style={{ color:'var(--gray-mid)', fontSize:'12px' }}>
+                        PKR {(TICKET_FEES.booking * selection.quantity).toLocaleString()}
+                      </span>
+                    </div>
+                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                      <span style={{ color:'var(--gray-mid)', fontSize:'12px' }}>Processing Fee</span>
+                      <span style={{ color:'var(--gray-mid)', fontSize:'12px' }}>
+                        PKR {(TICKET_FEES.processing * selection.quantity).toLocaleString()}
+                      </span>
+                    </div>
+                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                      <span style={{ color:'var(--gray-mid)', fontSize:'12px' }}>Platform Fee</span>
+                      <span style={{ color:'var(--gray-mid)', fontSize:'12px' }}>
+                        PKR {(TICKET_FEES.platform * selection.quantity).toLocaleString()}
+                      </span>
+                    </div>
                     <div style={{ height:'1px', background:'rgba(255,255,255,0.05)' }} />
                     <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
                       <span style={{
@@ -437,6 +499,7 @@ export default function EventDetail() {
                     </div>
                   </div>
                 ) : (
+
                   <div style={{
                     background:'var(--black-3)', borderRadius:'10px', padding:'16px',
                     textAlign:'center',

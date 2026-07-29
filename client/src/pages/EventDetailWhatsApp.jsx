@@ -14,6 +14,7 @@ export default function EventDetailWhatsApp() {
   const [error,     setError]     = useState(null)
   const [selection, setSelection] = useState({ category: null, quantity: 1 })
   const [form,      setForm]      = useState({ name: '', email: '', phone: '' })
+  const [ticketNames, setTicketNames] = useState([''])
   const [formError, setFormError] = useState(null)
   const [sending,   setSending]   = useState(false)
   const [submitted, setSubmitted] = useState(false)
@@ -30,11 +31,26 @@ export default function EventDetailWhatsApp() {
     setForm(f => ({ ...f, [e.target.name]: e.target.value }))
   }
 
+  function handleSelectionChange(sel) {
+    setSelection(sel)
+    setTicketNames(prev => {
+      const next = [...prev]
+      next.length = sel.quantity
+      return next.map(n => n || '')
+    })
+  }
+
+  function handleTicketNameChange(index, value) {
+    setTicketNames(prev => prev.map((n, i) => i === index ? value : n))
+  }
+
   async function handleSendWhatsapp() {
-  if (!selection.category) return setFormError('Please select a seat category.')
+  if (!selection.category) return setFormError('Please select your ticket.')
   if (!form.name.trim())    return setFormError('Please enter your full name.')
   if (!form.email.trim() || !/\S+@\S+\.\S+/.test(form.email))
     return setFormError('Please enter a valid email address.')
+  if (ticketNames.some(n => !n.trim()))
+    return setFormError('Please enter a name for every ticket.')
 
   setFormError(null)
   setSending(true)
@@ -52,6 +68,7 @@ export default function EventDetailWhatsApp() {
       buyerName:  form.name.trim(),
       buyerEmail: form.email.trim(),
       buyerPhone: form.phone.trim(),
+      ticketNames: ticketNames.map(n => n.trim()),
     })
 
     const feesForOrder = (TICKET_FEES.booking + TICKET_FEES.processing + TICKET_FEES.platform) * selection.quantity
@@ -64,6 +81,7 @@ export default function EventDetailWhatsApp() {
       form.phone.trim() ? `*Phone:* ${form.phone.trim()}` : null,
       `*Category:* ${selection.category.name}`,
       `*Quantity:* ${selection.quantity}`,
+      `*Attendees:* ${ticketNames.map(n => n.trim()).join(', ')}`,
       `*Ticket Price:* PKR ${(Number(selection.category.price) * selection.quantity).toLocaleString()}`,
       `*Fees (Booking + Processing + Platform):* PKR ${feesForOrder.toLocaleString()}`,
       `*Total:* PKR ${orderTotal.toLocaleString()}`,
@@ -269,7 +287,7 @@ export default function EventDetailWhatsApp() {
               </h2>
               <SeatSelector
                 categories={event.seat_categories}
-                onSelectionChange={setSelection}
+                onSelectionChange={handleSelectionChange}
               />
             </div>
           </div>
@@ -390,6 +408,32 @@ export default function EventDetailWhatsApp() {
                       style={inputStyle('phone')}
                     />
                   </div>
+
+                  {selection.category && (
+                    <div>
+                      <label style={labelStyle}>
+                        Attendee Name{ticketNames.length > 1 ? 's' : ''} *
+                      </label>
+                      <div style={{ display:'flex', flexDirection:'column', gap:'8px' }}>
+                        {ticketNames.map((name, i) => (
+                          <input
+                            key={i}
+                            className="input"
+                            type="text"
+                            placeholder={`Ticket ${i + 1} — full name`}
+                            value={name}
+                            onChange={e => handleTicketNameChange(i, e.target.value)}
+                            onFocus={() => setFocused(`ticket-${i}`)}
+                            onBlur={() => setFocused(null)}
+                            style={inputStyle(`ticket-${i}`)}
+                          />
+                        ))}
+                      </div>
+                      <p style={{ color:'var(--gray-mid)', fontSize:'11px', marginTop:'5px' }}>
+                        Each ticket needs the name of the person attending
+                      </p>
+                    </div>
+                  )}
 
                   <div style={{ height:'1px', background:'rgba(255,255,255,0.05)' }} />
 
