@@ -109,6 +109,7 @@ export default function BookMeeting() {
   }
 
   function handleSubmit() {
+    const waTab = window.open('', '_blank')
     const required = ['name', 'phone', 'serviceType']
     const missing  = required.find(k => !form[k].trim())
     if (missing) return
@@ -127,8 +128,14 @@ export default function BookMeeting() {
     ].filter(Boolean).join('\n')
 
     const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(lines)}`
+
+    if (waTab) {
+      waTab.location.href = url
+    } else {
+      window.location.href = url
+    }
+
     setSubmitted(true)
-    setTimeout(() => window.open(url, '_blank'), 400)
   }
 
   const isValid = form.name.trim() && form.phone.trim() && form.serviceType
