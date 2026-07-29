@@ -214,16 +214,12 @@ export default function EventDetail() {
             </h1>
 
             <div style={{ display:'flex', gap:'20px', marginTop:'14px', flexWrap:'wrap' }}>
-              {[
-                { icon:'📅', text: formattedDate },
-                { icon:'🕐', text: formattedTime },
-                { icon:'📍', text: event.venue   },
-              ].map((item, i) => (
+             {[formattedDate, formattedTime, event.venue].map((text, i) => (
                 <span key={i} style={{
                   display:'flex', alignItems:'center', gap:'6px',
                   color:'rgba(255,255,255,0.7)', fontSize:'13px',
                 }}>
-                  <span>{item.icon}</span> {item.text}
+                  {text}
                 </span>
               ))}
             </div>
@@ -336,7 +332,7 @@ export default function EventDetail() {
           </div>
 
           {/* ── Right: Checkout ── */}
-          <div className="checkout-sticky" style={{ position:'sticky', top:'88px' }}>
+          <div className="checkout-sticky" style={{ position:'sticky', top:'104px' }}>
 
             {/* Selection summary bar (only when something selected) */}
             {selection.category && (

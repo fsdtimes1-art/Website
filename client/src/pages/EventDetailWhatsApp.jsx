@@ -168,6 +168,8 @@ export default function EventDetailWhatsApp() {
         }
         @media (max-width: 600px) {
           .hero-title { font-size: 32px !important; }
+          .detail-body { padding-top: 20px !important; }
+          .detail-left-col { padding-top: 0 !important; gap: 28px !important; }
         }
         .back-btn:hover { background: rgba(255,255,255,0.08) !important; }
         .checkout-btn:hover:not(:disabled) { opacity: 0.88 !important; transform: translateY(-1px); }
@@ -207,14 +209,14 @@ export default function EventDetailWhatsApp() {
       </div>
 
       {/* ── Body ── */}
-      <div className="container" style={{ padding:'52px 24px 80px' }}>
+      <div className="container detail-body" style={{ padding:'52px 24px 80px' }}>
         <div className="detail-grid" style={{
           display:'grid', gridTemplateColumns:'minmax(0,1fr) minmax(0,400px)',
           gap:'52px', alignItems:'start',
         }}>
 
           {/* ── Left column ── */}
-          <div style={{ display:'flex', flexDirection:'column', gap:'44px', paddingTop:'24px' }}>
+          <div className="detail-left-col" style={{ display:'flex', flexDirection:'column', gap:'44px', paddingTop:'24px' }}>
 
             <h1 className="hero-title" style={{
               fontFamily:'var(--font-display)',
@@ -304,7 +306,7 @@ export default function EventDetailWhatsApp() {
           </div>
 
           {/* ── Right: WhatsApp checkout ── */}
-          <div className="checkout-sticky" style={{ position:'sticky', top:'88px' }}>
+          <div className="checkout-sticky" style={{ position:'sticky', top:'104px' }}>
 
             {selection.category && !submitted && (
               <div style={{

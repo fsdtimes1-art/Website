@@ -229,3 +229,34 @@ h1, h2, h3, h4, h5, h6 {
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+/* ── Heading spacing: tighten on mobile ─────────────────────── */
+@media (max-width: 600px) {
+  h1 { letter-spacing: 1px !important; }
+  h2 { letter-spacing: 1px !important; }
+  h3 { letter-spacing: 0.5px !important; }
+}
+
+/* ── Mobile swipe carousel ──────────────────────────────────── */
+.mobile-carousel { display: contents; }
+
+.mobile-carousel-item[data-clone="true"] { display: none; }
+
+@media (max-width: 768px) {
+  .mobile-carousel {
+    display: flex !important;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    gap: 20px;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+    width: 100%;
+  }
+  .mobile-carousel::-webkit-scrollbar { display: none; }
+  .mobile-carousel-item {
+    flex: 0 0 85%;
+    scroll-snap-align: center;
+    display: block !important;
+  }
+}

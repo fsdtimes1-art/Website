@@ -180,7 +180,7 @@ export default function Privacy() {
         }
         .legal-toc {
           position: sticky;
-          top: 90px;
+          top: 104px;
         }
         @media (max-width: 800px) {
           .legal-grid { grid-template-columns: 1fr; }
@@ -193,7 +193,7 @@ export default function Privacy() {
 
 function LegalSection({ id, title, children }) {
   return (
-    <div id={id} style={{ marginBottom: '36px', scrollMarginTop: '90px' }}>
+    <div id={id} style={{ marginBottom: '36px', scrollMarginTop: '104px' }}>
       <h2 style={{
         fontFamily:    'var(--font-display)',
         fontSize:      '20px',

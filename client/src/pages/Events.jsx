@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { getEvents }           from '../lib/api'
 import EventCard               from '../components/EventCard'
+import MobileCarousel from '../components/MobileCarousel'
 
 export default function Events() {
   const [events,  setEvents]  = useState([])
@@ -106,7 +107,7 @@ export default function Events() {
         background:   'rgba(255,255,255,0.95)',
         backdropFilter:'blur(12px)',
         position:     'sticky',
-        top:          '70px',
+        top:          '104px',
         zIndex:       10,
       }}>
         <div className="container" style={{
@@ -184,12 +185,14 @@ export default function Events() {
               gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
               gap:                 '28px',
             }}>
-              {filtered.map((event, i) => (
-                <div key={event.id} className="event-fade"
-                  style={{ animationDelay:`${i * 0.07}s` }}>
-                  <EventCard event={event} />
-                </div>
-              ))}
+              <MobileCarousel
+                items={filtered}
+                renderItem={(event, i) => (
+                  <div className="event-fade" style={{ animationDelay:`${i * 0.07}s` }}>
+                    <EventCard event={event} />
+                  </div>
+                )}
+              />
             </div>
           )}
 

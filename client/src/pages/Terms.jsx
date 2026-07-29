@@ -212,7 +212,7 @@ export default function Terms() {
 
 function LegalSection({ id, title, children }) {
   return (
-    <div id={id} style={{ marginBottom: '36px', scrollMarginTop: '90px' }}>
+    <div id={id} style={{ marginBottom: '36px', scrollMarginTop: '104px' }}>
       <h2 style={{
         fontFamily:    'var(--font-display)',
         fontSize:      '20px',

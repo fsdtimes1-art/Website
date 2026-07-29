@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link }                from 'react-router-dom'
 import { getPortfolio }        from '../lib/api'
+import MobileCarousel from '../components/MobileCarousel'
 
 export default function Portfolio() {
   const [items,   setItems]   = useState([])
@@ -96,9 +97,10 @@ export default function Portfolio() {
               gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
               gap:                 '28px',
             }}>
-              {items.map((item, i) => (
-                <PortfolioCard key={item.id} item={item} index={i} />
-              ))}
+              <MobileCarousel
+                items={items}
+                renderItem={(item, i) => <PortfolioCard item={item} index={i} />}
+              />
             </div>
           )}
 
@@ -176,7 +178,6 @@ function PortfolioCard({ item, index }) {
               width:      '100%',
               height:     '100%',
               objectFit:  'cover',
-              filter:     'brightness(0.75)',
               transition: 'transform 0.4s ease',
             }}
             onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'}

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import MobileCarousel from '../components/MobileCarousel'
 
 const WHATSAPP_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER || '923001234567'
 
@@ -192,9 +193,11 @@ export default function BookMeeting() {
           </div>
 
           <div className="services-grid">
-            {SERVICES.map((svc, i) => (
-              <div key={i} className={`service-card${svc.highlight ? ' service-card--highlight' : ''}`}>
-                <div className="service-card-inner">
+            <MobileCarousel
+              items={SERVICES}
+              renderItem={svc => (
+                <div className={`service-card${svc.highlight ? ' service-card--highlight' : ''}`}>
+                  <div className="service-card-inner">
 
                   {/* Top meta row */}
                   <p style={{ color: 'var(--gray-mid)', fontSize: '11px', fontWeight: '600', letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: '12px' }}>
@@ -251,9 +254,10 @@ export default function BookMeeting() {
                     </button>
                   </div>
 
+               </div>
                 </div>
-              </div>
-            ))}
+              )}
+            />
           </div>
         </div>
       </section>
@@ -346,7 +350,7 @@ export default function BookMeeting() {
                   CONTACT US DIRECTLY
                 </p>
                 {[
-                  { icon: '📱', label: 'WhatsApp', value: '+92 322 222 6677' },
+                  { icon: '📱', label: 'WhatsApp', value: '+92 305 2226673' },
                   { icon: '📧', label: 'Email',    value: 'fsdtimes1@gmail.com' },
                   { icon: '📍', label: 'Location', value: 'P-35 Chenab Market Susan Road Madina Town, Faisalabad, Pakistan' },
                 ].map((c, i) => (
@@ -576,7 +580,7 @@ export default function BookMeeting() {
         }
         .form-sticky {
           position: sticky;
-          top: 90px;
+          top: 104px;
         }
         .field-row {
           display: grid;
@@ -586,11 +590,21 @@ export default function BookMeeting() {
 
         /* Mobile */
         @media (max-width: 900px) {
-          .services-grid {
-            grid-template-columns: 1fr;
-            max-width: 480px;
-          }
+        .services-grid {
+          display: flex;
+          grid-template-columns: unset;
+          overflow-x: auto;
+          scroll-snap-type: x mandatory;
+          gap: 16px;
+          padding-bottom: 8px;
+          -webkit-overflow-scrolling: touch;
+          max-width: 100%;
         }
+        .service-card {
+          flex: 0 0 85%;
+          scroll-snap-align: center;
+        }
+      }
         @media (max-width: 768px) {
           .book-grid {
             grid-template-columns: 1fr;

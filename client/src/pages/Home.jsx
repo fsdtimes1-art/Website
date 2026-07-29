@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { getEvents, getPortfolio } from '../lib/api'
 import EventCard               from '../components/EventCard'
+import MobileCarousel from '../components/MobileCarousel'
 
 const SERVICES = [
   {
@@ -77,7 +78,7 @@ function PortfolioPreviewCard({ item }) {
     <Link to="/portfolio" className="card-dark" style={{ display: 'flex', flexDirection: 'column', textDecoration: 'none' }}>
       <div style={{ position: 'relative', height: '200px', overflow: 'hidden' }}>
         {image_url ? (
-          <img src={image_url} alt={event_name} style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'brightness(0.8)' }} />
+          <img src={image_url} alt={event_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
         ) : (
           <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, var(--black-3), var(--black-2))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '44px' }}>
             🏆
@@ -177,16 +178,15 @@ export default function Home() {
             </div>
           ) : (
             <div className="portfolio-grid" style={{
-  display:             'grid',
-  gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
-  gap:                 '24px',
-}}>
-  {gridPortfolio.map(item => (
-    <div key={item.id} className="portfolio-slide">
-      <PortfolioPreviewCard item={item} />
-    </div>
-  ))}
-</div>
+              display:             'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+              gap:                 '24px',
+            }}>
+              <MobileCarousel
+                items={gridPortfolio}
+                renderItem={item => <PortfolioPreviewCard item={item} />}
+              />
+            </div>
           )}
         </div>
       </section>
@@ -209,9 +209,11 @@ export default function Home() {
           </div>
 
           <div className="services-grid">
-            {SERVICES.map((svc, i) => (
-              <div key={i} className={`service-card${svc.highlight ? ' service-card--highlight' : ''}`}>
-                <div className="service-card-inner">
+            <MobileCarousel
+              items={SERVICES}
+              renderItem={svc => (
+                <div className={`service-card${svc.highlight ? ' service-card--highlight' : ''}`}>
+                  <div className="service-card-inner">
                   <p style={{ color: 'var(--gray-mid)', fontSize: '11px', fontWeight: '600', letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: '12px' }}>
                     {svc.badge}
                   </p>
@@ -261,9 +263,10 @@ export default function Home() {
                     </button>
                   </div>
 
+                  </div>
                 </div>
-              </div>
-            ))}
+              )}
+            />
           </div>
         </div>
 
@@ -332,13 +335,39 @@ export default function Home() {
             gap: 12px;
           }
 
-          @media (max-width: 900px) {
-            .services-grid {
-              grid-template-columns: 1fr;
-              max-width: 480px;
-              margin: 0 auto;
+          /* NEW — services slides on mobile */
+            @media (max-width: 900px) {
+              .services-grid {
+                display: flex;
+                grid-template-columns: unset;
+                overflow-x: auto;
+                scroll-snap-type: x mandatory;
+                gap: 16px;
+                padding-bottom: 8px;
+                -webkit-overflow-scrolling: touch;
+                max-width: 100%;
+                margin: 0;
+              }
+              .service-card {
+                flex: 0 0 85%;
+                scroll-snap-align: center;
+              }
+
+              /* NEW — portfolio slides on mobile */
+              .portfolio-grid {
+                display: flex !important;
+                grid-template-columns: unset !important;
+                overflow-x: auto;
+                scroll-snap-type: x mandatory;
+                gap: 16px !important;
+                padding-bottom: 8px;
+                -webkit-overflow-scrolling: touch;
+              }
+              .portfolio-slide {
+                flex: 0 0 85%;
+                scroll-snap-align: center;
+              }
             }
-          }
         `}</style>
       </section>
       
@@ -410,9 +439,10 @@ export default function Home() {
               gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
               gap:                 '24px',
             }}>
-              {gridEvents.map(event => (
-                <EventCard key={event.id} event={event} />
-              ))}
+              <MobileCarousel
+                items={gridEvents}
+                renderItem={event => <EventCard event={event} />}
+              />
             </div>
           )}
         </div>
