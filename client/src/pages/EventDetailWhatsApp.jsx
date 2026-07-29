@@ -229,9 +229,9 @@ export default function EventDetailWhatsApp() {
 
             <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(160px, 1fr))', gap:'12px' }}>
               {[
-                { label:'Date',     value: eventDate.toLocaleDateString('en-PK', { month:'short', day:'numeric', year:'numeric' }), icon:'📅' },
-                { label:'Time',     value: formattedTime,   icon:'🕐' },
-                { label:'Venue',    value: event.venue,     icon:'📍' },
+                { label:'Date',     value: eventDate.toLocaleDateString('en-PK', { month:'short', day:'numeric', year:'numeric' })},
+                { label:'Time',     value: formattedTime},
+                { label:'Venue',    value: event.venue},
               ].map((item, i) => (
                 <div key={i} style={{
                   background:'var(--black-2)', border:'1px solid rgba(255,255,255,0.06)',
@@ -239,7 +239,7 @@ export default function EventDetailWhatsApp() {
                 }}>
                   <p style={{ color:'var(--gray-mid)', fontSize:'10px', fontWeight:'700',
                     letterSpacing:'1.2px', textTransform:'uppercase', marginBottom:'6px' }}>
-                    {item.icon} {item.label}
+                    {item.label}
                   </p>
                   <p style={{ color:'var(--white)', fontSize:'14px', fontWeight:'500', lineHeight:'1.3' }}>
                     {item.value}
