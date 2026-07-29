@@ -145,7 +145,7 @@ export default function EventDetailWhatsApp() {
   const totalRemaining = totalSeats - soldSeats
   const soldPct = Math.max(0, Math.round(50 - (soldSeats / totalSeats) * 50))
   const orderTotal     = selection.category
-    ? getOrderTotal(selection.category.price, selection.quantity) : 0
+    ? getOrderTotal(selection.category.price, selection.quantity, event.discounts || []) : 0
   const inputStyle = (name) => ({
     width:        '100%',
     background:   focused === name ? 'rgba(255,255,255,0.04)' : 'var(--black-3)',
@@ -300,6 +300,7 @@ export default function EventDetailWhatsApp() {
               </h2>
               <SeatSelector
                 categories={event.seat_categories}
+                discounts={event.discounts || []}
                 onSelectionChange={handleSelectionChange}
               />
             </div>
@@ -481,6 +482,18 @@ export default function EventDetailWhatsApp() {
                           PKR {(TICKET_FEES.platform * selection.quantity).toLocaleString()}
                         </span>
                       </div>
+                      {(event.discounts || []).map(d => (
+                        <div key={d.id} style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                          <span style={{ color:'#4ade80', fontSize:'12px' }}>
+                            {d.label}{d.type === 'percent' ? ` (-${d.value}%)` : ''}
+                          </span>
+                          <span style={{ color:'#4ade80', fontSize:'12px' }}>
+                            − PKR {(d.type === 'percent'
+                              ? (Number(selection.category.price) * selection.quantity * Number(d.value) / 100)
+                              : Number(d.value)).toLocaleString()}
+                          </span>
+                        </div>
+                      ))}
                       <div style={{ height:'1px', background:'rgba(255,255,255,0.05)' }} />
                       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
                         <span style={{

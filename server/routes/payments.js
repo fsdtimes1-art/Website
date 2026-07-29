@@ -166,7 +166,9 @@ router.post('/create-whatsapp-order', async (req, res) => {
       return res.status(400).json({ error: `Only ${available} seat(s) available` });
     }
 
-    const totalAmount = category.price * quantity + feesFor(quantity);
+    const subtotal       = category.price * quantity;
+    const discountAmount = discountFor(subtotal, category.events.discounts);
+    const totalAmount    = subtotal - discountAmount + feesFor(quantity);
 
     const { data: purchase, error: purchaseError } = await supabase
       .from('purchases')
