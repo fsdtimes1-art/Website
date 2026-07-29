@@ -74,7 +74,14 @@ export default function EventDetailWhatsApp() {
       ticketNames,
     })
 
-    const feesForOrder = (TICKET_FEES.booking + TICKET_FEES.processing + TICKET_FEES.platform) * selection.quantity
+    const totals = getOrderTotals(selection.category.price, selection.quantity, event.discounts || [])
+
+    const discountLines = (event.discounts || []).map(d => {
+      const amt = d.type === 'percent'
+        ? (totals.subtotal * Number(d.value) / 100)
+        : Number(d.value)
+      return `*${d.label}${d.type === 'percent' ? ` (-${d.value}%)` : ''}:* − PKR ${amt.toLocaleString()}`
+    })
 
     const lines = [
       `🎟️ *New Ticket Order — ${event.name}*`,
@@ -85,9 +92,10 @@ export default function EventDetailWhatsApp() {
       `*Category:* ${selection.category.name}`,
       `*Quantity:* ${selection.quantity}`,
       `*Attendees:* ${ticketNames.join(', ')}`,
-      `*Ticket Price:* PKR ${(Number(selection.category.price) * selection.quantity).toLocaleString()}`,
-      `*Fees (Booking + Processing + Platform):* PKR ${feesForOrder.toLocaleString()}`,
-      `*Total:* PKR ${orderTotal.toLocaleString()}`,
+      `*Ticket Price:* PKR ${totals.subtotal.toLocaleString()}`,
+      ...discountLines,
+      `*Fees (Booking + Processing + Platform):* PKR ${totals.fees.toLocaleString()}`,
+      `*Total:* PKR ${totals.total.toLocaleString()}`,
       ``,
       `*Order Ref:* ${purchaseId}`,
     ].filter(Boolean).join('\n')

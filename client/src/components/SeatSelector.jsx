@@ -1,13 +1,14 @@
 import { useState } from 'react'
-import { TICKET_FEES, getOrderTotal } from '../lib/api'
+import { TICKET_FEES, getOrderTotals } from '../lib/api'
 
-export default function SeatSelector({ categories, onSelectionChange }) {
+export default function SeatSelector({ categories, discounts = [], onSelectionChange }) {
   const [selectedCategoryId, setSelectedCategoryId] = useState(null)
   const [quantity,           setQuantity]           = useState(1)
 
   const selected  = categories.find(c => c.id === selectedCategoryId)
   const available = selected ? selected.total_seats - selected.sold_seats : 0
   const maxQty    = Math.min(available, 10)
+  const totals    = selected ? getOrderTotals(selected.price, quantity, discounts) : null
 
   function handleCategorySelect(cat) {
     setSelectedCategoryId(cat.id)
@@ -238,16 +239,28 @@ export default function SeatSelector({ categories, onSelectionChange }) {
                 Booking + Processing + Platform Fee
               </span>
               <span style={{ color:'var(--gray-mid)', fontSize:'11px' }}>
-                PKR {((TICKET_FEES.booking + TICKET_FEES.processing + TICKET_FEES.platform) * quantity).toLocaleString()}
+                PKR {totals.fees.toLocaleString()}
               </span>
             </div>
+            {discounts.map(d => (
+              <div key={d.id} style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                <span style={{ color:'#4ade80', fontSize:'11px' }}>
+                  {d.label}{d.type === 'percent' ? ` (-${d.value}%)` : ''}
+                </span>
+                <span style={{ color:'#4ade80', fontSize:'11px' }}>
+                  − PKR {(d.type === 'percent'
+                    ? (totals.subtotal * Number(d.value) / 100)
+                    : Number(d.value)).toLocaleString()}
+                </span>
+              </div>
+            ))}
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', paddingTop:'4px' }}>
               <span style={{ color:'var(--gray-light)', fontSize:'12px', fontWeight:'600' }}>Total</span>
               <span style={{
                 fontFamily:'var(--font-display)', fontSize:'20px',
                 color:'var(--gold)', letterSpacing:'1px',
               }}>
-                PKR {getOrderTotal(selected.price, quantity).toLocaleString()}
+                PKR {totals.total.toLocaleString()}
               </span>
             </div>
           </div>

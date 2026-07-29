@@ -2,7 +2,8 @@ import { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate }      from 'react-router-dom'
 import { getAdminEvents, createEvent, updateEvent, deleteCategory } from '../lib/api'
 
-const EMPTY_CAT = { name: '', price: '', total_seats: '' }
+const EMPTY_CAT      = { name: '', price: '', total_seats: '' }
+const EMPTY_DISCOUNT = { id: null, label: '', type: 'flat', value: '' }
 
 function emptyForm() {
   return {
@@ -15,6 +16,7 @@ function emptyForm() {
     venue:       '',
     is_active:   true,
     categories:  [{ ...EMPTY_CAT }],
+    discounts:   [],
   }
 }
 
@@ -128,6 +130,7 @@ export default function EventForm() {
                 sold_seats:  c.sold_seats,
               }))
             : [{ ...EMPTY_CAT }],
+          discounts: (event.discounts || []).map(d => ({ ...d, value: String(d.value) })),
         })
       })
       .catch(err => setError(err.message))
@@ -150,6 +153,25 @@ export default function EventForm() {
 
   function addCategory() {
     setForm(f => ({ ...f, categories: [...f.categories, { ...EMPTY_CAT }] }))
+  }
+
+  function handleDiscountField(index, e) {
+    const { name, value } = e.target
+    setForm(f => ({
+      ...f,
+      discounts: f.discounts.map((d, i) => i === index ? { ...d, [name]: value } : d),
+    }))
+  }
+
+  function addDiscount() {
+    setForm(f => ({
+      ...f,
+      discounts: [...f.discounts, { ...EMPTY_DISCOUNT, id: `new-${Date.now()}` }],
+    }))
+  }
+
+  function removeDiscount(index) {
+    setForm(f => ({ ...f, discounts: f.discounts.filter((_, i) => i !== index) }))
   }
 
   async function removeCategory(index) {
@@ -248,6 +270,14 @@ export default function EventForm() {
       if (!c.total_seats || isNaN(Number(c.total_seats)) || Number(c.total_seats) < 1)
                             return `Category ${i+1}: seat count must be at least 1.`
     }
+    for (let i = 0; i < form.discounts.length; i++) {
+      const d = form.discounts[i]
+      if (!d.label.trim()) return `Discount ${i+1}: label is required.`
+      if (!d.value || isNaN(Number(d.value)) || Number(d.value) <= 0)
+                            return `Discount ${i+1}: a valid value is required.`
+      if (d.type === 'percent' && Number(d.value) > 100)
+                            return `Discount ${i+1}: percentage cannot exceed 100.`
+    }
     return null
   }
 
@@ -258,6 +288,7 @@ export default function EventForm() {
     setError(null); setSaving(true)
     const datetime = new Date(`${form.date}T${form.time}:00`).toISOString()
     const payload = {
+      
       name:        form.name.trim(),
       description: form.description.trim() || null,
       image_url:   form.image_url || null,
@@ -269,6 +300,12 @@ export default function EventForm() {
         name:        c.name.trim(),
         price:       Number(c.price),
         total_seats: Number(c.total_seats),
+        discounts: form.discounts.map(d => ({
+          id:    d.id,
+          label: d.label.trim(),
+          type:  d.type,
+          value: Number(d.value),
+        })),
       })),
     }
     try {
@@ -473,6 +510,68 @@ export default function EventForm() {
             onMouseLeave={e => e.currentTarget.style.background = 'rgba(245,158,11,0.05)'}
           >
             + Add Category
+
+
+          </button>
+        </Section>
+{/* ── DISCOUNTS ── */}
+        <Section title="DISCOUNTS">
+          <div style={{ display:'flex', flexDirection:'column', gap:'12px' }}>
+            {form.discounts.length === 0 && (
+              <p style={{ color:'var(--gray-mid)', fontSize:'12px' }}>
+                No discounts on this event. Add one below — it applies automatically
+                at checkout, in the WhatsApp order message, and in reported revenue.
+              </p>
+            )}
+            {form.discounts.map((d, i) => (
+              <div key={d.id || i} style={{
+                background:'var(--black-3)', border:'1px solid rgba(255,255,255,0.06)',
+                borderRadius:'10px', padding:'16px',
+                display:'grid', gridTemplateColumns:'2fr 1fr 1fr auto', gap:'12px', alignItems:'end',
+              }}>
+                <div>
+                  <label style={catLabelStyle}>Label</label>
+                  <input className="input" name="label"
+                    placeholder="e.g. Early Bird, EID10"
+                    value={d.label} onChange={e => handleDiscountField(i, e)} />
+                </div>
+                <div>
+                  <label style={catLabelStyle}>Type</label>
+                  <select className="input" name="type" value={d.type}
+                    onChange={e => handleDiscountField(i, e)} style={{ cursor:'pointer' }}>
+                    <option value="flat">Flat (PKR)</option>
+                    <option value="percent">Percent (%)</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={catLabelStyle}>
+                    {d.type === 'percent' ? 'Percent' : 'Amount (PKR)'}
+                  </label>
+                  <input className="input" name="value" type="number"
+                    placeholder={d.type === 'percent' ? '10' : '500'}
+                    value={d.value} onChange={e => handleDiscountField(i, e)} min="0" />
+                </div>
+                <button onClick={() => removeDiscount(i)} style={{
+                  background:'transparent', border:'1px solid rgba(239,68,68,0.2)',
+                  color:'#f87171', fontSize:'12px', padding:'11px 14px',
+                  borderRadius:'6px', cursor:'pointer', height:'42px',
+                }}>
+                  Remove
+                </button>
+              </div>
+            ))}
+          </div>
+          <button onClick={addDiscount} style={{
+            marginTop:'10px', display:'flex', alignItems:'center', gap:'8px',
+            background:'rgba(245,158,11,0.05)', border:'1px dashed rgba(245,158,11,0.25)',
+            borderRadius:'8px', color:'var(--gold)', fontSize:'13px', fontWeight:'600',
+            padding:'12px 20px', cursor:'pointer', width:'100%', justifyContent:'center',
+            transition:'background 0.2s',
+          }}
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(245,158,11,0.1)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'rgba(245,158,11,0.05)'}
+          >
+            + Add Discount
           </button>
         </Section>
 

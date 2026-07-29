@@ -120,6 +120,22 @@ export function getFeesTotal(quantity = 1) {
   return (TICKET_FEES.booking + TICKET_FEES.processing + TICKET_FEES.platform) * quantity
 }
 
-export function getOrderTotal(price, quantity) {
-  return Number(price) * quantity + getFeesTotal(quantity)
+export function computeDiscountAmount(subtotal, discounts = []) {
+  const amount = (discounts || []).reduce((sum, d) => {
+    const val = Number(d.value) || 0
+    return sum + (d.type === 'percent' ? (subtotal * val / 100) : val)
+  }, 0)
+  return Math.min(amount, subtotal)
+}
+
+export function getOrderTotals(price, quantity, discounts = []) {
+  const subtotal       = Number(price) * quantity
+  const discountAmount = computeDiscountAmount(subtotal, discounts)
+  const fees           = getFeesTotal(quantity)
+  const total          = Math.max(subtotal - discountAmount, 0) + fees
+  return { subtotal, discountAmount, fees, total }
+}
+
+export function getOrderTotal(price, quantity, discounts = []) {
+  return getOrderTotals(price, quantity, discounts).total
 }

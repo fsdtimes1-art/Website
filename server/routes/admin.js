@@ -111,7 +111,7 @@ router.get('/events', requireAdmin, async (req, res) => {
 
 router.post('/events', requireAdmin, async (req, res) => {
   try {
-    const { name, description, image_url, date, venue, categories } = req.body;
+    const { name, description, image_url, date, venue, categories, discounts } = req.body;
 
     if (!name || !date || !venue) {
       return res.status(400).json({ error: 'name, date and venue are required' });
@@ -119,7 +119,7 @@ router.post('/events', requireAdmin, async (req, res) => {
 
     const { data: event, error: eventError } = await supabase
       .from('events')
-      .insert({ name, description, image_url, date, venue })
+      .insert({ name, description, image_url, date, venue, discounts: discounts || [] })
       .select()
       .single();
 
@@ -154,11 +154,11 @@ router.post('/events', requireAdmin, async (req, res) => {
 
 router.put('/events/:id', requireAdmin, async (req, res) => {
   try {
-    const { name, description, image_url, date, venue, is_active, categories } = req.body;
+    const { name, description, image_url, date, venue, is_active, categories, discounts } = req.body;
 
     const { error: eventError } = await supabase
       .from('events')
-      .update({ name, description, image_url, date, venue, is_active })
+      .update({ name, description, image_url, date, venue, is_active, discounts: discounts || [] })
       .eq('id', req.params.id);
 
     if (eventError) throw eventError;

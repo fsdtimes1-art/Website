@@ -6,10 +6,18 @@ const { generateTicketsAndSendEmails } = require('../services/ticketService');
 
 const VARIANT_ID = '1738929';
 
-// Must mirror client/src/lib/api.js TICKET_FEES
 const TICKET_FEES = { booking: 80, processing: 70, platform: 70 };
 function feesFor(quantity) {
   return (TICKET_FEES.booking + TICKET_FEES.processing + TICKET_FEES.platform) * quantity;
+}
+
+// Must mirror client/src/lib/api.js computeDiscountAmount
+function discountFor(subtotal, discounts = []) {
+  const amount = (discounts || []).reduce((sum, d) => {
+    const val = Number(d.value) || 0;
+    return sum + (d.type === 'percent' ? (subtotal * val / 100) : val);
+  }, 0);
+  return Math.min(amount, subtotal);
 }
 
 // POST /api/payments/create-checkout
@@ -40,7 +48,9 @@ router.post('/create-checkout', async (req, res) => {
       return res.status(400).json({ error: `Only ${available} seat(s) available` });
     }
 
-    const totalAmount = category.price * quantity + feesFor(quantity);
+    const subtotal       = category.price * quantity;
+    const discountAmount = discountFor(subtotal, category.events.discounts);
+    const totalAmount    = subtotal - discountAmount + feesFor(quantity);
 
     // Save pending purchase first so we have an ID for the redirect URL
     const { data: purchase, error: purchaseError } = await supabase

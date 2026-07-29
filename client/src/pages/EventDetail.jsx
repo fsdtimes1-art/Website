@@ -1,6 +1,6 @@
 import { useEffect, useState }                        from 'react'
 import { useParams, useNavigate, useSearchParams }    from 'react-router-dom'
-import { getEvent, createCheckout, getOrderTotal, TICKET_FEES } from '../lib/api'
+import { getEvent, createCheckout, getOrderTotals, TICKET_FEES } from '../lib/api'
 import SeatSelector                                   from '../components/SeatSelector'
 
 export default function EventDetail() {
@@ -114,8 +114,10 @@ export default function EventDetail() {
   const soldSeats      = event.seat_categories.reduce((s, c) => s + c.sold_seats,  0)
   const totalRemaining = totalSeats - soldSeats
   const soldPct = Math.max(0, Math.round(50 - (soldSeats / totalSeats) * 50))
-  const orderTotal     = selection.category
-    ? getOrderTotal(selection.category.price, selection.quantity) : 0
+  const orderTotals = selection.category
+    ? getOrderTotals(selection.category.price, selection.quantity, event.discounts || [])
+    : { subtotal: 0, discountAmount: 0, fees: 0, total: 0 }
+  const orderTotal = orderTotals.total
 
   const inputStyle = (name) => ({
     width:        '100%',
@@ -327,6 +329,7 @@ export default function EventDetail() {
               </h2>
               <SeatSelector
                 categories={event.seat_categories}
+                discounts={event.discounts || []}
                 onSelectionChange={handleSelectionChange}
               />
             </div>
@@ -425,21 +428,21 @@ export default function EventDetail() {
                   />
                 </div>
 
-                {/* Per-ticket names */}
-                {selection.category && (
+              {/* Additional attendee names — ticket 1 uses the name field above */}
+                {selection.category && extraNames.length > 0 && (
                   <div>
                     <label style={labelStyle}>
-                      Attendee Name{ticketNames.length > 1 ? 's' : ''} *
+                      Additional Attendee Name{extraNames.length > 1 ? 's' : ''} *
                     </label>
                     <div style={{ display:'flex', flexDirection:'column', gap:'8px' }}>
-                      {ticketNames.map((name, i) => (
+                      {extraNames.map((name, i) => (
                         <input
                           key={i}
                           className="input"
                           type="text"
-                          placeholder={`Ticket ${i + 1} — full name`}
+                          placeholder={`Ticket ${i + 2} — full name`}
                           value={name}
-                          onChange={e => handleTicketNameChange(i, e.target.value)}
+                          onChange={e => handleExtraNameChange(i, e.target.value)}
                           onFocus={() => setFocused(`ticket-${i}`)}
                           onBlur={() => setFocused(null)}
                           style={inputStyle(`ticket-${i}`)}
@@ -447,7 +450,7 @@ export default function EventDetail() {
                       ))}
                     </div>
                     <p style={{ color:'var(--gray-mid)', fontSize:'11px', marginTop:'5px' }}>
-                      Each ticket needs the name of the person attending
+                      Ticket 1 uses the name above. Add a name for each additional ticket.
                     </p>
                   </div>
                 )}
@@ -487,6 +490,18 @@ export default function EventDetail() {
                         PKR {(TICKET_FEES.platform * selection.quantity).toLocaleString()}
                       </span>
                     </div>
+                    {(event.discounts || []).map(d => (
+                      <div key={d.id} style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                        <span style={{ color:'#4ade80', fontSize:'12px' }}>
+                          {d.label}{d.type === 'percent' ? ` (-${d.value}%)` : ''}
+                        </span>
+                        <span style={{ color:'#4ade80', fontSize:'12px' }}>
+                          − PKR {(d.type === 'percent'
+                            ? (orderTotals.subtotal * Number(d.value) / 100)
+                            : Number(d.value)).toLocaleString()}
+                        </span>
+                      </div>
+                    ))}
                     <div style={{ height:'1px', background:'rgba(255,255,255,0.05)' }} />
                     <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
                       <span style={{
