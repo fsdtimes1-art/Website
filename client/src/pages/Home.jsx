@@ -176,15 +176,17 @@ export default function Home() {
               <p style={{ fontSize: '16px' }}>No portfolio items yet. Check back soon!</p>
             </div>
           ) : (
-            <div style={{
-              display:             'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
-              gap:                 '24px',
-            }}>
-              {gridPortfolio.map(item => (
-                <PortfolioPreviewCard key={item.id} item={item} />
-              ))}
-            </div>
+            <div className="portfolio-grid" style={{
+  display:             'grid',
+  gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+  gap:                 '24px',
+}}>
+  {gridPortfolio.map(item => (
+    <div key={item.id} className="portfolio-slide">
+      <PortfolioPreviewCard item={item} />
+    </div>
+  ))}
+</div>
           )}
         </div>
       </section>

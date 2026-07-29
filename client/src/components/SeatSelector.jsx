@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { TICKET_FEES, getOrderTotal } from '../lib/api'
 
 export default function SeatSelector({ categories, onSelectionChange }) {
   const [selectedCategoryId, setSelectedCategoryId] = useState(null)
@@ -221,18 +222,34 @@ export default function SeatSelector({ categories, onSelectionChange }) {
 
           {/* Mini subtotal */}
           <div style={{
-            display:'flex', justifyContent:'space-between', alignItems:'center',
             paddingTop:'14px', borderTop:'1px solid rgba(255,255,255,0.05)',
+            display:'flex', flexDirection:'column', gap:'8px',
           }}>
-            <span style={{ color:'var(--gray-mid)', fontSize:'12px' }}>
-              {quantity} × PKR {Number(selected.price).toLocaleString()}
-            </span>
-            <span style={{
-              fontFamily:'var(--font-display)', fontSize:'20px',
-              color:'var(--gold)', letterSpacing:'1px',
-            }}>
-              PKR {(Number(selected.price) * quantity).toLocaleString()}
-            </span>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+              <span style={{ color:'var(--gray-mid)', fontSize:'12px' }}>
+                {quantity} × PKR {Number(selected.price).toLocaleString()}
+              </span>
+              <span style={{ color:'var(--gray-mid)', fontSize:'12px' }}>
+                PKR {(Number(selected.price) * quantity).toLocaleString()}
+              </span>
+            </div>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+              <span style={{ color:'var(--gray-mid)', fontSize:'11px' }}>
+                Booking + Processing + Platform Fee
+              </span>
+              <span style={{ color:'var(--gray-mid)', fontSize:'11px' }}>
+                PKR {((TICKET_FEES.booking + TICKET_FEES.processing + TICKET_FEES.platform) * quantity).toLocaleString()}
+              </span>
+            </div>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', paddingTop:'4px' }}>
+              <span style={{ color:'var(--gray-light)', fontSize:'12px', fontWeight:'600' }}>Total</span>
+              <span style={{
+                fontFamily:'var(--font-display)', fontSize:'20px',
+                color:'var(--gold)', letterSpacing:'1px',
+              }}>
+                PKR {getOrderTotal(selected.price, quantity).toLocaleString()}
+              </span>
+            </div>
           </div>
         </div>
       )}

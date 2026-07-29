@@ -101,3 +101,21 @@ export async function getPaymentSession(sessionId) {
 export async function getTicketsByPurchase(purchaseId) {
   return request(`/tickets/purchase/${purchaseId}`)
 }
+
+
+// ============================================================
+// FEES
+// ============================================================
+export const TICKET_FEES = {
+  booking:    80,
+  processing: 70,
+  platform:   70,
+}
+
+export function getFeesTotal(quantity = 1) {
+  return (TICKET_FEES.booking + TICKET_FEES.processing + TICKET_FEES.platform) * quantity
+}
+
+export function getOrderTotal(price, quantity) {
+  return Number(price) * quantity + getFeesTotal(quantity)
+}

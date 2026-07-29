@@ -34,20 +34,20 @@ export default function Navbar() {
           transition:     'box-shadow 0.3s',
         }}>
         <div className="container" style={{
-          display:        'flex',
-          alignItems:     'center',
-          justifyContent: 'space-between',
-          height:         '70px',
-        }}>
+        display:        'flex',
+        alignItems:     'center',
+        justifyContent: 'space-between',
+        height:         '84px',
+      }}>
 
-          {/* Logo */}
-          <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
-            <img
-              src="/favicon.png"
-              alt="FaisalabadTimes.co"
-              style={{ height: '64px', width: 'auto' }}
-            />
-          </Link>
+        {/* Logo */}
+        <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
+          <img
+            src="/favicon.png"
+            alt="FaisalabadTimes.co"
+            style={{ height: '76px', width: 'auto', maxHeight: '100%' }}
+          />
+        </Link>
 
           {/* Desktop links */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}

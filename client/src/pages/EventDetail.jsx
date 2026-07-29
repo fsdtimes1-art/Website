@@ -1,6 +1,6 @@
 import { useEffect, useState }                        from 'react'
 import { useParams, useNavigate, useSearchParams }    from 'react-router-dom'
-import { getEvent, createCheckout }                   from '../lib/api'
+import { getEvent, createCheckout, getOrderTotal, TICKET_FEES } from '../lib/api'
 import SeatSelector                                   from '../components/SeatSelector'
 
 export default function EventDetail() {
@@ -95,7 +95,7 @@ export default function EventDetail() {
   const totalRemaining = totalSeats - soldSeats
   const soldPct = Math.max(0, Math.round(50 - (soldSeats / totalSeats) * 50))
   const orderTotal     = selection.category
-    ? Number(selection.category.price) * selection.quantity : 0
+    ? getOrderTotal(selection.category.price, selection.quantity) : 0
 
   const inputStyle = (name) => ({
     width:        '100%',
@@ -129,8 +129,7 @@ export default function EventDetail() {
       <div style={{ position:'relative', height:'clamp(300px, 42vw, 520px)', overflow:'hidden' }}>
         {event.image_url ? (
           <img src={event.image_url} alt={event.name} style={{
-            width:'100%', height:'100%', objectFit:'cover',
-            filter:'brightness(0.35) saturate(0.8)',
+            width:'100%', height:'100%', objectFit:'contain', background:'var(--black-2)',
           }} />
         ) : (
           <div style={{
@@ -138,15 +137,6 @@ export default function EventDetail() {
             background:'linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 100%)',
           }} />
         )}
-
-        {/* Multi-layer gradient for depth */}
-        <div style={{
-          position:'absolute', inset:0,
-          background:`
-            linear-gradient(to top, var(--black) 0%, rgba(0,0,0,0.3) 50%, transparent 100%),
-            linear-gradient(to right, rgba(0,0,0,0.4) 0%, transparent 60%)
-          `,
-        }} />
 
         {/* Gold accent line at bottom */}
         <div style={{

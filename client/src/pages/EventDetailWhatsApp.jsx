@@ -1,6 +1,6 @@
 import { useEffect, useState }         from 'react'
 import { useParams, useNavigate }      from 'react-router-dom'
-import { getEvent, createWhatsappOrder } from '../lib/api'
+import { getEvent, createWhatsappOrder, getOrderTotal, TICKET_FEES } from '../lib/api'
 import SeatSelector                    from '../components/SeatSelector'
 
 const WHATSAPP_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER || '923001234567'
@@ -112,8 +112,7 @@ export default function EventDetailWhatsApp() {
   const totalRemaining = totalSeats - soldSeats
   const soldPct = Math.max(0, Math.round(50 - (soldSeats / totalSeats) * 50))
   const orderTotal     = selection.category
-    ? Number(selection.category.price) * selection.quantity : 0
-
+    ? getOrderTotal(selection.category.price, selection.quantity) : 0
   const inputStyle = (name) => ({
     width:        '100%',
     background:   focused === name ? 'rgba(255,255,255,0.04)' : 'var(--black-3)',
@@ -146,8 +145,7 @@ export default function EventDetailWhatsApp() {
       <div style={{ position:'relative', height:'clamp(300px, 42vw, 520px)', overflow:'hidden' }}>
         {event.image_url ? (
           <img src={event.image_url} alt={event.name} style={{
-            width:'100%', height:'100%', objectFit:'cover',
-            filter:'brightness(0.35) saturate(0.8)',
+            width:'100%', height:'100%', objectFit:'contain', background:'var(--black-2)',
           }} />
         ) : (
           <div style={{
@@ -155,14 +153,6 @@ export default function EventDetailWhatsApp() {
             background:'linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 100%)',
           }} />
         )}
-
-        <div style={{
-          position:'absolute', inset:0,
-          background:`
-            linear-gradient(to top, var(--black) 0%, rgba(0,0,0,0.3) 50%, transparent 100%),
-            linear-gradient(to right, rgba(0,0,0,0.4) 0%, transparent 60%)
-          `,
-        }} />
 
         <div style={{
           position:'absolute', bottom:0, left:0, right:0,
@@ -448,6 +438,24 @@ export default function EventDetailWhatsApp() {
                         </span>
                         <span style={{ color:'var(--gray-mid)', fontSize:'12px' }}>
                           PKR {Number(selection.category.price).toLocaleString()} × {selection.quantity}
+                        </span>
+                      </div>
+                      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                        <span style={{ color:'var(--gray-mid)', fontSize:'12px' }}>Booking Fee</span>
+                        <span style={{ color:'var(--gray-mid)', fontSize:'12px' }}>
+                          PKR {(TICKET_FEES.booking * selection.quantity).toLocaleString()}
+                        </span>
+                      </div>
+                      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                        <span style={{ color:'var(--gray-mid)', fontSize:'12px' }}>Processing Fee</span>
+                        <span style={{ color:'var(--gray-mid)', fontSize:'12px' }}>
+                          PKR {(TICKET_FEES.processing * selection.quantity).toLocaleString()}
+                        </span>
+                      </div>
+                      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                        <span style={{ color:'var(--gray-mid)', fontSize:'12px' }}>Platform Fee</span>
+                        <span style={{ color:'var(--gray-mid)', fontSize:'12px' }}>
+                          PKR {(TICKET_FEES.platform * selection.quantity).toLocaleString()}
                         </span>
                       </div>
                       <div style={{ height:'1px', background:'rgba(255,255,255,0.05)' }} />

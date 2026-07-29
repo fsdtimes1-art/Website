@@ -57,7 +57,7 @@ export default function EventCard({ event }) {
               height:     '100%',
               objectFit:  'cover',
               transition: 'transform 0.4s ease',
-              filter:     isPast || soldOut ? 'grayscale(60%) brightness(0.6)' : 'brightness(0.85)',
+              filter:     isPast || soldOut ? 'grayscale(60%)' : 'none',
             }}
             onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'}
             onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
