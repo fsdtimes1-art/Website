@@ -3,13 +3,28 @@ const BASE = (import.meta.env.VITE_API_URL || '') + '/api/admin'
 // ── stored key ───────────────────────────────────────────────
 export function getStoredKey()  { return localStorage.getItem('admin_key')  || '' }
 export function getStoredRole() { return localStorage.getItem('admin_role') || '' }
+export function getStoredLoginAt() {
+  const v = localStorage.getItem('admin_login_at')
+  return v ? Number(v) : null
+}
 
 export function setStoredKey(key)   { localStorage.setItem('admin_key',  key)  }
 export function setStoredRole(role) { localStorage.setItem('admin_role', role) }
+export function setStoredLoginAt(ts = Date.now()) {
+  localStorage.setItem('admin_login_at', String(ts))
+}
+
+export function getStoredLoginAt() {
+  return Number(localStorage.getItem('admin_login_at')) || 0
+}
+export function setStoredLoginAt() {
+  localStorage.setItem('admin_login_at', String(Date.now()))
+}
 
 export function clearStoredKey() {
   localStorage.removeItem('admin_key')
   localStorage.removeItem('admin_role')
+  localStorage.removeItem('admin_login_at')
 }
 
 // ── generic fetch helper ─────────────────────────────────────
