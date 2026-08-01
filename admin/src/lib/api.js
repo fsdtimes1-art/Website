@@ -14,13 +14,6 @@ export function setStoredLoginAt(ts = Date.now()) {
   localStorage.setItem('admin_login_at', String(ts))
 }
 
-export function getStoredLoginAt() {
-  return Number(localStorage.getItem('admin_login_at')) || 0
-}
-export function setStoredLoginAt() {
-  localStorage.setItem('admin_login_at', String(Date.now()))
-}
-
 export function clearStoredKey() {
   localStorage.removeItem('admin_key')
   localStorage.removeItem('admin_role')
