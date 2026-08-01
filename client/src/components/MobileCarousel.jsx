@@ -55,31 +55,31 @@ export default function MobileCarousel({ items, renderItem, cloneCount = 1 }) {
   const display  = [...leading, ...items, ...trailing]
 
   return (
-    <>
-      <div ref={scrollRef} className="mobile-carousel">
-        {display.map((item, i) => {
-          const isClone = i < cloneCount || i >= cloneCount + itemCount
-          return (
-            <div className="mobile-carousel-item" data-clone={isClone ? 'true' : 'false'} key={`mc-${i}`}>
-              {renderItem(item, i)}
-            </div>
-          )
-        })}
-      </div>
+  <div className="mobile-carousel-wrapper">
+    <div ref={scrollRef} className="mobile-carousel">
+      {display.map((item, i) => {
+        const isClone = i < cloneCount || i >= cloneCount + itemCount
+        return (
+          <div className="mobile-carousel-item" data-clone={isClone ? 'true' : 'false'} key={`mc-${i}`}>
+            {renderItem(item, i)}
+          </div>
+        )
+      })}
+    </div>
 
-      {itemCount > 1 && (
-        <div className="mobile-carousel-dots">
-          {items.map((_, i) => (
-            <button
-              key={i}
-              type="button"
-              className={`mobile-carousel-dot${i === activeIndex ? ' mobile-carousel-dot--active' : ''}`}
-              onClick={() => goTo(i)}
-              aria-label={`Go to slide ${i + 1}`}
-            />
-          ))}
-        </div>
-      )}
-    </>
-  )
+    {itemCount > 1 && (
+      <div className="mobile-carousel-dots">
+        {items.map((_, i) => (
+          <button
+            key={i}
+            type="button"
+            className={`mobile-carousel-dot${i === activeIndex ? ' mobile-carousel-dot--active' : ''}`}
+            onClick={() => goTo(i)}
+            aria-label={`Go to slide ${i + 1}`}
+          />
+        ))}
+      </div>
+    )}
+  </div>
+)
 }

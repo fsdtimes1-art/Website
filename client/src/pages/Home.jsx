@@ -439,6 +439,11 @@ export default function Home() {
               gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
               gap:                 '24px',
             }}>
+              {gridEvents.map((event, i) => (
+                <div key={event.id} className="event-fade" style={{ animationDelay: `${i * 0.07}s` }}>
+                  <EventCard event={event} />
+                </div>
+              ))}
             </div>
           )}
         </div>

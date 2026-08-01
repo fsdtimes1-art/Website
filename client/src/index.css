@@ -238,11 +238,16 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* ── Mobile swipe carousel ──────────────────────────────────── */
-.mobile-carousel { display: contents; }
+/* ── Mobile swipe carousel ──────────────────────────────────── */
+.mobile-carousel-wrapper { display: contents; }
 
 .mobile-carousel-item[data-clone="true"] { display: none; }
 
 @media (max-width: 768px) {
+  .mobile-carousel-wrapper {
+    display: block;
+    width: 100%;
+  }
   .mobile-carousel {
     display: flex !important;
     overflow-x: auto;
@@ -259,7 +264,6 @@ h1, h2, h3, h4, h5, h6 {
     scroll-snap-align: center;
     display: block !important;
   }
-  
 }
 
 
