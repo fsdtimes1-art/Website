@@ -1,6 +1,6 @@
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useState }                              from 'react'
-import { getStoredKey, getStoredRole }           from './lib/api'
+import { getStoredKey, getStoredRole, getStoredLoginAt, clearStoredKey } from './lib/api'
 import Sidebar    from './components/Sidebar'
 import Login      from './pages/Login'
 import Dashboard  from './pages/Dashboard'
@@ -9,6 +9,33 @@ import EventForm  from './pages/EventForm'
 import Purchases  from './pages/Purchases'
 import ScanTicket from './pages/ScanTicket'
 import Portfolio  from './pages/Portfolio'
+
+const SCANNER_SESSION_MS = 30 * 60 * 1000 // 30 minutes
+
+function SessionGuard() {
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    function checkExpiry() {
+      const role = getStoredRole()
+      if (role !== 'scanner') return
+
+      const loginAt = getStoredLoginAt()
+      if (!loginAt) return
+
+      if (Date.now() - loginAt >= SCANNER_SESSION_MS) {
+        clearStoredKey()
+        navigate('/login', { replace: true })
+      }
+    }
+
+    checkExpiry()
+    const id = setInterval(checkExpiry, 15000)
+    return () => clearInterval(id)
+  }, [navigate])
+
+  return null
+}
 
 function RequireAuth({ children }) {
   const key = getStoredKey()
