@@ -259,4 +259,32 @@ h1, h2, h3, h4, h5, h6 {
     scroll-snap-align: center;
     display: block !important;
   }
+  
+}
+
+
+.mobile-carousel-dots { display: none; }
+
+@media (max-width: 768px) {
+  .mobile-carousel-dots {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    margin-top: 14px;
+  }
+  .mobile-carousel-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.15);
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.2s;
+  }
+  .mobile-carousel-dot--active {
+    background: #0a0a0a;
+    transform: scale(1.3);
+  }
 }

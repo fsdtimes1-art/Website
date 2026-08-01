@@ -137,8 +137,8 @@ export default function Home() {
       .finally(() => setPortfolioLoading(false))
   }, [])
 
-  const gridEvents    = events.slice(0, 3)
-  const gridPortfolio = portfolio.slice(0, 3)
+  const gridEvents    = events
+  const gridPortfolio = portfolio
 
   const visibilityStyle = fontsReady ? {} : { visibility: 'hidden' }
 
@@ -439,10 +439,6 @@ export default function Home() {
               gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
               gap:                 '24px',
             }}>
-              <MobileCarousel
-                items={gridEvents}
-                renderItem={event => <EventCard event={event} />}
-              />
             </div>
           )}
         </div>
