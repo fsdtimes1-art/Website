@@ -1,7 +1,17 @@
-const BASE = (import.meta.env.VITE_API_URL || '') + '/api'
+// VITE_USE_SAME_ORIGIN_API is enabled only for the Vercel review preview.
+// Production continues to use its existing VITE_API_URL configuration.
+const useSameOriginApi = import.meta.env.VITE_USE_SAME_ORIGIN_API === 'true'
+const apiOrigin = useSameOriginApi ? '' : (import.meta.env.VITE_API_URL || '')
+const BASE = `${apiOrigin}/api`
+const previewReadOnly = import.meta.env.VITE_PREVIEW_READ_ONLY === 'true'
 
 // ── Generic fetch helper ─────────────────────────────────────
 async function request(path, options = {}) {
+  const method = (options.method || 'GET').toUpperCase()
+  if (previewReadOnly && method !== 'GET') {
+    throw new Error('This review preview is read-only. Purchase requests are disabled.')
+  }
+
   const res = await fetch(`${BASE}${path}`, {
     headers: { 'Content-Type': 'application/json', ...options.headers },
     ...options
@@ -106,14 +116,13 @@ export async function getTicketsByPurchase(purchaseId) {
   return request(`/tickets/purchase/${purchaseId}`)
 }
 
-
 // ============================================================
 // FEES
 // ============================================================
 export const TICKET_FEES = {
-  booking:    80,
+  booking: 80,
   processing: 70,
-  platform:   70,
+  platform: 70,
 }
 
 export function getFeesTotal(quantity = 1) {
@@ -129,10 +138,10 @@ export function computeDiscountAmount(subtotal, discounts = []) {
 }
 
 export function getOrderTotals(price, quantity, discounts = []) {
-  const subtotal       = Number(price) * quantity
+  const subtotal = Number(price) * quantity
   const discountAmount = computeDiscountAmount(subtotal, discounts)
-  const fees           = getFeesTotal(quantity)
-  const total          = Math.max(subtotal - discountAmount, 0) + fees
+  const fees = getFeesTotal(quantity)
+  const total = Math.max(subtotal - discountAmount, 0) + fees
   return { subtotal, discountAmount, fees, total }
 }
 
