@@ -1,4 +1,4 @@
-/** Midnight Circuit app shell: a desktop-only neon pointer halo sits behind public page content; touch layouts stay static. */
+/** Midnight Circuit app shell: static public pages with shared navigation and footer. */
 import { Routes, Route, useLocation } from 'react-router-dom'
 import { useEffect }                  from 'react'
 import Navbar                          from './components/Navbar'
@@ -22,50 +22,9 @@ function ScrollToTop() {
   return null
 }
 
-function DesktopPointerGlow() {
-  useEffect(() => {
-    const media = window.matchMedia('(hover: hover) and (pointer: fine)')
-    const root = document.documentElement
-    let frame = null
-
-    const sync = () => {
-      root.classList.toggle('ft-desktop-glow-enabled', media.matches)
-      if (!media.matches) return
-      root.style.setProperty('--ft-glow-x', `${Math.round(window.innerWidth * 0.58)}px`)
-      root.style.setProperty('--ft-glow-y', `${Math.round(window.innerHeight * 0.34)}px`)
-    }
-
-    const onPointerMove = event => {
-      if (!media.matches) return
-      const { clientX, clientY } = event
-      if (frame) window.cancelAnimationFrame(frame)
-      frame = window.requestAnimationFrame(() => {
-        root.style.setProperty('--ft-glow-x', `${clientX}px`)
-        root.style.setProperty('--ft-glow-y', `${clientY}px`)
-      })
-    }
-
-    sync()
-    media.addEventListener('change', sync)
-    window.addEventListener('pointermove', onPointerMove, { passive: true })
-
-    return () => {
-      if (frame) window.cancelAnimationFrame(frame)
-      media.removeEventListener('change', sync)
-      window.removeEventListener('pointermove', onPointerMove)
-      root.classList.remove('ft-desktop-glow-enabled')
-      root.style.removeProperty('--ft-glow-x')
-      root.style.removeProperty('--ft-glow-y')
-    }
-  }, [])
-
-  return <span className="ft-cursor-glow" aria-hidden="true" />
-}
-
 export default function App() {
   return (
     <div className="ft-app-shell">
-      <DesktopPointerGlow />
       <ScrollToTop />
       <Navbar />
 
