@@ -1,6 +1,6 @@
 /**
- * Midnight Circuit home: event-first landing page built around live EventFlow API data.
- * Sections follow the agreed order: events, partner work, services, meetings, event planning, booking explainer.
+ * Midnight Circuit home: real EventFlow data is shown in an event-first, dark neon-blue landing page.
+ * The portfolio section uses the live client/project image records as a moving case-study carousel—never invented brands.
  */
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
@@ -19,7 +19,6 @@ const REVIEW_EVENTS = [
   { id: 'review-workshop', is_review_fixture: true, name: 'Ink, Colour & Your Own Rules', image_url: 'https://images.unsplash.com/photo-1547891654-e66ed7ebb968?auto=format&fit=crop&w=1400&q=88', date: '2026-09-27T14:00:00+05:00', venue: 'Canal Road Studio', seat_categories: [{ id: 'review-studio', name: 'Studio pass', price: 2200, total_seats: 40, sold_seats: 9 }] },
 ]
 
-const REVIEW_PARTNER_SLOTS = ['Portfolio partner', 'Campaign brand', 'Venue collaborator', 'Media client']
 
 function eventMeta(event) {
   const date = new Date(event.date)
@@ -47,15 +46,12 @@ export default function Home() {
   useEffect(() => { if (eventIndex >= events.length) setEventIndex(0) }, [eventIndex, events.length])
 
   const featured = events[eventIndex]
-  const partners = useMemo(() => {
-    const values = portfolio.map(item => item.client_name).filter(Boolean)
-    return [...new Set(values)]
-  }, [portfolio])
-  const displayedPartners = partners.length ? partners : REVIEW_PARTNER_SLOTS
-  const partnerRail = displayedPartners.length > 1 ? [...displayedPartners, ...displayedPartners] : displayedPartners
+  const portfolioProjects = useMemo(() => portfolio.filter(item => item && (item.client_name || item.event_name || item.image_url)), [portfolio])
+  const projectRail = portfolioProjects.length > 1 ? [...portfolioProjects, ...portfolioProjects] : portfolioProjects
 
   return <div className="mc-home">
     <style>{homeCss}</style>
+    <style>{portfolioCarouselCss}</style>
 
     <section className="mc-event-banner">
       <div className="container mc-event-shell">
@@ -80,8 +76,7 @@ export default function Home() {
     <section className="mc-partner-section">
       <div className="container">
         <div className="mc-section-header"><div><p className="mc-kicker"><i /> Portfolio</p><h2>IN GOOD <em>COMPANY.</em></h2></div><Link to="/portfolio" className="mc-text-link">See the work <span>·</span></Link></div>
-        <div className={`mc-partner-window ${partners.length ? '' : 'is-review'}`}><div className="mc-partner-line" aria-label="Companies featured in our portfolio">{partnerRail.map((partner, index) => <Link to="/portfolio" className="mc-partner-chip" key={`${partner}-${index}`}><span>×</span>{partner}</Link>)}</div></div>
-        {!partners.length && <p className="mc-partner-note">Review carousel uses clearly marked placeholder slots until the live portfolio API is available.</p>}
+        {portfolioProjects.length ? <div className="mc-project-window"><div className="mc-project-rail" aria-label="Real projects and clients featured in our portfolio">{projectRail.map((project, index) => <Link to="/portfolio" className="mc-project-card" key={[project.id || project.client_name || project.event_name, index].join('-')}><div className="mc-project-image">{project.image_url ? <img src={project.image_url} alt={project.event_name || project.client_name || 'Portfolio project'} /> : <div className="mc-project-image-empty" />}<span className="mc-project-scan" /><p>{project.is_featured ? 'Featured project' : 'Portfolio work'}</p></div><div className="mc-project-copy"><p>{project.client_name || 'Client project'}</p><h3>{project.event_name || project.client_name || 'View project'}</h3><span>View portfolio <b>→</b></span></div></Link>)}</div></div> : <div className="mc-partner-empty"><p className="mc-kicker"><i /> Portfolio</p><h3>Project work will appear here when the portfolio is available.</h3></div>}
       </div>
     </section>
 
@@ -98,6 +93,10 @@ export default function Home() {
     <section className="mc-how-section"><div className="container"><div className="mc-section-header"><div><p className="mc-kicker"><i /> Ticketing</p><h2>CURIOUS HOW<br /><em>BOOKING WORKS?</em></h2></div><Link to="/how-it-works" className="mc-blue-button"><i /> See the process</Link></div><div className="mc-steps">{[['01','Find','Choose an event and see its current ticket options.'],['02','Select','Pick your preferred ticket type and add your details.'],['03','Request','Send your booking request directly through WhatsApp.'],['04','Enter','After payment is confirmed, receive your ticket by email.']].map(step => <article key={step[0]}><span>{step[0]}</span><h3>{step[1]}</h3><p>{step[2]}</p></article>)}</div></div></section>
   </div>
 }
+
+const portfolioCarouselCss = `
+  .mc-project-window{position:relative;overflow:hidden;margin-top:28px;padding:4px 0;border-top:1px solid rgba(45,119,160,.42);border-bottom:1px solid rgba(45,119,160,.42)}.mc-project-window:before,.mc-project-window:after{position:absolute;z-index:3;top:0;bottom:0;width:8%;content:'';pointer-events:none}.mc-project-window:before{left:0;background:linear-gradient(90deg,#07121f,transparent)}.mc-project-window:after{right:0;background:linear-gradient(-90deg,#07121f,transparent)}.mc-project-rail{display:flex;gap:14px;width:max-content;padding:17px 0;animation:mcProjectScroll 48s linear infinite}.mc-project-window:hover .mc-project-rail{animation-play-state:paused}.mc-project-card{display:flex;width:310px;min-height:258px;overflow:hidden;border:1px solid rgba(57,141,190,.46);border-radius:13px;background:linear-gradient(145deg,#0c1e31,#08121f);color:#eefaff;text-decoration:none;box-shadow:0 16px 28px rgba(0,0,0,.2);transition:transform .22s,border-color .22s,box-shadow .22s}.mc-project-card:hover{z-index:2;border-color:#29dcff;box-shadow:0 18px 34px rgba(24,173,231,.18);transform:translateY(-5px)}.mc-project-image{position:relative;flex:0 0 47%;overflow:hidden;background:#0a1725}.mc-project-image img,.mc-project-image-empty{width:100%;height:100%;object-fit:cover;transition:transform .35s}.mc-project-card:hover .mc-project-image img{transform:scale(1.06)}.mc-project-image-empty{display:block;background:radial-gradient(circle at 30% 25%,rgba(41,220,255,.28),transparent 24%),linear-gradient(135deg,#104366,#07121f)}.mc-project-image:after{position:absolute;inset:0;content:'';background:linear-gradient(180deg,transparent 40%,rgba(3,10,18,.7))}.mc-project-scan{position:absolute;z-index:1;top:11px;right:10px;left:10px;height:3px;background:repeating-linear-gradient(90deg,#29dcff 0 7px,transparent 7px 13px)}.mc-project-image p{position:absolute;z-index:1;right:10px;bottom:8px;left:10px;margin:0;color:#dffdff;font-size:8px;font-weight:900;letter-spacing:.12em;text-transform:uppercase}.mc-project-copy{display:flex;min-width:0;flex:1;flex-direction:column;justify-content:flex-end;padding:20px 16px}.mc-project-copy>p{margin:0;color:#91c9dc;font-size:9px;font-weight:800;letter-spacing:.12em;line-height:1.3;text-transform:uppercase}.mc-project-copy h3{display:-webkit-box;overflow:hidden;margin:8px 0 19px;color:#f2fbff;font-family:'Bebas Neue',Impact,sans-serif;font-size:1.8rem;font-weight:400;letter-spacing:.02em;line-height:.92;-webkit-box-orient:vertical;-webkit-line-clamp:3}.mc-project-copy>span{color:#29dcff;font-size:9px;font-weight:900;letter-spacing:.06em;text-transform:uppercase}.mc-project-copy b{font-size:14px;font-weight:400}.mc-partner-empty{margin-top:28px;border:1px solid rgba(45,119,160,.42);padding:27px;background:rgba(8,23,37,.58)}.mc-partner-empty h3{max-width:340px;margin:12px 0 0;font-family:'Bebas Neue',Impact,sans-serif;font-size:2rem;font-weight:400;line-height:.95}@keyframes mcProjectScroll{to{transform:translateX(calc(-50% - 7px))}}@media(max-width:600px){.mc-project-window{margin-top:20px}.mc-project-rail{gap:10px;padding:12px 0;animation-duration:36s}.mc-project-card{width:268px;min-height:224px}.mc-project-copy{padding:15px 12px}.mc-project-copy h3{font-size:1.5rem;margin:7px 0 15px}.mc-project-window:before,.mc-project-window:after{width:5%}}
+`
 
 const homeCss = `
   .mc-home { --mc-blue:#29dcff; --mc-soft:#a9f4ff; --mc-ink:#050b14; --mc-panel:#0b1725; --mc-line:#255473; overflow:hidden; background:linear-gradient(160deg,#050b14 0%,#091b2d 40%,#050b14 100%); color:#f2fbff; }.mc-home *{box-sizing:border-box}.mc-event-banner{position:relative;padding:113px 0 54px;overflow:hidden}.mc-event-banner::before{position:absolute;inset:0;content:'';background:radial-gradient(circle at 10% 30%,rgba(41,220,255,.18),transparent 29%),linear-gradient(90deg,rgba(28,140,228,.08) 1px,transparent 1px),linear-gradient(rgba(28,140,228,.08) 1px,transparent 1px);background-size:auto,54px 54px,54px 54px;mask-image:linear-gradient(180deg,black,transparent 92%);pointer-events:none}.mc-event-shell{position:relative;z-index:1;display:grid;grid-template-columns:.75fr 1.25fr;align-items:end;gap:42px}.mc-kicker{display:flex;align-items:center;gap:8px;margin:0;color:var(--mc-soft);font-size:10px;font-weight:800;letter-spacing:.16em;text-transform:uppercase}.mc-kicker i,.mc-blue-button i{width:7px;height:7px;border-radius:50%;background:var(--mc-blue);box-shadow:0 0 0 4px rgba(41,220,255,.13)}.mc-event-copy h1,.mc-section-header h2,.mc-meeting-shell h2,.mc-planning-copy h2{margin:12px 0 0;font-family:'Bebas Neue',Impact,sans-serif;font-weight:400;letter-spacing:.01em;line-height:.86}.mc-event-copy h1{font-size:clamp(4rem,7vw,7.2rem)}.mc-event-copy h1 em,.mc-section-header h2 em,.mc-meeting-shell h2 em,.mc-planning-copy h2 em{color:var(--mc-blue);font-style:normal}.mc-lead{max-width:330px;margin:18px 0;color:#aac1d2;font-size:15px;line-height:1.65}.mc-text-link{display:inline-flex;align-items:center;gap:9px;border-bottom:1px solid rgba(169,244,255,.32);padding-bottom:5px;color:#eafaff;font-size:12px;font-weight:800;letter-spacing:.04em;text-decoration:none;transition:color .16s,border-color .16s}.mc-text-link:hover{border-color:var(--mc-blue);color:var(--mc-blue)}.mc-text-link span{color:var(--mc-blue);font-size:18px;line-height:0}.mc-banner-counter{display:flex;align-items:center;gap:8px;margin-top:45px;color:#6f95ae;font-size:11px}.mc-banner-counter>span{color:var(--mc-blue);font-weight:900}.mc-banner-counter>i{width:36px;height:1px;background:#356180}.mc-banner-counter>b{font-weight:700}.mc-counter-controls{display:flex;gap:4px;margin-left:11px}.mc-counter-controls button{border:1px solid #2e5a77;border-radius:8px;padding:5px 8px;background:rgba(9,27,45,.7);color:#b9dced;font-size:9px;font-weight:800;cursor:pointer}.mc-counter-controls button:hover{border-color:var(--mc-blue);color:var(--mc-blue)}
