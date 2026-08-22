@@ -45,7 +45,7 @@ function EventTicketCard({ event, index }) {
     <div className="pp-card-overlay" />
     <span className="pp-card-live"><i /> {badge}</span>
     <span className="pp-card-code">FSD // {String(index + 1).padStart(2, '0')}</span>
-    <div className="pp-card-caption"><p>{event.seat_categories?.[0]?.name || 'Event ticket'}</p><h3>{event.name}</h3><div><span>◷ {day}{time && ` · ${time}`}</span><span>⌖ {event.venue || 'Venue TBA'}</span></div><strong>{soldOut ? 'Tickets unavailable' : price !== null ? `From PKR ${price.toLocaleString()}` : 'View tickets'} {!soldOut && ' →'}</strong></div>
+    <div className="pp-card-caption"><p>{event.seat_categories?.[0]?.name || 'Event ticket'}</p><h3>{event.name}</h3><div><span>◷ {day}{time && ` · ${time}`}</span></div><strong>{soldOut ? 'Tickets unavailable' : price !== null ? `From PKR ${price.toLocaleString()}` : 'View tickets'} {!soldOut && ' →'}</strong></div>
   </Wrapper>
 }
 
@@ -66,9 +66,9 @@ export default function Events() {
   const featuredDate = featured ? dateDetails(featured.date) : null
 
   return <div className="pp-scope">
-    <style>{pulsePassEventsCss}</style>
+    <style>{pulsePassEventsCss}</style><style>{'@media(max-width:600px){.pp-scope .pp-events-hero{padding:92px 0 20px}}'}</style>
     <section className="pp-events-hero"><div className="container pp-hero-layout"><div className="pp-heading"><p><i /> Faisalabad live desk</p><h1>Find your next <em>live moment.</em></h1><span>Concerts, comedy, maker rooms, and city gatherings—now in one clearer ticket desk.</span></div>
-      {featured && <article className="pp-feature-card">{featured.image_url ? <img src={featured.image_url} alt={featured.name} /> : <div className="pp-image-fallback" />}<div className="pp-feature-wash" /><span className="pp-feature-rule" /><span className="pp-feature-badge"><i /> Featured</span><div className="pp-feature-caption"><p>Featured this week</p><h2>{featured.name}</h2><span>◷ {featuredDate.day}{featuredDate.time && ` · ${featuredDate.time}`} &nbsp;&nbsp; ⌖ {featured.venue || 'Venue TBA'}</span></div></article>}
+      {featured && <article className="pp-feature-card">{featured.image_url ? <img src={featured.image_url} alt={featured.name} /> : <div className="pp-image-fallback" />}<div className="pp-feature-wash" /><span className="pp-feature-rule" /><span className="pp-feature-badge"><i /> Featured</span><div className="pp-feature-caption"><p>Featured this week</p><h2>{featured.name}</h2><span>◷ {featuredDate.day}{featuredDate.time && ` · ${featuredDate.time}`}</span></div></article>}
     </div></section>
 
     <section className="container pp-events-shell"><div className="pp-events-rail"><span className="pp-rail-serial">FSD // EVENTS</span><div className="pp-rail-header"><div><p><i /> What&apos;s on</p><h2>Events</h2></div><span>Choose an event to view ticket options.</span></div>
