@@ -1,472 +1,111 @@
-import { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+/**
+ * Midnight Circuit home: event-first landing page built around live EventFlow API data.
+ * Sections follow the agreed order: events, partner work, services, meetings, event planning, booking explainer.
+ */
+import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { getEvents, getPortfolio } from '../lib/api'
-import EventCard               from '../components/EventCard'
-import MobileCarousel from '../components/MobileCarousel'
 
 const SERVICES = [
-  {
-    badge:    'Restaurant Digital Marketing',
-    live:     false,
-    headline: 'FILL YOUR TABLES,\nGROW YOUR BRAND.',
-    desc:     'Partner with Faisalabad Times to elevate your digital presence. We combine creative storytelling, professional production, and proven marketing strategies to help businesses reach more customers, strengthen their brand, and achieve measurable growth.',
-    features: [
-      'Social Media Management',
-      'Premium Content Creation',
-      'Static Posts & Carousels',
-      'Reels & Short Form Videos',
-      'Professional Photography',
-      'Influencer & Campaign Management',
-      'Monthly Performance Reports',
-    ],
-    highlight: false,
-  },
-  {
-    badge:    'FT Page Business Promotion',
-    live:     true,
-    headline: 'GET SEEN BY\n70K+ FOLLOWERS.',
-    desc:     'Promote your business with premium content and strategic social media campaigns designed to increase visibility, engagement, and brand awareness across Faisalabad.',
-    features: [
-      'Premium Reel Production with Concept, Shoot & Editing',
-      'Static Post Design with Professional Copywriting',
-      'Instagram Story Promotions',
-      'Reel & Static Post Publishing on Faisalabad Times',
-      'Product, Restaurant & Brand Photography',
-      'Fast Content Delivery',
-    ],
-    highlight: true,
-  },
-  {
-    badge:    'Events & Media Coverage',
-    live:     true,
-    headline: 'WE CAPTURE THE MOMENT.\nYOU CREATE THE EXPERIENCE.',
-    desc:     'Professional event coverage that showcases your brand before, during, and after the event through high quality photography, cinematic videos, and engaging social media content.',
-    features: [
-      'Pre Event Promotional Reel or Post',
-      'Professional Photography & Videography',
-      'Live Instagram Story Coverage',
-      'Premium Cinematic Highlight Reel',
-      'Customer Testimonial Videos',
-      'Fast Content Delivery',
-    ],
-    price:    null,
-    highlight: false,
-  },
-  {
-    badge:    'Event Partnerships',
-    live:     true,
-    headline: 'NEED A MEDIA PARTNER OR\nTICKETING PLATFORM?',
-    desc:     'Promote your event with Faisalabad Times and let us help you reach the right audience. From official media partnerships to online ticket sales, we simplify event promotion from start to finish.',
-    features: [
-      'Official Media Partnership',
-      'Ticket Sales via FaisalabadTimes.co',
-      'Event Listing on Our Website',
-      'Promotion Across Social Media Channels',
-      'WhatsApp Registration Support',
-      'Digital E Ticket Management',
-      'Event Performance Insights',
-    ],
-    highlight: false,
-  },
+  { number: '01', eyebrow: 'Media & reach', title: 'Event promotion', text: 'Campaigns, social reach, and launch material built to put your event in front of the right crowd.', tags: ['Campaign direction', 'Paid reach', 'Content rollout'] },
+  { number: '02', eyebrow: 'Tickets & entry', title: 'Ticket operations', text: 'A clear ticket journey from event discovery to buyer details, payment guidance, and confirmed entry.', tags: ['Ticket listing', 'WhatsApp ordering', 'Digital ticketing'] },
+  { number: '03', eyebrow: 'On the ground', title: 'Media coverage', text: 'Professional photography, live stories, and video coverage that make the moment last beyond the room.', tags: ['Photography', 'Videography', 'Live coverage'] },
+  { number: '04', eyebrow: 'Partners', title: 'Event management', text: 'Bring a complex event together with one experienced point of contact for planning, audiences, and operations.', tags: ['Venue support', 'Event partnerships', 'On-ground team'] },
 ]
 
+const REVIEW_EVENTS = [
+  { id: 'review-afterglow', is_review_fixture: true, name: 'Afterglow: Live Under the Sky', image_url: 'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?auto=format&fit=crop&w=1400&q=88', date: '2026-09-20T20:00:00+05:00', venue: 'Faisalabad Arts Council', seat_categories: [{ id: 'review-vip', name: 'VIP', price: 3500, total_seats: 100, sold_seats: 42 }] },
+  { id: 'review-comedy', is_review_fixture: true, name: 'The City Laughs Back', image_url: 'https://images.unsplash.com/photo-1527224857830-43a7acc85260?auto=format&fit=crop&w=1400&q=88', date: '2026-09-26T19:30:00+05:00', venue: 'Kohinoor City, Faisalabad', seat_categories: [{ id: 'review-general', name: 'General', price: 1800, total_seats: 200, sold_seats: 185 }] },
+  { id: 'review-workshop', is_review_fixture: true, name: 'Ink, Colour & Your Own Rules', image_url: 'https://images.unsplash.com/photo-1547891654-e66ed7ebb968?auto=format&fit=crop&w=1400&q=88', date: '2026-09-27T14:00:00+05:00', venue: 'Canal Road Studio', seat_categories: [{ id: 'review-studio', name: 'Studio pass', price: 2200, total_seats: 40, sold_seats: 9 }] },
+]
 
-// ── Small portfolio card used only on Home ──────────────────
-function PortfolioPreviewCard({ item }) {
-  const { client_name, event_name, image_url, is_featured } = item
-  return (
-    <Link to="/portfolio" className="card-dark" style={{ display: 'flex', flexDirection: 'column', textDecoration: 'none' }}>
-      <div style={{ position: 'relative', height: '200px', overflow: 'hidden' }}>
-        {image_url ? (
-          <img src={image_url} alt={event_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-        ) : (
-          <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, var(--black-3), var(--black-2))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '44px' }}>
-            🏆
-          </div>
-        )}
-        {is_featured && (
-          <span style={{
-            position: 'absolute', top: '10px', right: '10px',
-            background: 'rgba(245,158,11,0.9)', color: '#000',
-            fontSize: '9px', fontWeight: '700', letterSpacing: '1px', padding: '3px 8px', borderRadius: '20px',
-          }}>
-            FEATURED
-          </span>
-        )}
-      </div>
-      <div style={{ padding: '18px' }}>
-        <p style={{ color: 'var(--gray-mid)', fontSize: '10px', fontWeight: '600', letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: '4px' }}>
-          {client_name}
-        </p>
-        <p style={{ fontFamily: 'var(--font-display)', fontSize: '19px', letterSpacing: '1px', color: 'var(--white)' }}>
-          {event_name}
-        </p>
-      </div>
-    </Link>
-  )
+const REVIEW_PARTNER_SLOTS = ['Portfolio partner', 'Campaign brand', 'Venue collaborator', 'Media client']
+
+function eventMeta(event) {
+  const date = new Date(event.date)
+  if (Number.isNaN(date.getTime())) return 'Date and time to be announced'
+  return `${date.toLocaleDateString('en-PK', { day: 'numeric', month: 'short', year: 'numeric' })} · ${date.toLocaleTimeString('en-PK', { hour: '2-digit', minute: '2-digit' })}`
 }
 
-// ── Main Home Page ───────────────────────────────────────────
+function cheapestTicket(event) {
+  const prices = (event.seat_categories || []).map(category => Number(category.price)).filter(Number.isFinite)
+  return prices.length ? `From PKR ${Math.min(...prices).toLocaleString()}` : 'View tickets'
+}
+
 export default function Home() {
-  const navigate = useNavigate()
-  const [events,           setEvents]           = useState([])
-  const [portfolio,        setPortfolio]        = useState([])
-  const [loading,          setLoading]          = useState(true)
-  const [portfolioLoading, setPortfolioLoading] = useState(true)
-  const [fontsReady,       setFontsReady]       = useState(false)
+  const [events, setEvents] = useState([])
+  const [portfolio, setPortfolio] = useState([])
+  const [loadingEvents, setLoadingEvents] = useState(true)
+  const [eventIndex, setEventIndex] = useState(0)
+  const [reviewMode, setReviewMode] = useState(false)
 
   useEffect(() => {
-    if (document.fonts && document.fonts.ready) {
-      document.fonts.ready.then(() => setFontsReady(true))
-    } else {
-      setFontsReady(true)
-    }
+    getEvents().then(data => setEvents(Array.isArray(data) ? data : [])).catch(() => { setEvents(REVIEW_EVENTS); setReviewMode(true) }).finally(() => setLoadingEvents(false))
+    getPortfolio().then(data => setPortfolio(Array.isArray(data) ? data : [])).catch(() => setPortfolio([]))
   }, [])
 
-  useEffect(() => {
-    getEvents()
-      .then(data => setEvents(data))
-      .catch(console.error)
-      .finally(() => setLoading(false))
-  }, [])
+  useEffect(() => { if (eventIndex >= events.length) setEventIndex(0) }, [eventIndex, events.length])
 
-  useEffect(() => {
-    getPortfolio()
-      .then(data => setPortfolio(data))
-      .catch(console.error)
-      .finally(() => setPortfolioLoading(false))
-  }, [])
+  const featured = events[eventIndex]
+  const partners = useMemo(() => {
+    const values = portfolio.map(item => item.client_name).filter(Boolean)
+    return [...new Set(values)]
+  }, [portfolio])
+  const displayedPartners = partners.length ? partners : REVIEW_PARTNER_SLOTS
+  const partnerRail = displayedPartners.length > 1 ? [...displayedPartners, ...displayedPartners] : displayedPartners
 
-  const gridEvents    = events
-  const gridPortfolio = portfolio
+  return <div className="mc-home">
+    <style>{homeCss}</style>
 
-  const visibilityStyle = fontsReady ? {} : { visibility: 'hidden' }
-
-  return (
-    <div style={visibilityStyle}>
-      {/* ── Our Portfolio (preview) ──────────────────── */}
-      <section className="section">
-        <div className="container">
-          <div style={{
-            display:        'flex',
-            justifyContent: 'space-between',
-            alignItems:     'flex-end',
-            marginBottom:   '48px',
-            flexWrap:       'wrap',
-            gap:            '16px',
-          }}>
-            <div>
-              <h2 style={{
-                fontFamily:    'var(--font-display)',
-                fontSize:      'clamp(36px, 5vw, 56px)',
-                letterSpacing: '2px',
-              }}>
-                OUR PORTFOLIO
-              </h2>
-            </div>
-            <Link to="/portfolio" className="btn-ghost">View Full Portfolio →</Link>
-          </div>
-
-          {portfolioLoading ? (
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
-              <div className="spinner" />
-            </div>
-          ) : gridPortfolio.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '80px 0', color: 'var(--gray-mid)' }}>
-              <p style={{ fontSize: '48px', marginBottom: '16px' }}>🏆</p>
-              <p style={{ fontSize: '16px' }}>No portfolio items yet. Check back soon!</p>
-            </div>
-          ) : (
-            <div className="portfolio-grid" style={{
-              display:             'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
-              gap:                 '24px',
-            }}>
-              <MobileCarousel
-                items={gridPortfolio}
-                renderItem={item => <PortfolioPreviewCard item={item} />}
-              />
-            </div>
-          )}
-        </div>
-      </section>
-
-{/* ── Our Services ──────────────────────────────── */}
-      <section className="section" style={{ background: 'var(--black-2)' }}>
-        <div className="container">
-          <div style={{ marginBottom: '48px' }}>
-            <h2 style={{
-              fontFamily:    'var(--font-display)',
-              fontSize:      'clamp(36px, 5vw, 56px)',
-              letterSpacing: '2px',
-              marginBottom:  '12px',
-            }}>
-              OUR SERVICES
-            </h2>
-            <p style={{ color: 'var(--gray-light)', fontSize: '15px', maxWidth: '520px', lineHeight: '1.6' }}>
-              Everything you need to grow your brand, fill your seats, and run successful events in Faisalabad.
-            </p>
-          </div>
-
-          <div className="services-grid">
-            <MobileCarousel
-              items={SERVICES}
-              renderItem={svc => (
-                <div className={`service-card${svc.highlight ? ' service-card--highlight' : ''}`}>
-                  <div className="service-card-inner">
-                  <p style={{ color: 'var(--gray-mid)', fontSize: '11px', fontWeight: '600', letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: '12px' }}>
-                    {svc.badge}
-                  </p>
-
-                  <h3 style={{
-                    fontFamily:    'var(--font-display)',
-                    fontSize:      '24px',
-                    letterSpacing: '1.5px',
-                    lineHeight:    '1.25',
-                    marginBottom:  '12px',
-                    whiteSpace:    'pre-line',
-                  }}>
-                    {svc.headline}
-                  </h3>
-
-                  <p style={{ color: 'var(--gray-light)', fontSize: '13px', lineHeight: '1.65', marginBottom: '24px' }}>
-                    {svc.desc}
-                  </p>
-
-                  <ul className="service-features">
-                    {svc.features.map((f, j) => <li key={j}>{f}</li>)}
-                  </ul>
-
-                  <div className="service-footer" style={{ justifyContent: svc.price ? 'space-between' : 'center' }}>
-                    {svc.price && (
-                      <div>
-                        <p style={{ color: 'var(--gray-mid)', fontSize: '10px', fontWeight: '600', letterSpacing: '1px', textTransform: 'uppercase' }}>
-                          Starting From
-                        </p>
-                        <p style={{ color: 'var(--gold)', fontFamily: 'var(--font-display)', fontSize: '20px', letterSpacing: '1px' }}>
-                          {svc.price}
-                        </p>
-                      </div>
-                    )}
-                    <button
-                      onClick={() => navigate('/book-meeting')}
-                      className="btn-gold"
-                      style={{
-                        fontSize: '13px',
-                        padding: '10px 20px',
-                        whiteSpace: 'nowrap',
-                        border: 'none',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      Book Free Meeting
-                    </button>
-                  </div>
-
-                  </div>
-                </div>
-              )}
-            />
-          </div>
+    <section className="mc-event-banner">
+      <div className="container mc-event-shell">
+        <div className="mc-event-copy">
+          <p className="mc-kicker"><i /> Ongoing events</p>
+          <h1>THE CITY<br />IS <em>LIVE.</em></h1>
+          <p className="mc-lead">Find the next room, stage, or city moment worth showing up for.</p>
+          <Link className="mc-text-link" to="/events">Explore all events <span>·</span></Link>
+          {events.length > 1 && <div className="mc-banner-counter"><span>{String(eventIndex + 1).padStart(2, '0')}</span><i /><b>{String(events.length).padStart(2, '0')}</b><div className="mc-counter-controls"><button onClick={() => setEventIndex(index => (index - 1 + events.length) % events.length)} aria-label="Previous event">Prev</button><button onClick={() => setEventIndex(index => (index + 1) % events.length)} aria-label="Next event">Next</button></div></div>}
         </div>
 
-        <style>{`
-          .services-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 24px;
-            align-items: stretch;
-          }
-          .service-card {
-            background: var(--black-2);
-            border: 1px solid rgba(255,255,255,0.07);
-            border-radius: 16px;
-            overflow: hidden;
-            transition: border-color 0.25s, transform 0.25s;
-            display: flex;
-            flex-direction: column;
-          }
-          .service-card:hover {
-            border-color: rgba(245,158,11,0.25);
-            transform: translateY(-4px);
-          }
-          .service-card--highlight {
-            border-color: rgba(245,158,11,0.2);
-            background: linear-gradient(160deg, rgba(245,158,11,0.06) 0%, var(--black-2) 50%);
-          }
-          .service-card-inner {
-            padding: 28px;
-            display: flex;
-            flex-direction: column;
-            flex: 1;
-          }
-          .service-features {
-            list-style: none;
-            padding: 0;
-            margin: 0 0 28px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            flex: 1;
-          }
-          .service-features li {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: var(--gray-light);
-            font-size: 13px;
-            line-height: 1.4;
-          }
-          .service-features li::before {
-            content: '';
-            width: 5px;
-            height: 5px;
-            border-radius: 50%;
-            background: var(--gold);
-            flex-shrink: 0;
-            opacity: 0.7;
-          }
-          .service-footer {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding-top: 20px;
-            border-top: 1px solid rgba(255,255,255,0.06);
-            gap: 12px;
-          }
+        {loadingEvents ? <div className="mc-event-placeholder"><span className="mc-spinner" />Loading current events</div> : featured ? <Link className="mc-feature-event" to={`/events/${featured.id}/whatsapp`} state={featured.is_review_fixture ? { reviewEvent: featured } : undefined}>
+          {featured.image_url ? <img src={featured.image_url} alt={featured.name} /> : <div className="mc-feature-image" />}
+          <div className="mc-feature-overlay" />
+          <span className="mc-feature-topline" />
+          <div className="mc-feature-badge"><i /> Live listing</div>
+          <div className="mc-feature-content"><p>{featured.venue || 'Faisalabad'}</p><h2>{featured.name}</h2><div><span>{eventMeta(featured)}{reviewMode && ' · Review preview'}</span><strong>{cheapestTicket(featured)}</strong></div></div>
+        </Link> : <div className="mc-event-placeholder mc-empty-event"><p className="mc-kicker"><i /> Event desk</p><h2>New event listings will appear here.</h2><Link to="/events" className="mc-text-link">Browse events <span>·</span></Link></div>}
+      </div>
+    </section>
 
-          /* NEW — services slides on mobile */
-            @media (max-width: 900px) {
-              .services-grid {
-                display: flex;
-                grid-template-columns: unset;
-                overflow-x: auto;
-                scroll-snap-type: x mandatory;
-                gap: 16px;
-                padding-bottom: 8px;
-                -webkit-overflow-scrolling: touch;
-                max-width: 100%;
-                margin: 0;
-              }
-              .service-card {
-                flex: 0 0 85%;
-                scroll-snap-align: center;
-              }
+    <section className="mc-partner-section">
+      <div className="container">
+        <div className="mc-section-header"><div><p className="mc-kicker"><i /> Portfolio</p><h2>IN GOOD <em>COMPANY.</em></h2></div><Link to="/portfolio" className="mc-text-link">See the work <span>·</span></Link></div>
+        <div className={`mc-partner-window ${partners.length ? '' : 'is-review'}`}><div className="mc-partner-line" aria-label="Companies featured in our portfolio">{partnerRail.map((partner, index) => <Link to="/portfolio" className="mc-partner-chip" key={`${partner}-${index}`}><span>×</span>{partner}</Link>)}</div></div>
+        {!partners.length && <p className="mc-partner-note">Review carousel uses clearly marked placeholder slots until the live portfolio API is available.</p>}
+      </div>
+    </section>
 
-              /* NEW — portfolio slides on mobile */
-              .portfolio-grid {
-                display: flex !important;
-                grid-template-columns: unset !important;
-                overflow-x: auto;
-                scroll-snap-type: x mandatory;
-                gap: 16px !important;
-                padding-bottom: 8px;
-                -webkit-overflow-scrolling: touch;
-              }
-              .portfolio-slide {
-                flex: 0 0 85%;
-                scroll-snap-align: center;
-              }
-            }
-        `}</style>
-      </section>
-      
-      {/* ── Book a Meeting (CTA) ─────────────────────── */}
-      <section style={{
-        padding:      '80px 0',
-        background:   'linear-gradient(135deg, rgba(245,158,11,0.12), rgba(245,158,11,0.04))',
-        borderTop:    '1px solid rgba(245,158,11,0.15)',
-        borderBottom: '1px solid rgba(245,158,11,0.15)',
-      }}>
-        <div className="container" style={{ textAlign: 'center' }}>
-          <h2 style={{
-            fontFamily:    'var(--font-display)',
-            fontSize:      'clamp(36px, 5vw, 64px)',
-            letterSpacing: '2px',
-            marginBottom:  '16px',
-          }}>
-            PLANNING AN EVENT?
-          </h2>
-          <p style={{
-            color:       'var(--gray-light)',
-            fontSize:    '16px',
-            margin:      '0 auto 36px',
-            maxWidth:    '480px',
-          }}>
-            Let us handle everything: From ticketing to on-ground management.
-          </p>
-          <Link to="/book-meeting" className="btn-gold" style={{ fontSize: '15px' }}>
-            Book a Free Consultation →
-          </Link>
-        </div>
-      </section>
+    <section className="mc-services-section">
+      <div className="container"><div className="mc-section-header mc-services-head"><div><p className="mc-kicker"><i /> What we do</p><h2>ONE TEAM.<br /><em>MORE MOMENTUM.</em></h2></div><p>FaisalabadTimes brings promotion, ticketing, content, and event operations into one practical partnership.</p></div>
+        <div className="mc-service-grid">{SERVICES.map(service => <article className="mc-service-card" key={service.number}><span className="mc-service-num">{service.number}</span><p>{service.eyebrow}</p><h3>{service.title}</h3><span className="mc-card-rule" /><p className="mc-service-text">{service.text}</p><ul>{service.tags.map(tag => <li key={tag}>{tag}</li>)}</ul><Link to="/book-meeting" className="mc-card-link">Talk to the team</Link></article>)}</div>
+      </div>
+    </section>
 
-      {/* ── Upcoming Events Grid ─────────────────────── */}
-      <section className="section">
-        <div className="container">
-          <div style={{
-            display:        'flex',
-            justifyContent: 'space-between',
-            alignItems:     'flex-end',
-            marginBottom:   '48px',
-            flexWrap:       'wrap',
-            gap:            '16px',
-          }}>
-            <div>
-              <h2 style={{
-                fontFamily:    'var(--font-display)',
-                fontSize:      'clamp(36px, 5vw, 56px)',
-                letterSpacing: '2px',
-              }}>
-                UPCOMING EVENTS
-              </h2>
-            </div>
-            <Link to="/events" className="btn-ghost">View All Events →</Link>
-          </div>
+    <section className="mc-meeting-section"><div className="container mc-meeting-shell"><div><p className="mc-kicker"><i /> A clear first step</p><h2>HAVE A BRIEF?<br /><em>LET&apos;S BUILD.</em></h2><p>Tell us what you are planning. We will reply on WhatsApp and work through the next practical step together.</p></div><Link to="/book-meeting" className="mc-blue-button"><i /> Book a meeting</Link></div></section>
 
-          {loading ? (
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
-              <div className="spinner" />
-            </div>
-          ) : gridEvents.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '80px 0', color: 'var(--gray-mid)' }}>
-              <p style={{ fontSize: '48px', marginBottom: '16px' }}>🎭</p>
-              <p style={{ fontSize: '16px' }}>No upcoming events right now. Check back soon!</p>
-            </div>
-          ) : (
-            <div style={{
-              display:             'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
-              gap:                 '24px',
-            }}>
-              {gridEvents.map((event, i) => (
-                <div key={event.id} className="event-fade" style={{ animationDelay: `${i * 0.07}s` }}>
-                  <EventCard event={event} />
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
+    <section className="mc-planning-section"><div className="container mc-planning-grid"><div className="mc-planning-art"><span className="mc-grid-stamp">FSD<br />LIVE</span><i /><i /><i /></div><div className="mc-planning-copy"><p className="mc-kicker"><i /> Planning an event</p><h2>DON&apos;T JUST FILL<br />A ROOM. <em>MOVE IT.</em></h2><p>From the first announcement to the final scan at the door, we help teams make their event easier to discover, buy, and remember.</p><Link to="/book-meeting" className="mc-text-link">Start a conversation <span>·</span></Link></div></div></section>
 
-      {/* ── Link to How It Works ─────────────────────── */}
-      <section className="section" style={{ background: 'var(--black-2)', textAlign: 'center' }}>
-        <div className="container">
-          <h2 style={{
-            fontFamily:    'var(--font-display)',
-            fontSize:      'clamp(28px, 4vw, 44px)',
-            letterSpacing: '2px',
-            marginBottom:  '16px',
-          }}>
-            CURIOUS HOW BOOKING WORKS?
-          </h2>
-          <p style={{ color: 'var(--gray-mid)', fontSize: '15px', marginBottom: '28px' }}>
-            See our simple 4-step process from browsing to entry.
-          </p>
-          <Link to="/how-it-works" className="btn-ghost">See How It Works →</Link>
-        </div>
-      </section>
-
-    </div>
-  )
+    <section className="mc-how-section"><div className="container"><div className="mc-section-header"><div><p className="mc-kicker"><i /> Ticketing</p><h2>CURIOUS HOW<br /><em>BOOKING WORKS?</em></h2></div><Link to="/how-it-works" className="mc-blue-button"><i /> See the process</Link></div><div className="mc-steps">{[['01','Find','Choose an event and see its current ticket options.'],['02','Select','Pick your preferred ticket type and add your details.'],['03','Request','Send your booking request directly through WhatsApp.'],['04','Enter','After payment is confirmed, receive your ticket by email.']].map(step => <article key={step[0]}><span>{step[0]}</span><h3>{step[1]}</h3><p>{step[2]}</p></article>)}</div></div></section>
+  </div>
 }
+
+const homeCss = `
+  .mc-home { --mc-blue:#29dcff; --mc-soft:#a9f4ff; --mc-ink:#050b14; --mc-panel:#0b1725; --mc-line:#255473; overflow:hidden; background:linear-gradient(160deg,#050b14 0%,#091b2d 40%,#050b14 100%); color:#f2fbff; }.mc-home *{box-sizing:border-box}.mc-event-banner{position:relative;padding:113px 0 54px;overflow:hidden}.mc-event-banner::before{position:absolute;inset:0;content:'';background:radial-gradient(circle at 10% 30%,rgba(41,220,255,.18),transparent 29%),linear-gradient(90deg,rgba(28,140,228,.08) 1px,transparent 1px),linear-gradient(rgba(28,140,228,.08) 1px,transparent 1px);background-size:auto,54px 54px,54px 54px;mask-image:linear-gradient(180deg,black,transparent 92%);pointer-events:none}.mc-event-shell{position:relative;z-index:1;display:grid;grid-template-columns:.75fr 1.25fr;align-items:end;gap:42px}.mc-kicker{display:flex;align-items:center;gap:8px;margin:0;color:var(--mc-soft);font-size:10px;font-weight:800;letter-spacing:.16em;text-transform:uppercase}.mc-kicker i,.mc-blue-button i{width:7px;height:7px;border-radius:50%;background:var(--mc-blue);box-shadow:0 0 0 4px rgba(41,220,255,.13)}.mc-event-copy h1,.mc-section-header h2,.mc-meeting-shell h2,.mc-planning-copy h2{margin:12px 0 0;font-family:'Bebas Neue',Impact,sans-serif;font-weight:400;letter-spacing:.01em;line-height:.86}.mc-event-copy h1{font-size:clamp(4rem,7vw,7.2rem)}.mc-event-copy h1 em,.mc-section-header h2 em,.mc-meeting-shell h2 em,.mc-planning-copy h2 em{color:var(--mc-blue);font-style:normal}.mc-lead{max-width:330px;margin:18px 0;color:#aac1d2;font-size:15px;line-height:1.65}.mc-text-link{display:inline-flex;align-items:center;gap:9px;border-bottom:1px solid rgba(169,244,255,.32);padding-bottom:5px;color:#eafaff;font-size:12px;font-weight:800;letter-spacing:.04em;text-decoration:none;transition:color .16s,border-color .16s}.mc-text-link:hover{border-color:var(--mc-blue);color:var(--mc-blue)}.mc-text-link span{color:var(--mc-blue);font-size:18px;line-height:0}.mc-banner-counter{display:flex;align-items:center;gap:8px;margin-top:45px;color:#6f95ae;font-size:11px}.mc-banner-counter>span{color:var(--mc-blue);font-weight:900}.mc-banner-counter>i{width:36px;height:1px;background:#356180}.mc-banner-counter>b{font-weight:700}.mc-counter-controls{display:flex;gap:4px;margin-left:11px}.mc-counter-controls button{border:1px solid #2e5a77;border-radius:8px;padding:5px 8px;background:rgba(9,27,45,.7);color:#b9dced;font-size:9px;font-weight:800;cursor:pointer}.mc-counter-controls button:hover{border-color:var(--mc-blue);color:var(--mc-blue)}
+  .mc-feature-event,.mc-event-placeholder{position:relative;min-height:395px;overflow:hidden;border:1px solid #2d668b;border-radius:18px;background:#0b1b2d;box-shadow:0 28px 52px rgba(0,0,0,.24);color:#fff;text-decoration:none}.mc-feature-event img,.mc-feature-image{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.mc-feature-image{background:linear-gradient(135deg,#07527e,#0b1b2d)}.mc-feature-overlay{position:absolute;inset:0;background:linear-gradient(90deg,rgba(3,11,20,.88),rgba(3,11,20,.15) 70%),linear-gradient(0deg,rgba(3,11,20,.82),transparent 62%)}.mc-feature-topline{position:absolute;z-index:2;top:16px;right:22px;left:22px;height:4px;background:repeating-linear-gradient(90deg,var(--mc-blue) 0 8px,transparent 8px 15px)}.mc-feature-badge{position:absolute;z-index:2;top:30px;left:25px;border-radius:999px;padding:5px 9px;background:var(--mc-blue);color:#04151d;font-size:9px;font-weight:900;letter-spacing:.1em;text-transform:uppercase}.mc-feature-badge i{display:inline-block;width:5px;height:5px;margin-right:5px;border-radius:50%;background:#04151d}.mc-feature-content{position:absolute;z-index:2;right:26px;bottom:24px;left:26px}.mc-feature-content p{margin:0;color:var(--mc-soft);font-size:10px;font-weight:800;letter-spacing:.15em;text-transform:uppercase}.mc-feature-content h2{max-width:700px;margin:8px 0 0;font-family:'Bebas Neue',Impact,sans-serif;font-size:clamp(2.5rem,4.6vw,4.5rem);font-weight:400;letter-spacing:.01em;line-height:.92}.mc-feature-content>div{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-top:15px;color:#e0f7ff;font-size:11px;font-weight:600}.mc-feature-content strong{color:var(--mc-blue);font-size:11px}.mc-event-placeholder{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:15px;padding:36px}.mc-event-placeholder h2{max-width:400px;margin:0;font-family:'Bebas Neue',Impact,sans-serif;font-size:3rem;font-weight:400;line-height:.95}.mc-spinner{width:33px;height:33px;border:3px solid rgba(41,220,255,.15);border-top-color:var(--mc-blue);border-radius:50%;animation:mcspin .8s linear infinite}@keyframes mcspin{to{transform:rotate(360deg)}}
+  .mc-partner-section{position:relative;border-top:1px solid rgba(65,178,239,.18);border-bottom:1px solid rgba(65,178,239,.18);padding:45px 0;background:rgba(4,12,21,.58)}.mc-section-header{display:flex;align-items:end;justify-content:space-between;gap:24px}.mc-section-header h2{font-size:clamp(2.7rem,5vw,5.6rem)}.mc-partner-window{position:relative;overflow:hidden;margin-top:28px;border-top:1px solid rgba(45,119,160,.42);border-bottom:1px solid rgba(45,119,160,.42)}.mc-partner-window::before,.mc-partner-window::after{position:absolute;z-index:2;top:0;bottom:0;width:10%;content:'';pointer-events:none}.mc-partner-window::before{left:0;background:linear-gradient(90deg,#07121f,transparent)}.mc-partner-window::after{right:0;background:linear-gradient(-90deg,#07121f,transparent)}.mc-partner-line{display:flex;width:max-content;animation:mcscroll 28s linear infinite}.mc-partner-window:hover .mc-partner-line{animation-play-state:paused}.mc-partner-chip{display:flex;align-items:center;gap:14px;min-width:250px;border-right:1px solid rgba(45,119,160,.35);padding:19px 26px;color:#d8f8ff;font-family:'Bebas Neue',Impact,sans-serif;font-size:23px;letter-spacing:.06em;text-decoration:none}.mc-partner-chip span{color:var(--mc-blue);font-family:'DM Sans',sans-serif;font-size:17px;font-weight:300}.mc-partner-window.is-review .mc-partner-chip{color:#8bc6d5;font-style:italic}.mc-partner-window.is-review .mc-partner-chip::after{margin-left:auto;color:#477e92;font-family:'DM Sans',sans-serif;font-size:8px;font-style:normal;font-weight:800;letter-spacing:.12em;content:'PREVIEW'}.mc-partner-note{margin:10px 0 0;color:#759caf;font-size:10px;letter-spacing:.03em}@keyframes mcscroll{to{transform:translateX(-50%)}}
+  .mc-services-section{padding:105px 0;background:linear-gradient(180deg,rgba(4,13,23,.36),rgba(10,30,48,.5))}.mc-services-head>p{max-width:420px;margin:0;color:#9db8c9;font-size:14px;line-height:1.7}.mc-service-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:44px}.mc-service-card{position:relative;display:flex;min-height:390px;flex-direction:column;overflow:hidden;border:1px solid rgba(61,125,165,.5);border-radius:15px;padding:24px;background:linear-gradient(155deg,rgba(15,38,59,.95),rgba(5,15,26,.95));transition:border-color .2s,transform .2s,box-shadow .2s}.mc-service-card:hover{border-color:var(--mc-blue);box-shadow:0 14px 30px rgba(17,130,196,.16);transform:translateY(-5px)}.mc-service-num{position:absolute;top:19px;right:20px;color:#4c7793;font-size:11px;font-weight:900;letter-spacing:.1em}.mc-service-card>p{margin:0;color:var(--mc-soft);font-size:10px;font-weight:800;letter-spacing:.13em;text-transform:uppercase}.mc-service-card h3{max-width:220px;margin:17px 0 0;font-family:'Bebas Neue',Impact,sans-serif;font-size:2.1rem;font-weight:400;letter-spacing:.02em;line-height:.95}.mc-card-rule{width:36px;height:2px;margin:22px 0;background:var(--mc-blue);box-shadow:0 0 10px rgba(41,220,255,.8)}.mc-service-text{color:#a5c1d4!important;font-size:12px!important;font-weight:400!important;letter-spacing:0!important;line-height:1.65;text-transform:none!important}.mc-service-card ul{display:flex;flex:1;flex-direction:column;gap:7px;margin:21px 0;padding:0;list-style:none}.mc-service-card li{color:#d5edf8;font-size:11px}.mc-service-card li::before{margin-right:8px;color:var(--mc-blue);content:'•'}.mc-card-link{border-top:1px solid rgba(121,202,246,.17);padding-top:14px;color:var(--mc-blue);font-size:11px;font-weight:800;text-decoration:none}.mc-card-link:hover{color:#e6fbff}
+  .mc-meeting-section{padding:82px 0;background:linear-gradient(100deg,rgba(7,56,88,.6),rgba(9,18,31,.72)),radial-gradient(circle at 90% 10%,rgba(41,220,255,.17),transparent 33%);border-top:1px solid rgba(67,183,247,.32);border-bottom:1px solid rgba(67,183,247,.32)}.mc-meeting-shell{display:flex;align-items:end;justify-content:space-between;gap:30px}.mc-meeting-shell h2,.mc-planning-copy h2{font-size:clamp(3rem,5vw,5.4rem)}.mc-meeting-shell>div>p:last-child{max-width:500px;margin:17px 0 0;color:#b3cbe0;font-size:15px;line-height:1.65}.mc-blue-button{display:inline-flex;align-items:center;gap:9px;flex:0 0 auto;border:1px solid var(--mc-blue);border-radius:10px;padding:13px 17px;background:var(--mc-blue);color:#03141b;font-size:12px;font-weight:900;letter-spacing:.04em;text-decoration:none;transition:transform .16s,box-shadow .16s}.mc-blue-button:hover{box-shadow:0 10px 24px rgba(41,220,255,.26);transform:translateY(-2px)}.mc-blue-button i{background:#03141b;box-shadow:0 0 0 4px rgba(3,20,27,.12)}
+  .mc-planning-section{padding:105px 0;background:#06111e}.mc-planning-grid{display:grid;grid-template-columns:.9fr 1.1fr;align-items:center;gap:clamp(38px,8vw,112px)}.mc-planning-art{position:relative;min-height:370px;overflow:hidden;border:1px solid #2c658b;background:radial-gradient(circle at 50% 50%,rgba(41,220,255,.23),transparent 18%),linear-gradient(135deg,#0e3856,#07131f)}.mc-planning-art::before{position:absolute;inset:18px;content:'';border:1px dashed rgba(169,244,255,.38)}.mc-grid-stamp{position:absolute;z-index:2;top:26px;left:25px;color:#ddfbff;font-family:'Bebas Neue',Impact,sans-serif;font-size:2.7rem;line-height:.8;letter-spacing:.08em}.mc-planning-art>i{position:absolute;display:block;border:1px solid rgba(169,244,255,.6);border-radius:50%;background:rgba(41,220,255,.15);box-shadow:0 0 26px rgba(41,220,255,.24)}.mc-planning-art>i:nth-of-type(1){right:14%;bottom:18%;width:115px;height:115px}.mc-planning-art>i:nth-of-type(2){right:32%;bottom:42%;width:42px;height:42px}.mc-planning-art>i:nth-of-type(3){right:8%;bottom:56%;width:20px;height:20px}.mc-planning-copy>p:not(.mc-kicker){max-width:470px;margin:21px 0;color:#a9c2d3;font-size:15px;line-height:1.7}.mc-how-section{padding:105px 0 116px;background:linear-gradient(180deg,#06111e,#050b14)}.mc-steps{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin-top:45px;border-top:1px solid rgba(67,178,239,.36);border-bottom:1px solid rgba(67,178,239,.36)}.mc-steps article{min-height:210px;padding:24px 24px 27px;border-right:1px solid rgba(67,178,239,.26)}.mc-steps article:last-child{border-right:0}.mc-steps span{color:var(--mc-blue);font-size:11px;font-weight:900;letter-spacing:.13em}.mc-steps h3{margin:42px 0 8px;font-family:'Bebas Neue',Impact,sans-serif;font-size:2rem;font-weight:400;letter-spacing:.03em}.mc-steps p{margin:0;color:#9dbacd;font-size:12px;line-height:1.65}
+  @media(max-width:900px){.mc-event-shell,.mc-planning-grid{grid-template-columns:1fr;gap:28px}.mc-event-banner{padding-top:96px}.mc-feature-event,.mc-event-placeholder{min-height:335px}.mc-service-grid{grid-template-columns:repeat(2,1fr)}.mc-meeting-shell{align-items:flex-start;flex-direction:column}.mc-steps{grid-template-columns:repeat(2,1fr)}.mc-steps article:nth-child(2){border-right:0}.mc-steps article:nth-child(-n+2){border-bottom:1px solid rgba(67,178,239,.26)}}
+  @media(max-width:600px){.mc-event-banner{padding:86px 0 35px}.mc-event-shell{gap:18px}.mc-event-copy h1{font-size:3.6rem}.mc-lead,.mc-event-copy>.mc-text-link,.mc-banner-counter{display:none}.mc-feature-event,.mc-event-placeholder{min-height:200px;border:4px solid #030a12;border-radius:18px}.mc-feature-topline{top:10px;right:14px;left:14px}.mc-feature-badge{top:18px;left:15px;font-size:8px}.mc-feature-content{right:15px;bottom:13px;left:15px}.mc-feature-content h2{font-size:2.05rem}.mc-feature-content p{font-size:8px}.mc-feature-content>div{margin-top:7px;font-size:8px}.mc-feature-content strong{font-size:8px}.mc-section-header{align-items:flex-start;flex-direction:column;gap:16px}.mc-section-header h2{font-size:3.1rem}.mc-partner-section{padding:38px 0}.mc-partner-chip{min-width:210px;padding:16px 20px;font-size:20px}.mc-services-section,.mc-planning-section,.mc-how-section{padding:70px 0}.mc-service-grid{display:flex;overflow-x:auto;gap:12px;padding-bottom:8px;scroll-snap-type:x mandatory}.mc-service-card{min-width:83%;min-height:350px;scroll-snap-align:start}.mc-meeting-section{padding:65px 0}.mc-meeting-shell h2,.mc-planning-copy h2{font-size:3.1rem}.mc-planning-art{min-height:240px}.mc-steps{display:block;margin-top:30px}.mc-steps article{min-height:auto;border-right:0;border-bottom:1px solid rgba(67,178,239,.26);padding:21px 4px}.mc-steps article:last-child{border-bottom:0}.mc-steps h3{margin:16px 0 6px;font-size:1.8rem}.mc-how-section .mc-section-header .mc-blue-button{width:100%;justify-content:center}}
+`

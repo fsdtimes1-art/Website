@@ -1,114 +1,23 @@
-/* ── FAISALABADTIMES.CO — Global White/Light Theme Overrides ── */
+/* Midnight Circuit compatibility layer: converts legacy inline amber/green accents to neon-blue without changing behavior. */
+:root { --gold:#29dcff; --gold-light:#96f1ff; --gold-dark:#108fb5; }
 
-/* Scrollbar */
-::-webkit-scrollbar-thumb { background: #d1d5db !important; }
+/* Legacy amber and green inline treatments. */
+[style*="rgba(245,158,11"][style*="background"], [style*="rgba(245, 158, 11"][style*="background"] { background:rgba(41,220,255,.1)!important; }
+[style*="rgba(245,158,11"][style*="border"], [style*="rgba(245, 158, 11"][style*="border"] { border-color:rgba(41,220,255,.34)!important; }
+[style*="rgba(245,158,11"][style*="box-shadow"], [style*="rgba(245, 158, 11"][style*="box-shadow"] { box-shadow:0 0 18px rgba(41,220,255,.2)!important; }
+[style*="#fcd34d"], [style*="#f59e0b"], [style*="#d97706"] { color:var(--gold-light)!important; }
+[style*="#25D366"] { background:var(--gold)!important; color:#03141a!important; }
+[style*="#4ade80"] { color:var(--gold-light)!important; }
+[style*="#22c55e"] { background:var(--gold)!important; }
 
-/* Selection */
-::selection { background: #0a0a0a !important; color: #ffffff !important; }
+/* Shared public shell and old light-mode surface fixes. */
+footer { background:var(--black-2)!important; border-top-color:rgba(41,220,255,.22)!important; }
+a[style*="var(--gold)"], span[style*="var(--gold)"], p[style*="var(--gold)"] { color:var(--gold)!important; }
+[style*="rgba(255,255,255,0.03)"], [style*="rgba(255, 255, 255, 0.03)"], [style*="rgba(255,255,255,0.04)"], [style*="rgba(255, 255, 255, 0.04)"], [style*="rgba(255,255,255,0.05)"], [style*="rgba(255, 255, 255, 0.05)"], [style*="rgba(255,255,255,0.06)"], [style*="rgba(255, 255, 255, 0.06)"], [style*="rgba(255,255,255,0.07)"], [style*="rgba(255, 255, 255, 0.07)"], [style*="rgba(255,255,255,0.08)"], [style*="rgba(255, 255, 255, 0.08)"], [style*="rgba(255,255,255,0.1)"], [style*="rgba(255, 255, 255, 0.1)"], [style*="rgba(255,255,255,0.12)"], [style*="rgba(255, 255, 255, 0.12)"], [style*="rgba(255,255,255,0.15)"], [style*="rgba(255, 255, 255, 0.15)"] { border-color:rgba(150,241,255,.15)!important; }
 
-/* Spinner */
-.spinner {
-  border: 3px solid rgba(0,0,0,0.08) !important;
-  border-top-color: #0a0a0a !important;
-}
-
-/* Tags / badges */
-.tag {
-  background: rgba(0,0,0,0.04) !important;
-  color: #6b7280 !important;
-  border: 1px solid rgba(0,0,0,0.1) !important;
-}
-
-/* Inputs */
-.input {
-  border-color: rgba(0,0,0,0.12) !important;
-}
-.input:focus { border-color: rgba(0,0,0,0.4) !important; }
-
-/* Ghost button */
-.btn-ghost {
-  border-color: rgba(0,0,0,0.15) !important;
-}
-.btn-ghost:hover {
-  border-color: rgba(0,0,0,0.5) !important;
-  color: #0a0a0a !important;
-  background: rgba(0,0,0,0.03) !important;
-}
-
-/* Gold button hover shadow */
-.btn-gold:hover {
-  box-shadow: 0 8px 24px rgba(0,0,0,0.15) !important;
-}
-
-/* Cards */
-.card-dark {
-  border-color: rgba(0,0,0,0.08) !important;
-}
-.card-dark:hover { border-color: rgba(0,0,0,0.2) !important; }
-
-/* Divider */
-.divider {
-  background: linear-gradient(to right, transparent, rgba(0,0,0,0.14), transparent) !important;
-}
-
-/* Text gold gradient utility — force dark text on light bg */
-.text-gold-gradient {
-  background: none !important;
-  -webkit-background-clip: unset !important;
-  -webkit-text-fill-color: #0a0a0a !important;
-  background-clip: unset !important;
-  color: #0a0a0a !important;
-}
-
-/* Gold accent → near-black on white theme (keeps btn-gold a solid dark button) */
-:root {
-  --gold:       #0a0a0a;
-  --gold-light: #374151;
-  --gold-dark:  #9ca3af;
-}
-
-a[style*="var(--gold)"],
-span[style*="var(--gold)"],
-p[style*="var(--gold)"] {
-  color: #0a0a0a !important;
-}
-
-*:not(.btn-gold):not(.btn-gold *)[style*="background: var(--gold)"],
-*:not(.btn-gold):not(.btn-gold *)[style*="background:var(--gold)"] {
-  background: #0a0a0a !important;
-  color: #ffffff !important;
-}
-
-[style*="rgba(250,204,21"] {
-  border-color: rgba(0,0,0,0.12) !important;
-}
-[style*="background"][style*="rgba(250,204,21"] {
-  background: rgba(0,0,0,0.04) !important;
-}
-[style*="box-shadow"][style*="rgba(250,204,21"] {
-  box-shadow: none !important;
-}
-
-/* ── Catch-all: flip hardcoded "white on dark" inline overlays used across
-   page components (borders, hover fills, dividers) to "dark on light".
-   Covers both comma-spaced and non-spaced rgba serializations. ── */
-[style*="rgba(255,255,255,0.03)"],
-[style*="rgba(255, 255, 255, 0.03)"],
-[style*="rgba(255,255,255,0.04)"],
-[style*="rgba(255, 255, 255, 0.04)"],
-[style*="rgba(255,255,255,0.05)"],
-[style*="rgba(255, 255, 255, 0.05)"],
-[style*="rgba(255,255,255,0.06)"],
-[style*="rgba(255, 255, 255, 0.06)"],
-[style*="rgba(255,255,255,0.07)"],
-[style*="rgba(255, 255, 255, 0.07)"],
-[style*="rgba(255,255,255,0.08)"],
-[style*="rgba(255, 255, 255, 0.08)"],
-[style*="rgba(255,255,255,0.1)"],
-[style*="rgba(255, 255, 255, 0.1)"],
-[style*="rgba(255,255,255,0.12)"],
-[style*="rgba(255, 255, 255, 0.12)"],
-[style*="rgba(255,255,255,0.15)"],
-[style*="rgba(255, 255, 255, 0.15)"] {
-  border-color: rgba(0,0,0,0.12) !important;
-}
+/* Review-only pages inherit the same blue system instead of the previous pink accent. */
+.pp-scope { --pp-pink:#29dcff!important; --pp-pink-soft:#96f1ff!important; --pp-line:#29445d!important; --pp-panel:#0d1420!important; --pp-panel-2:#142032!important; --pp-ink:#070b13!important; }
+.flow-page { --f-pink:#29dcff!important; --f-line:#2d4b65!important; --f-panel:#0d1420!important; --f-panel2:#142032!important; --f-ink:#070b13!important; }
+.flow-page .flow-ticket-price,.flow-page .flow-grand strong,.flow-page .flow-cart-top p,.flow-page .flow-info p,.flow-page .flow-section header p { color:#96f1ff!important; }
+.flow-page .flow-ticket-row:hover,.flow-page .flow-ticket-row.is-selected { background:linear-gradient(90deg,rgba(41,220,255,.13),var(--f-panel))!important; }
+.flow-page .flow-hero-shade { background:linear-gradient(0deg,rgba(7,11,19,.96),rgba(7,11,19,.06) 70%)!important; }
