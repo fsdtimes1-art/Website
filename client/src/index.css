@@ -1,4 +1,4 @@
-/* Midnight Circuit design system: dark venue surfaces, neon-blue signals, and readable ticketing controls across public routes. */
+/* Midnight Circuit design system: dark venue surfaces, neon-blue signals, and readable ticketing controls across public routes. Desktop devices receive a pointer-led halo; touch layouts remain static. */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -21,6 +21,8 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; background: var(--black); overscroll-behavior-y: none; }
 body { overflow-x: hidden; background: var(--black); color: var(--white); font-family: var(--font-body); -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+.ft-app-shell { position:relative; isolation:isolate; display:flex; min-height:100vh; flex-direction:column; }.ft-app-shell > :not(.ft-cursor-glow) { position:relative; z-index:1; }.ft-app-main { flex:1; }.ft-cursor-glow { display:none; }
+@media (hover:hover) and (pointer:fine) { html.ft-desktop-glow-enabled .ft-cursor-glow { position:fixed; z-index:0; top:var(--ft-glow-y,34vh); left:var(--ft-glow-x,58vw); display:block; width:540px; height:540px; border-radius:50%; pointer-events:none; background:radial-gradient(circle,rgba(41,220,255,.19) 0%,rgba(24,154,218,.09) 26%,rgba(9,63,103,.035) 48%,transparent 72%); filter:blur(2px); transform:translate(-50%,-50%); transition:opacity .18s ease; } }
 h1, h2, h3, h4, h5, h6 { font-family: var(--font-display); letter-spacing: .04em; line-height: 1.1; }
 ::selection { background: var(--gold); color: #021217; }
 ::-webkit-scrollbar { width: 7px; } ::-webkit-scrollbar-track { background: var(--black-2); } ::-webkit-scrollbar-thumb { border-radius: 999px; background: #284764; }
