@@ -214,7 +214,7 @@ export default function EventDetail() {
             </h1>
 
             <div style={{ display:'flex', gap:'20px', marginTop:'14px', flexWrap:'wrap' }}>
-             {[formattedDate, formattedTime, event.venue].map((text, i) => (
+             {[formattedDate, formattedTime].map((text, i) => (
                 <span key={i} style={{
                   display:'flex', alignItems:'center', gap:'6px',
                   color:'rgba(255,255,255,0.7)', fontSize:'13px',
@@ -252,7 +252,6 @@ export default function EventDetail() {
               {[
                 { label:'Date',     value: eventDate.toLocaleDateString('en-PK', { month:'short', day:'numeric', year:'numeric' }), icon:'📅' },
                 { label:'Time',     value: formattedTime,   icon:'🕐' },
-                { label:'Venue',    value: event.venue,     icon:'📍' },
                 { label:'Capacity', value: `${totalRemaining}/${totalSeats} left`, icon:'🎟️' },
               ].map((item, i) => (
                 <div key={i} style={{
