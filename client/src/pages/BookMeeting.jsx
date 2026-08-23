@@ -1,6 +1,6 @@
 /**
- * Midnight Circuit meeting page: a neon-blue campaign-services grid for events,
- * local brands, restaurants, and digital marketing partnerships. WhatsApp submission is preserved.
+ * Book a Meeting page: the campaign brief is intentionally placed immediately after the hero
+ * to prioritize enquiries; services follow. Existing WhatsApp submission is preserved.
  */
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
@@ -111,32 +111,6 @@ export default function BookMeeting() {
         </div>
       </section>
 
-      <section className="bm-services-section">
-        <div className="container">
-          <div className="bm-section-head">
-            <div>
-              <p className="bm-kicker"><i /> What we do</p>
-              <h2>ONE LOCAL TEAM.<br /><em>MORE MOMENTUM.</em></h2>
-            </div>
-            <p>Use Faisalabad Times for content, campaigns, collaborations, and ticketing that bring your local audience closer to your brand.</p>
-          </div>
-
-          <div className="bm-service-grid">
-            {SERVICES.map(service => (
-              <article className="bm-service-card" key={service.number}>
-                <span className="bm-service-number">{service.number}</span>
-                <p className="bm-service-eyebrow">{service.eyebrow}</p>
-                <h3>{service.title}</h3>
-                <span className="bm-card-rule" />
-                <p className="bm-service-text">{service.text}</p>
-                <ul>{service.tags.map(tag => <li key={tag}>{tag}</li>)}</ul>
-                <button type="button" className="bm-card-link" onClick={() => { setForm(current => ({ ...current, serviceType: current.serviceType || service.title })); document.getElementById('booking-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }}>Discuss this service <span>&rarr;</span></button>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-
       <section className="bm-form-section" id="booking-form">
         <div className="container">
           <div className="bm-form-heading">
@@ -177,6 +151,32 @@ export default function BookMeeting() {
                 </div>
               </div>}
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="bm-services-section">
+        <div className="container">
+          <div className="bm-section-head">
+            <div>
+              <p className="bm-kicker"><i /> What we do</p>
+              <h2>ONE LOCAL TEAM.<br /><em>MORE MOMENTUM.</em></h2>
+            </div>
+            <p>Use Faisalabad Times for content, campaigns, collaborations, and ticketing that bring your local audience closer to your brand.</p>
+          </div>
+
+          <div className="bm-service-grid">
+            {SERVICES.map(service => (
+              <article className="bm-service-card" key={service.number}>
+                <span className="bm-service-number">{service.number}</span>
+                <p className="bm-service-eyebrow">{service.eyebrow}</p>
+                <h3>{service.title}</h3>
+                <span className="bm-card-rule" />
+                <p className="bm-service-text">{service.text}</p>
+                <ul>{service.tags.map(tag => <li key={tag}>{tag}</li>)}</ul>
+                <button type="button" className="bm-card-link" onClick={() => { setForm(current => ({ ...current, serviceType: current.serviceType || service.title })); document.getElementById('booking-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }}>Discuss this service <span>&rarr;</span></button>
+              </article>
+            ))}
           </div>
         </div>
       </section>
