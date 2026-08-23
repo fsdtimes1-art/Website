@@ -1,1 +1,33 @@
-{"rewrites":[{"source":"/(.*)","destination":"/index.html"}]}
+{
+  
+  "rewrites": [
+    
+    {
+      
+      "source": "/api/:path*",
+      
+      "destination": "https://eventflow-q7q6.vercel.app/api/:path*"
+      
+    },
+    
+    {
+      
+      "source": "/(.*)",
+      
+      "destination": "/index.html"
+      
+    }
+    
+  ]
+  
+}
+
+
+
+
+
+
+
+
+
+

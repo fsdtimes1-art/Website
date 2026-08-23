@@ -1,690 +1,197 @@
+/**
+ * Midnight Circuit meeting page: a neon-blue campaign-services grid for events,
+ * local brands, restaurants, and digital marketing partnerships. WhatsApp submission is preserved.
+ */
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import MobileCarousel from '../components/MobileCarousel'
 
 const WHATSAPP_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER || '923001234567'
 
 const SERVICE_TYPES = [
-  'Restaurant Digital Marketing',
-  'FT Page Business Promotion',
-  'Events & Media Coverage',
-  'Social Media Management',
-  'Paid Advertising',
-  'Event Promotion',
+  'Restaurant & Local Business Growth',
+  'Reels & Short-Form Content',
   'Brand Collaboration',
-  'Custom Requirement',
+  'Social Media Management',
+  'Paid Advertising & Campaigns',
+  'Event Promotion & Ticketing',
+  'Event Media Coverage',
+  'Custom Digital Marketing Requirement',
 ]
 
 const BUDGET_RANGES = [
-  'Under PKR 1 Lac',
-  'PKR 1 – 5 Lacs',
-  'PKR 5 – 20 Lacs',
-  'PKR 20 – 50 Lacs',
-  'PKR 50 Lacs+',
+  'Under PKR 50,000',
+  'PKR 50,000 to 1 Lac',
+  'PKR 1 to 5 Lacs',
+  'PKR 5 to 20 Lacs',
+  'PKR 20 Lacs+',
   'Not sure yet',
 ]
 
 const SERVICES = [
   {
-    badge:    'Restaurant Digital Marketing',
-    live:     false,
-    headline: 'FILL YOUR TABLES,\nGROW YOUR BRAND.',
-    desc:     'Partner with Faisalabad Times to elevate your digital presence. We combine creative storytelling, professional production, and proven marketing strategies to help businesses reach more customers, strengthen their brand, and achieve measurable growth.',
-    features: [
-      'Social Media Management',
-      'Premium Content Creation',
-      'Static Posts & Carousels',
-      'Reels & Short Form Videos',
-      'Professional Photography',
-      'Influencer & Campaign Management',
-      'Monthly Performance Reports',
-    ],
-    highlight: false,
+    number: '01', eyebrow: 'Restaurants & retail', title: 'Turn local reach into footfall.',
+    text: 'Campaigns and content built to move people from their feed to your table, store, launch, or offer.',
+    tags: ['Restaurant campaigns', 'Offer launches', 'Footfall growth'],
   },
   {
-    badge:    'FT Page Business Promotion',
-    live:     true,
-    headline: 'GET SEEN BY\n70K+ FOLLOWERS.',
-    desc:     'Promote your business with premium content and strategic social media campaigns designed to increase visibility, engagement, and brand awareness across Faisalabad.',
-    features: [
-      'Premium Reel Production with Concept, Shoot & Editing',
-      'Static Post Design with Professional Copywriting',
-      'Instagram Story Promotions',
-      'Reel & Static Post Publishing on Faisalabad Times',
-      'Product, Restaurant & Brand Photography',
-      'Fast Content Delivery',
-    ],
-    highlight: true,
+    number: '02', eyebrow: 'Reels & production', title: 'Make content people stop for.',
+    text: 'Concept-led reels, photography, edits, and short-form stories shaped for the local audience you want to reach.',
+    tags: ['Reel production', 'Photography', 'Creative direction'],
   },
   {
-    badge:    'Events & Media Coverage',
-    live:     true,
-    headline: 'WE CAPTURE THE MOMENT.\nYOU CREATE THE EXPERIENCE.',
-    desc:     'Professional event coverage that showcases your brand before, during, and after the event through high quality photography, cinematic videos, and engaging social media content.',
-    features: [
-      'Pre Event Promotional Reel or Post',
-      'Professional Photography & Videography',
-      'Live Instagram Story Coverage',
-      'Premium Cinematic Highlight Reel',
-      'Customer Testimonial Videos',
-      'Fast Content Delivery',
-    ],
-    price:    null,
-    highlight: false,
+    number: '03', eyebrow: 'Brand collaborations', title: 'Put the right names together.',
+    text: 'Thoughtful collaborations between brands, venues, creators, and the Faisalabad Times community.',
+    tags: ['Brand features', 'Creator partnerships', 'Community reach'],
   },
   {
-    badge:    'Event Partnerships',
-    live:     true,
-    headline: 'NEED A MEDIA PARTNER OR\nTICKETING PLATFORM?',
-    desc:     'Promote your event with Faisalabad Times and let us help you reach the right audience. From official media partnerships to online ticket sales, we simplify event promotion from start to finish.',
-    features: [
-      'Official Media Partnership',
-      'Ticket Sales via FaisalabadTimes.co',
-      'Event Listing on Our Website',
-      'Promotion Across Social Media Channels',
-      'WhatsApp Registration Support',
-      'Digital E Ticket Management',
-      'Event Performance Insights',
-    ],
-    highlight: false,
+    number: '04', eyebrow: 'Digital marketing', title: 'Keep your brand moving.',
+    text: 'A practical content and campaign rhythm for businesses that need consistent visibility, not one-off posts.',
+    tags: ['Social management', 'Paid reach', 'Performance review'],
+  },
+  {
+    number: '05', eyebrow: 'Events & media', title: 'Build momentum around the moment.',
+    text: 'Promotion, live coverage, and highlight content for events that need more awareness before and after doors open.',
+    tags: ['Launch campaigns', 'Live stories', 'Highlight reels'],
+  },
+  {
+    number: '06', eyebrow: 'Tickets & partnerships', title: 'Make entry feel effortless.',
+    text: 'Event partnership support and a clear ticket route that helps people find, request, and receive their access.',
+    tags: ['Event listings', 'WhatsApp orders', 'Digital tickets'],
   },
 ]
 
+const DIFFERENTIATORS = [
+  { title: 'Local reach that converts', text: 'We build campaigns around the people, places, and conversations moving Faisalabad right now.' },
+  { title: 'Content with a job to do', text: 'Every reel, story, post, or campaign is created to support awareness, visits, enquiries, or ticket sales.' },
+  { title: 'More than event promotion', text: 'Restaurants, retail, launches, local brands, experiences, and events all get a tailored route forward.' },
+  { title: 'One collaborative team', text: 'Creative production, publishing, partnerships, and campaign thinking stay connected from brief to outcome.' },
+]
+
 export default function BookMeeting() {
-  const [form, setForm] = useState({
-    name:      '',
-    phone:     '',
-    email:     '',
-    serviceType: '',
-    budget:    '',
-    date:      '',
-    attendees: '',
-    message:   '',
-    business: '',
-    marketingBudget: '',
-  })
+  const [form, setForm] = useState({ name: '', phone: '', email: '', serviceType: '', budget: '', message: '', business: '', marketingBudget: '' })
   const [submitted, setSubmitted] = useState(false)
 
-  function handleField(e) {
-    setForm(f => ({ ...f, [e.target.name]: e.target.value }))
+  function handleField(event) {
+    setForm(current => ({ ...current, [event.target.name]: event.target.value }))
   }
 
   function handleSubmit() {
-    const waTab = window.open('', '_blank')
     const required = ['name', 'phone', 'serviceType']
-    const missing  = required.find(k => !form[k].trim())
-    if (missing) return
-
+    if (required.some(key => !form[key].trim())) return
+    const waTab = window.open('', '_blank')
     const lines = [
-      `👋 *New Meeting Request:FaisalabadTimes.co*`,
-      ``,
+      '*New Faisalabad Times Meeting Request*',
+      '',
       `*Name:* ${form.name}`,
-      `*Phone:* ${form.phone}`,
-      form.email     ? `*Email:* ${form.email}`                   : null,
-      `*Service Interested In:* ${form.serviceType}`,
-      form.business  ? `*Business Name:* ${form.business}`        : null,
-      form.marketingBudget  ? `*Marketing Budget:* ${form.marketingBudget}`     : null,
-      form.budget    ? `*Budget:* ${form.budget}`                  : null,
-      form.message   ? `\n*Notes:*\n${form.message}`               : null,
+      `*WhatsApp:* ${form.phone}`,
+      form.email ? `*Email:* ${form.email}` : null,
+      `*Campaign / Service:* ${form.serviceType}`,
+      form.business ? `*Business, Brand or Event:* ${form.business}` : null,
+      form.budget ? `*Estimated Budget:* ${form.budget}` : null,
+      form.marketingBudget ? `*Monthly Marketing Budget:* ${form.marketingBudget}` : null,
+      form.message ? `\n*Goals / Notes:*\n${form.message}` : null,
     ].filter(Boolean).join('\n')
-
     const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(lines)}`
-
-    if (waTab) {
-      waTab.location.href = url
-    } else {
-      window.location.href = url
-    }
-
+    if (waTab) waTab.location.href = url
+    else window.location.href = url
     setSubmitted(true)
   }
 
   const isValid = form.name.trim() && form.phone.trim() && form.serviceType
 
   return (
-    <div>
+    <main className="bm-page">
+      <style>{bookMeetingCss}</style>
 
-      {/* ── Hero ── */}
-      <section style={{ position: 'relative', padding: '80px 0 64px', overflow: 'hidden' }}>
-        <div style={{
-          position:   'absolute',
-          inset:      0,
-          background: `
-            radial-gradient(ellipse 60% 60% at 30% 50%, rgba(245,158,11,0.08) 0%, transparent 70%),
-            var(--black)
-          `,
-        }} />
-        <div className="container" style={{ position: 'relative', zIndex: 1 }}>
-          <h1 className="fade-up fade-up-delay-1" style={{
-            fontFamily:    'var(--font-display)',
-            fontSize:      'clamp(48px, 7vw, 88px)',
-            letterSpacing: '3px',
-            marginBottom:  '16px',
-          }}>
-            BOOK A MEETING
-          </h1>
-          <p className="fade-up fade-up-delay-2" style={{
-            color:      'var(--gray-light)',
-            fontSize:   '16px',
-            maxWidth:   '480px',
-            lineHeight: '1.6',
-          }}>
-            Tell us about your event and we'll get back to you on WhatsApp within a few hours.
-          </p>
-        </div>
-      </section>
-
-      {/* ── Services ── */}
-      <section style={{ padding: '0 0 96px' }}>
+      <section className="bm-hero">
         <div className="container">
-
-          <div style={{ marginBottom: '48px' }}>
-            <h2 style={{
-              fontFamily:    'var(--font-display)',
-              fontSize:      'clamp(32px, 5vw, 56px)',
-              letterSpacing: '2px',
-              marginBottom:  '12px',
-            }}>
-              OUR SERVICES
-            </h2>
-            <p style={{ color: 'var(--gray-light)', fontSize: '15px', maxWidth: '520px', lineHeight: '1.6' }}>
-              Everything you need to grow your brand, fill your seats, and run successful events in Faisalabad.
-            </p>
-          </div>
-
-          <div className="services-grid">
-            <MobileCarousel
-              items={SERVICES}
-              renderItem={svc => (
-                <div className={`service-card${svc.highlight ? ' service-card--highlight' : ''}`}>
-                  <div className="service-card-inner">
-
-                  {/* Top meta row */}
-                  <p style={{ color: 'var(--gray-mid)', fontSize: '11px', fontWeight: '600', letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: '12px' }}>
-                    {svc.badge}
-                  </p>
-
-                  <h3 style={{
-                    fontFamily:    'var(--font-display)',
-                    fontSize:      '24px',
-                    letterSpacing: '1.5px',
-                    lineHeight:    '1.25',
-                    marginBottom:  '12px',
-                    whiteSpace:    'pre-line',
-                  }}>
-                    {svc.headline}
-                  </h3>
-
-                  <p style={{ color: 'var(--gray-light)', fontSize: '13px', lineHeight: '1.65', marginBottom: '24px' }}>
-                    {svc.desc}
-                  </p>
-
-                  <ul className="service-features">
-                    {svc.features.map((f, j) => <li key={j}>{f}</li>)}
-                  </ul>
-
-                  <div className="service-footer" style={{ justifyContent: svc.price ? 'space-between' : 'center' }}>
-                    {svc.price && (
-                      <div>
-                        <p style={{ color: 'var(--gray-mid)', fontSize: '10px', fontWeight: '600', letterSpacing: '1px', textTransform: 'uppercase' }}>
-                          Starting From
-                        </p>
-                        <p style={{ color: 'var(--gold)', fontFamily: 'var(--font-display)', fontSize: '20px', letterSpacing: '1px' }}>
-                          {svc.price}
-                        </p>
-                      </div>
-                    )}
-                    <button
-                      onClick={() => {
-                        document.getElementById('booking-form')?.scrollIntoView({
-                          behavior: 'smooth',
-                          block: 'start',
-                        })
-                      }}
-                      className="btn-gold"
-                      style={{
-                        fontSize: '13px',
-                        padding: '10px 20px',
-                        whiteSpace: 'nowrap',
-                        border: 'none',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      Book Free Meeting
-                    </button>
-                  </div>
-
-               </div>
-                </div>
-              )}
-            />
-          </div>
+          <p className="bm-kicker"><i /> Collaborate locally</p>
+          <h1>BOOK A<br /><em>MEETING.</em></h1>
+          <p>From events to restaurants, retail, brand launches, and digital marketing - tell us what you want to grow. We will reply on WhatsApp with the next practical step.</p>
         </div>
       </section>
 
-      {/* ── Contact Form ── */}
-      <section id="booking-form" style={{ padding: '0 0 96px' }}>
+      <section className="bm-services-section">
         <div className="container">
-
-          <div style={{ marginBottom: '48px' }}>
-            <h2 style={{
-              fontFamily:    'var(--font-display)',
-              fontSize:      'clamp(32px, 5vw, 56px)',
-              letterSpacing: '2px',
-              marginBottom:  '12px',
-            }}>
-              BOOK A MEETING
-            </h2>
-            <p style={{ color: 'var(--gray-light)', fontSize: '15px', maxWidth: '480px', lineHeight: '1.6' }}>
-              Tell us about your event and we'll get back to you on WhatsApp within a few hours.
-            </p>
+          <div className="bm-section-head">
+            <div>
+              <p className="bm-kicker"><i /> What we do</p>
+              <h2>ONE LOCAL TEAM.<br /><em>MORE MOMENTUM.</em></h2>
+            </div>
+            <p>Use Faisalabad Times for content, campaigns, collaborations, and ticketing that bring your local audience closer to your brand.</p>
           </div>
 
-          <div className="book-grid">
-
-            {/* Left: Why us */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
-              <div>
-                <h2 style={{
-                  fontFamily:    'var(--font-display)',
-                  fontSize:      '32px',
-                  letterSpacing: '2px',
-                  marginBottom:  '16px',
-                }}>
-                  WHY FAISALABADTIMES.CO?
-                </h2>
-                <p style={{ color: 'var(--gray-light)', fontSize: '15px', lineHeight: '1.7' }}>
-                  We've managed over 50 events across Pakistan: from intimate corporate dinners
-                  to large-scale concerts. Our team handles everything so you don't have to.
-                </p>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                {[
-                  {title: 'End-to-End Management',    desc: 'Venue, ticketing, logistics, on-ground staff: All handled by us.' },
-                  {title: 'Built-In Ticketing',       desc: 'Our platform handles sales, seat allocation, QR check-in, and revenue reporting.' },
-                  {title: 'Real-Time Insights',       desc: 'Live dashboards showing sales, attendance, and revenue as it happens.' },
-                  {title: 'Dedicated Point of Contact', desc: 'One person responsible for your event from kickoff to curtain call.' },
-                ].map((item, i) => (
-                  <div key={i} style={{
-                    display:      'flex',
-                    gap:          '16px',
-                    alignItems:   'flex-start',
-                    background:   'var(--black-2)',
-                    border:       '1px solid rgba(255,255,255,0.06)',
-                    borderRadius: '10px',
-                    padding:      '20px',
-                  }}>
-                    <div>
-                      <p style={{
-                        fontFamily:    'var(--font-display)',
-                        fontSize:      '17px',
-                        letterSpacing: '1px',
-                        color:         'var(--white)',
-                        marginBottom:  '4px',
-                      }}>
-                        {item.title}
-                      </p>
-                      <p style={{ color: 'var(--gray-mid)', fontSize: '13px', lineHeight: '1.5' }}>
-                        {item.desc}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Contact block */}
-              <div style={{
-                background:   'var(--black-2)',
-                border:       '1px solid rgba(245,158,11,0.15)',
-                borderRadius: '12px',
-                padding:      '24px',
-              }}>
-                <p style={{
-                  fontFamily:    'var(--font-display)',
-                  fontSize:      '16px',
-                  letterSpacing: '2px',
-                  color:         'var(--gold)',
-                  marginBottom:  '16px',
-                }}>
-                  CONTACT US DIRECTLY
-                </p>
-                {[
-                  { icon: '📱', label: 'WhatsApp', value: '+92 305 2226673' },
-                  { icon: '📧', label: 'Email',    value: 'fsdtimes1@gmail.com' },
-                  { icon: '📍', label: 'Location', value: 'P-35 Chenab Market Susan Road Madina Town, Faisalabad, Pakistan' },
-                ].map((c, i) => (
-                  <div key={i} style={{
-                    display:       'flex',
-                    gap:           '12px',
-                    alignItems:    'center',
-                    paddingBottom: i < 2 ? '12px' : '0',
-                    marginBottom:  i < 2 ? '12px' : '0',
-                    borderBottom:  i < 2 ? '1px solid rgba(255,255,255,0.05)' : 'none',
-                  }}>
-                    <span style={{ fontSize: '16px' }}>{c.icon}</span>
-                    <div>
-                      <p style={{ color: 'var(--gray-mid)', fontSize: '11px', fontWeight: '600', letterSpacing: '1px', textTransform: 'uppercase' }}>
-                        {c.label}
-                      </p>
-                      <p style={{ color: 'var(--white)', fontSize: '14px' }}>{c.value}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Right: Form */}
-            <div className="form-sticky">
-              {submitted ? (
-                <SuccessState onReset={() => setSubmitted(false)} />
-              ) : (
-                <div style={{
-                  background:   'var(--black-2)',
-                  border:       '1px solid rgba(255,255,255,0.08)',
-                  borderRadius: '16px',
-                  overflow:     'hidden',
-                }}>
-                  <div style={{
-                    background:   'var(--black-3)',
-                    padding:      '20px 28px',
-                    borderBottom: '1px solid rgba(255,255,255,0.06)',
-                  }}>
-                    <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '20px', letterSpacing: '2px' }}>
-                      LET'S GROW YOUR BRAND
-                    </h3>
-                    <p style={{ color: 'var(--gray-mid)', fontSize: '12px', marginTop: '4px' }}>
-                      Tell us what you need and our team will contact you shortly.
-                    </p>
-                  </div>
-
-                  <div style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
-                    <div className="field-row">
-                      <Field label="Your Name *"        name="name"      placeholder="Ahmed Khan"          value={form.name}      onChange={handleField} />
-                      <Field label="WhatsApp Number *"  name="phone"     type="tel" placeholder="+92 300 000 0000" value={form.phone} onChange={handleField} />
-                    </div>
-                    <Field label="Email Address" name="email" type="email" placeholder="you@email.com" value={form.email} onChange={handleField} />
-
-                    <div>
-                      <label style={labelStyle}>Service Interested In *</label>
-
-                      <select
-                        name="serviceType"
-                        value={form.serviceType}
-                        onChange={handleField}
-                        className="input"
-                        style={{ cursor: 'pointer' }}
-                      >
-                        <option value="">Select a service...</option>
-
-                        {SERVICE_TYPES.map(service => (
-                          <option key={service} value={service}>
-                            {service}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label style={labelStyle}>Budget Range</label>
-                      <select name="budget" value={form.budget} onChange={handleField} className="input" style={{ cursor: 'pointer' }}>
-                        <option value="">Select budget range...</option>
-                        {BUDGET_RANGES.map(b => <option key={b} value={b}>{b}</option>)}
-                      </select>
-                    </div>
-
-                    <div className="field-row">
-                      <Field
-                        label="Business / Brand Name"
-                        name="business"
-                        placeholder="Your business name"
-                        value={form.business}
-                        onChange={handleField}
-                      />
-
-                      <Field
-                        label="Monthly Marketing Budget"
-                        name="marketingBudget"
-                        placeholder="Optional"
-                        value={form.marketingBudget}
-                        onChange={handleField}
-                      />
-                    </div>
-
-                    <div>
-                      <label style={labelStyle}>Additional Notes</label>
-                      <textarea
-                        name="message"
-                        placeholder="Tell us about your business, goals, campaign idea, or requirements..."
-                        value={form.message}
-                        onChange={handleField}
-                        className="input"
-                        rows={4}
-                        style={{ resize: 'vertical', minHeight: '100px' }}
-                      />
-                    </div>
-
-                    <button
-                      onClick={handleSubmit}
-                      disabled={!isValid}
-                      className="btn-gold"
-                      style={{
-                        width:   '100%',
-                        fontSize:'15px',
-                        padding: '16px',
-                        opacity: isValid ? 1 : 0.5,
-                        cursor:  isValid ? 'pointer' : 'not-allowed',
-                        gap:     '10px',
-                      }}
-                    >
-                      Send via WhatsApp
-                    </button>
-
-                    <p style={{ color: 'var(--gray-mid)', fontSize: '11px', textAlign: 'center', lineHeight: '1.5' }}>
-                      Clicking the button will open WhatsApp with a pre-filled message.
-                      No account needed, just hit Send.
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
-
+          <div className="bm-service-grid">
+            {SERVICES.map(service => (
+              <article className="bm-service-card" key={service.number}>
+                <span className="bm-service-number">{service.number}</span>
+                <p className="bm-service-eyebrow">{service.eyebrow}</p>
+                <h3>{service.title}</h3>
+                <span className="bm-card-rule" />
+                <p className="bm-service-text">{service.text}</p>
+                <ul>{service.tags.map(tag => <li key={tag}>{tag}</li>)}</ul>
+                <button type="button" className="bm-card-link" onClick={() => { setForm(current => ({ ...current, serviceType: current.serviceType || service.title })); document.getElementById('booking-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }}>Discuss this service <span>&rarr;</span></button>
+              </article>
+            ))}
           </div>
         </div>
       </section>
 
-      <style>{`
-        /* Services grid */
-        .services-grid {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 24px;
-          align-items: stretch;
-        }
-        .service-card {
-          background: var(--black-2);
-          border: 1px solid rgba(255,255,255,0.07);
-          border-radius: 16px;
-          overflow: hidden;
-          transition: border-color 0.25s, transform 0.25s;
-          display: flex;
-          flex-direction: column;
-        }
-        .service-card:hover {
-          border-color: rgba(245,158,11,0.25);
-          transform: translateY(-4px);
-        }
-        .service-card--highlight {
-          border-color: rgba(245,158,11,0.2);
-          background: linear-gradient(160deg, rgba(245,158,11,0.06) 0%, var(--black-2) 50%);
-        }
-        .service-card-inner {
-          padding: 28px;
-          display: flex;
-          flex-direction: column;
-          flex: 1;
-        }
-        .service-badge {
-          display: inline-block;
-          background: rgba(245,158,11,0.1);
-          border: 1px solid rgba(245,158,11,0.2);
-          color: var(--gold);
-          font-size: 10px;
-          font-weight: 700;
-          letter-spacing: 0.8px;
-          text-transform: uppercase;
-          padding: 3px 8px;
-          border-radius: 4px;
-        }
-        .service-features {
-          list-style: none;
-          padding: 0;
-          margin: 0 0 28px;
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-          flex: 1;
-        }
-        .service-features li {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          color: var(--gray-light);
-          font-size: 13px;
-          line-height: 1.4;
-        }
-        .service-features li::before {
-          content: '';
-          width: 5px;
-          height: 5px;
-          border-radius: 50%;
-          background: var(--gold);
-          flex-shrink: 0;
-          opacity: 0.7;
-        }
-        .service-footer {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding-top: 20px;
-          border-top: 1px solid rgba(255,255,255,0.06);
-          gap: 12px;
-        }
+      <section className="bm-form-section" id="booking-form">
+        <div className="container">
+          <div className="bm-form-heading">
+            <p className="bm-kicker"><i /> Start a conversation</p>
+            <h2>WHAT DO YOU<br /><em>WANT TO MOVE?</em></h2>
+            <p>A bigger weekend crowd, a restaurant launch, a smarter content rhythm, or the next event on the calendar - we can shape the right campaign together.</p>
+          </div>
 
-        /* Book form grid */
-        .book-grid {
-          display: grid;
-          grid-template-columns: minmax(0, 1fr) minmax(0, 480px);
-          gap: 64px;
-          align-items: start;
-        }
-        .form-sticky {
-          position: sticky;
-          top: 104px;
-        }
-        .field-row {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 12px;
-        }
+          <div className="bm-book-grid">
+            <aside className="bm-differentiator-column">
+              <div className="bm-differentiator-intro">
+                <p className="bm-kicker"><i /> Why Faisalabad Times</p>
+                <h3>LOCAL CONTEXT.<br /><em>REAL CREATIVE.</em></h3>
+                <p>We combine local audience understanding with practical digital marketing and a content team that can turn a good brief into work people notice.</p>
+              </div>
+              <div className="bm-differentiator-grid">
+                {DIFFERENTIATORS.map((item, index) => <article key={item.title}><span>{String(index + 1).padStart(2, '0')}</span><h4>{item.title}</h4><p>{item.text}</p></article>)}
+              </div>
+              <div className="bm-contact-card">
+                <p className="bm-kicker"><i /> Contact directly</p>
+                <a href="https://wa.me/923052226673" target="_blank" rel="noreferrer"><small>WhatsApp</small><strong>+92 305 2226673</strong></a>
+                <a href="mailto:fsdtimes1@gmail.com"><small>Email</small><strong>fsdtimes1@gmail.com</strong></a>
+              </div>
+            </aside>
 
-        /* Mobile */
-        @media (max-width: 900px) {
-        .services-grid {
-          display: flex;
-          grid-template-columns: unset;
-          overflow-x: auto;
-          scroll-snap-type: x mandatory;
-          gap: 16px;
-          padding-bottom: 8px;
-          -webkit-overflow-scrolling: touch;
-          max-width: 100%;
-        }
-        .service-card {
-          flex: 0 0 85%;
-          scroll-snap-align: center;
-        }
-      }
-        @media (max-width: 768px) {
-          .book-grid {
-            grid-template-columns: 1fr;
-            gap: 40px;
-          }
-          .book-grid > div:last-child { order: -1; }
-          .form-sticky { position: static; }
-          .field-row { grid-template-columns: 1fr; }
-        }
-
-        select.input option {
-          background: #1a1a1a;
-          color: #fff;
-        }
-      `}</style>
-
-    </div>
+            <div className="bm-form-sticky">
+              {submitted ? <SuccessState onReset={() => setSubmitted(false)} /> : <div className="bm-form-card">
+                <div className="bm-form-card-head"><p className="bm-kicker"><i /> Campaign brief</p><h3>LET&apos;S BUILD YOUR NEXT MOVE.</h3><p>Share a few details. We will prepare a helpful WhatsApp conversation, not an automated contract.</p></div>
+                <div className="bm-form-fields">
+                  <div className="bm-field-row"><Field label="Your Name *" name="name" placeholder="Ahmed Khan" value={form.name} onChange={handleField} /><Field label="WhatsApp Number *" name="phone" type="tel" placeholder="+92 300 000 0000" value={form.phone} onChange={handleField} /></div>
+                  <Field label="Email Address" name="email" type="email" placeholder="you@email.com" value={form.email} onChange={handleField} />
+                  <div><label className="bm-label">Campaign or service interested in *</label><select name="serviceType" value={form.serviceType} onChange={handleField} className="bm-input"><option value="">Select a service...</option>{SERVICE_TYPES.map(service => <option key={service} value={service}>{service}</option>)}</select></div>
+                  <div className="bm-field-row"><div><label className="bm-label">Estimated budget</label><select name="budget" value={form.budget} onChange={handleField} className="bm-input"><option value="">Select a budget range...</option>{BUDGET_RANGES.map(range => <option key={range} value={range}>{range}</option>)}</select></div><Field label="Monthly marketing budget" name="marketingBudget" placeholder="Optional" value={form.marketingBudget} onChange={handleField} /></div>
+                  <Field label="Business, brand or event name" name="business" placeholder="Your business, restaurant, brand or event" value={form.business} onChange={handleField} />
+                  <div><label className="bm-label">What would success look like?</label><textarea name="message" placeholder="For example: more restaurant footfall, a reel campaign, a launch collaboration, event promotion, or a stronger monthly content plan..." value={form.message} onChange={handleField} className="bm-input" rows={5} /></div>
+                  <button type="button" onClick={handleSubmit} disabled={!isValid} className="bm-submit">Send via WhatsApp <span>&rarr;</span></button>
+                  <p className="bm-form-note">This opens WhatsApp with your campaign brief pre-filled. No account or payment is required.</p>
+                </div>
+              </div>}
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
   )
-}
-
-const labelStyle = {
-  display:       'block',
-  color:         'var(--gray-light)',
-  fontSize:      '11px',
-  fontWeight:    '600',
-  letterSpacing: '1px',
-  textTransform: 'uppercase',
-  marginBottom:  '8px',
 }
 
 function Field({ label, name, type = 'text', placeholder, value, onChange }) {
-  return (
-    <div>
-      <label style={labelStyle}>{label}</label>
-      <input
-        className="input"
-        type={type}
-        name={name}
-        placeholder={placeholder}
-        value={value}
-        onChange={onChange}
-      />
-    </div>
-  )
+  return <label><span className="bm-label">{label}</span><input className="bm-input" type={type} name={name} placeholder={placeholder} value={value} onChange={onChange} /></label>
 }
 
 function SuccessState({ onReset }) {
-  return (
-    <div style={{
-      background:   'var(--black-2)',
-      border:       '1px solid rgba(245,158,11,0.2)',
-      borderRadius: '16px',
-      padding:      '48px 32px',
-      textAlign:    'center',
-    }}>
-      <div style={{
-        width: '80px', height: '80px', borderRadius: '50%',
-        background: 'rgba(245,158,11,0.1)', border: '2px solid rgba(245,158,11,0.3)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        margin: '0 auto 24px', fontSize: '36px',
-      }}>
-        💬
-      </div>
-      <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '28px', letterSpacing: '2px', marginBottom: '12px' }}>
-        OPENING WHATSAPP
-      </h3>
-      <p style={{
-        color: 'var(--gray-light)', fontSize: '14px', lineHeight: '1.6',
-        maxWidth: '320px', margin: '0 auto 28px',
-      }}>
-        WhatsApp should open with your message pre-filled. Just hit Send & we'll respond within a few hours.
-      </p>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        <button onClick={onReset} className="btn-ghost" style={{ width: '100%' }}>
-          Edit My Details
-        </button>
-        <Link to="/events" className="btn-gold" style={{ width: '100%', justifyContent: 'center' }}>
-          Browse Events →
-        </Link>
-      </div>
-    </div>
-  )
+  return <div className="bm-success"><div><i>OK</i></div><p className="bm-kicker"><i /> Message prepared</p><h3>WHATSAPP IS READY.</h3><p>Your brief has been prepared. Send the message in WhatsApp and our team will get back to you soon.</p><button type="button" onClick={onReset}>Edit my details</button><Link to="/events">Browse events <span>&middot;</span></Link></div>
 }
+
+const bookMeetingCss = String.raw`
+  .bm-page{--bm-blue:#29dcff;--bm-soft:#a9f4ff;--bm-ink:#050b14;--bm-panel:#0b1725;min-height:100vh;overflow:hidden;background:linear-gradient(160deg,#050b14 0%,#091b2d 42%,#050b14 100%);color:#f2fbff}.bm-page *{box-sizing:border-box}.bm-hero{position:relative;overflow:hidden;padding:126px 0 86px;border-bottom:1px solid rgba(63,146,196,.2);background:linear-gradient(100deg,rgba(6,36,57,.92),rgba(5,13,23,.86))}.bm-hero::before{position:absolute;inset:0;content:'';background:radial-gradient(circle at 18% 45%,rgba(41,220,255,.2),transparent 27%),linear-gradient(90deg,rgba(41,220,255,.08) 1px,transparent 1px),linear-gradient(rgba(41,220,255,.08) 1px,transparent 1px);background-size:auto,58px 58px,58px 58px;mask-image:linear-gradient(90deg,black,transparent 82%);pointer-events:none}.bm-hero .container{position:relative;z-index:1}.bm-kicker{display:flex;align-items:center;gap:8px;margin:0;color:var(--bm-soft);font-size:10px;font-weight:900;letter-spacing:.16em;text-transform:uppercase}.bm-kicker i,.bm-submit::before{width:7px;height:7px;border-radius:50%;background:var(--bm-blue);box-shadow:0 0 0 4px rgba(41,220,255,.13)}.bm-hero h1,.bm-section-head h2,.bm-form-heading h2,.bm-differentiator-intro h3,.bm-success h3{margin:14px 0 0;font-family:'Bebas Neue',Impact,sans-serif;font-weight:400;letter-spacing:.015em;line-height:.85}.bm-hero h1{font-size:clamp(4.1rem,8vw,7.4rem)}.bm-hero em,.bm-section-head em,.bm-form-heading em,.bm-differentiator-intro em{color:var(--bm-blue);font-style:normal}.bm-hero .container>p:last-child{max-width:590px;margin:22px 0 0;color:#b5cad8;font-size:16px;line-height:1.7}.bm-services-section{padding:100px 0;background:linear-gradient(180deg,rgba(4,13,23,.35),rgba(8,27,44,.72))}.bm-section-head{display:flex;align-items:end;justify-content:space-between;gap:34px}.bm-section-head h2{font-size:clamp(3rem,5vw,5.65rem)}.bm-section-head>p{max-width:410px;margin:0;color:#a5c1d4;font-size:14px;line-height:1.7}.bm-service-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:46px}.bm-service-card{position:relative;display:flex;min-height:340px;flex-direction:column;overflow:hidden;border:1px solid rgba(61,125,165,.52);border-radius:15px;padding:25px;background:linear-gradient(155deg,rgba(15,38,59,.95),rgba(5,15,26,.95));transition:border-color .2s,transform .2s,box-shadow .2s}.bm-service-card::after{position:absolute;right:-18px;bottom:-25px;width:130px;height:130px;border:1px solid rgba(41,220,255,.09);border-radius:50%;content:''}.bm-service-card:hover{border-color:var(--bm-blue);box-shadow:0 16px 32px rgba(17,130,196,.18);transform:translateY(-5px)}.bm-service-number{position:absolute;top:20px;right:20px;color:#4c7793;font-size:11px;font-weight:900;letter-spacing:.12em}.bm-service-eyebrow{margin:0;color:var(--bm-soft);font-size:10px;font-weight:900;letter-spacing:.13em;text-transform:uppercase}.bm-service-card h3{max-width:255px;margin:18px 0 0;font-family:'Bebas Neue',Impact,sans-serif;font-size:2.15rem;font-weight:400;letter-spacing:.02em;line-height:.95}.bm-card-rule{width:38px;height:2px;margin:22px 0;background:var(--bm-blue);box-shadow:0 0 11px rgba(41,220,255,.8)}.bm-service-text{margin:0;color:#a5c1d4;font-size:12px;line-height:1.68}.bm-service-card ul{position:relative;z-index:1;display:flex;flex:1;flex-direction:column;justify-content:end;gap:7px;margin:20px 0;padding:0;list-style:none}.bm-service-card li{color:#d5edf8;font-size:11px}.bm-service-card li::before{margin-right:8px;color:var(--bm-blue);content:'\2022'}.bm-card-link{position:relative;z-index:1;display:flex;justify-content:space-between;border:0;border-top:1px solid rgba(121,202,246,.17);padding:14px 0 0;background:transparent;color:var(--bm-blue);font-size:11px;font-weight:900;text-align:left;cursor:pointer}.bm-card-link:hover{color:#e6fbff}.bm-card-link span{font-size:14px}.bm-form-section{padding:106px 0;background:#06111e}.bm-form-heading{max-width:620px}.bm-form-heading h2{font-size:clamp(3.2rem,5.6vw,5.8rem)}.bm-form-heading>p:last-child{max-width:540px;margin:20px 0 0;color:#a9c2d3;font-size:15px;line-height:1.7}.bm-book-grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(360px,.95fr);align-items:start;gap:clamp(35px,6vw,82px);margin-top:52px}.bm-differentiator-column{display:flex;flex-direction:column;gap:27px}.bm-differentiator-intro h3{font-size:clamp(2.3rem,3.4vw,3.5rem)}.bm-differentiator-intro>p:last-child{margin:18px 0 0;color:#a9c2d3;font-size:14px;line-height:1.7}.bm-differentiator-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.bm-differentiator-grid article{min-height:168px;border:1px solid rgba(61,125,165,.38);border-radius:13px;padding:19px;background:linear-gradient(145deg,rgba(15,38,59,.7),rgba(5,15,26,.76))}.bm-differentiator-grid span{color:var(--bm-blue);font-size:10px;font-weight:900;letter-spacing:.1em}.bm-differentiator-grid h4{margin:21px 0 8px;font-family:'Bebas Neue',Impact,sans-serif;font-size:1.55rem;font-weight:400;letter-spacing:.02em;line-height:.95}.bm-differentiator-grid p{margin:0;color:#a5c1d4;font-size:11px;line-height:1.6}.bm-contact-card{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid rgba(41,220,255,.35);border-radius:13px;overflow:hidden;background:rgba(10,38,56,.72)}.bm-contact-card>.bm-kicker{grid-column:1/-1;padding:18px 20px 0}.bm-contact-card a{display:flex;flex-direction:column;gap:5px;padding:19px 20px;color:#e7faff;text-decoration:none}.bm-contact-card a+a{border-left:1px solid rgba(121,202,246,.17)}.bm-contact-card small{color:#8fc9db;font-size:9px;font-weight:900;letter-spacing:.13em;text-transform:uppercase}.bm-contact-card strong{font-size:12px}.bm-form-sticky{position:sticky;top:105px}.bm-form-card,.bm-success{overflow:hidden;border:1px solid rgba(85,161,204,.42);border-radius:16px;background:linear-gradient(150deg,rgba(14,33,50,.98),rgba(6,15,26,.98));box-shadow:0 28px 45px rgba(0,0,0,.2)}.bm-form-card-head{border-bottom:1px solid rgba(121,202,246,.18);padding:26px 28px;background:linear-gradient(100deg,rgba(17,69,97,.48),rgba(8,20,34,.5))}.bm-form-card-head h3{margin:17px 0 0;font-family:'Bebas Neue',Impact,sans-serif;font-size:2.15rem;font-weight:400;letter-spacing:.02em;line-height:.92}.bm-form-card-head>p:last-child{margin:10px 0 0;color:#a9c2d3;font-size:12px;line-height:1.6}.bm-form-fields{display:flex;flex-direction:column;gap:17px;padding:27px}.bm-field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}.bm-label{display:block;margin-bottom:8px;color:#c0d5e2;font-size:10px;font-weight:900;letter-spacing:.1em;text-transform:uppercase}.bm-input{width:100%;border:1px solid rgba(77,139,178,.44);border-radius:10px;padding:13px 14px;background:rgba(16,37,58,.92);color:#effbff;font-family:inherit;font-size:13px;outline:none;transition:border-color .16s,box-shadow .16s}.bm-input:focus{border-color:var(--bm-blue);box-shadow:0 0 0 3px rgba(41,220,255,.09)}.bm-input::placeholder{color:#6f8da1}.bm-input option{background:#0c1a29;color:#effbff}.bm-input textarea{resize:vertical}.bm-submit{display:flex;align-items:center;justify-content:center;gap:10px;border:1px solid var(--bm-blue);border-radius:10px;padding:15px;background:var(--bm-blue);color:#03141b;font-size:12px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:transform .16s,box-shadow .16s}.bm-submit::before{display:block;content:'';background:#03141b;box-shadow:0 0 0 4px rgba(3,20,27,.12)}.bm-submit:hover:not(:disabled){box-shadow:0 10px 25px rgba(41,220,255,.25);transform:translateY(-2px)}.bm-submit:disabled{cursor:not-allowed;opacity:.45}.bm-submit span{font-size:15px}.bm-form-note{margin:0;color:#7795aa;font-size:10px;line-height:1.55;text-align:center}.bm-success{padding:46px 30px;text-align:center}.bm-success>div{display:grid;width:75px;height:75px;margin:0 auto 21px;place-items:center;border:1px solid rgba(41,220,255,.45);border-radius:50%;background:rgba(41,220,255,.1);color:var(--bm-blue);font-size:28px}.bm-success .bm-kicker{justify-content:center}.bm-success h3{font-size:2.6rem}.bm-success>p:last-of-type{max-width:340px;margin:16px auto 25px;color:#a9c2d3;font-size:13px;line-height:1.65}.bm-success button,.bm-success a{display:flex;align-items:center;justify-content:center;width:100%;border-radius:10px;padding:13px;font-size:12px;font-weight:900;text-decoration:none;cursor:pointer}.bm-success button{border:1px solid rgba(121,202,246,.36);background:transparent;color:#e6fbff}.bm-success a{margin-top:10px;background:var(--bm-blue);color:#03141b}.bm-success a span{margin-left:6px;color:#03141b;font-size:16px}@media(max-width:980px){.bm-service-grid{grid-template-columns:repeat(2,1fr)}.bm-book-grid{grid-template-columns:1fr;gap:42px}.bm-form-sticky{position:static}}@media(max-width:600px){.bm-hero{padding:103px 0 63px}.bm-services-section,.bm-form-section{padding:70px 0}.bm-section-head{align-items:flex-start;flex-direction:column;gap:17px}.bm-section-head h2,.bm-form-heading h2{font-size:3.15rem}.bm-service-grid{grid-template-columns:1fr;gap:12px;margin-top:30px}.bm-service-card{min-height:292px;padding:22px}.bm-book-grid{margin-top:35px}.bm-differentiator-grid{grid-template-columns:1fr}.bm-differentiator-grid article{min-height:0}.bm-contact-card{grid-template-columns:1fr}.bm-contact-card a+a{border-top:1px solid rgba(121,202,246,.17);border-left:0}.bm-field-row{grid-template-columns:1fr}.bm-form-card-head,.bm-form-fields{padding:22px}.bm-form-card-head h3{font-size:1.95rem}}@media(prefers-reduced-motion:reduce){.bm-service-card,.bm-submit{transition:none}}
+`

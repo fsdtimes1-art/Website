@@ -1,3 +1,4 @@
+/** Midnight Circuit app shell: static public pages with shared navigation and footer. */
 import { Routes, Route, useLocation } from 'react-router-dom'
 import { useEffect }                  from 'react'
 import Navbar                          from './components/Navbar'
@@ -23,11 +24,11 @@ function ScrollToTop() {
 
 export default function App() {
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <div className="ft-app-shell">
       <ScrollToTop />
       <Navbar />
 
-      <main style={{ flex: 1 }}>
+      <main className="ft-app-main">
         <Routes>
           <Route path="/"                  element={<Home />} />
           <Route path="/how-it-works"      element={<HowItWorks />} />
