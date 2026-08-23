@@ -432,6 +432,55 @@ router.patch('/purchases/:id/verify-whatsapp', requireAdmin, async (req, res) =>
   }
 });
 
+// DELETE /admin/purchases/:id
+// Permanently removes an unverified WhatsApp-pending purchase only.
+router.delete('/purchases/:id', requireAdmin, async (req, res) => {
+  try {
+    const { data: purchase, error: purchaseError } = await supabase
+      .from('purchases')
+      .select('id, status')
+      .eq('id', req.params.id)
+      .single();
+
+    if (purchaseError || !purchase) {
+      return res.status(404).json({ error: 'Purchase not found' });
+    }
+
+    if (purchase.status !== 'whatsapp_pending') {
+      return res.status(400).json({ error: 'Only unverified WhatsApp-pending purchases can be deleted' });
+    }
+
+    const { data: tickets, error: ticketsError } = await supabase
+      .from('tickets')
+      .select('id, scanned')
+      .eq('purchase_id', purchase.id)
+      .limit(1);
+
+    if (ticketsError) throw ticketsError;
+    if (tickets && tickets.length > 0) {
+      return res.status(400).json({ error: 'Cannot delete a purchase with issued or scanned tickets' });
+    }
+
+    // Re-check status in the mutation to avoid deleting a purchase verified concurrently.
+    const { data: deletedRows, error: deleteError } = await supabase
+      .from('purchases')
+      .delete()
+      .eq('id', purchase.id)
+      .eq('status', 'whatsapp_pending')
+      .select('id');
+
+    if (deleteError) throw deleteError;
+    if (!deletedRows || deletedRows.length === 0) {
+      return res.status(409).json({ error: 'Purchase was updated before deletion. Refresh and try again.' });
+    }
+
+    res.json({ success: true, id: purchase.id });
+  } catch (err) {
+    console.error('Delete WhatsApp purchase error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ============================================================
 // PORTFOLIO — admin only
 // ============================================================
