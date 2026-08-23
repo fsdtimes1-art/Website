@@ -21,11 +21,16 @@ const allowedOrigins = [
   'http://localhost:5174',
 ].filter(Boolean);
 
+// The separate admin Vercel project uses branch-specific Preview URLs.
+// Keep this narrowly scoped to that project so public or unrelated Vercel sites stay blocked.
+const isTrustedAdminPreviewOrigin = (origin) =>
+  /^https:\/\/website-git-[a-z0-9-]+-fsdtimes1-3083s-projects\.vercel\.app$/.test(origin);
+
 app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (mobile apps, curl, Postman)
     if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) return callback(null, true);
+    if (allowedOrigins.includes(origin) || isTrustedAdminPreviewOrigin(origin)) return callback(null, true);
     callback(new Error(`CORS blocked: ${origin}`));
   },
   credentials: true,
