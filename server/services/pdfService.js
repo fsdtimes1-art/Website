@@ -165,5 +165,3 @@ async function generateTicketPDF(tickets, event, category) {
 }
 
 module.exports = { generateTicketPDF };
-Manus is browsing...
-Take over
