@@ -10,11 +10,12 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-const FROM = `${process.env.FROM_NAME || 'EventFlow'} <${process.env.FROM_EMAIL}>`;
+const BRAND_NAME = 'Faisalabad Times';
+const BRAND_TAGLINE = "Faisalabad's Event Desk";
+const BRAND_ACCENT = '#29dcff';
+const FROM = `${BRAND_NAME} <${process.env.FROM_EMAIL}>`;
 
-// ============================================================
-// EMAIL 1 — Payment Confirmation
-// ============================================================
+// EMAIL 1 - Payment Confirmation
 async function sendPaymentConfirmation({
   buyerEmail,
   buyerName,
@@ -45,9 +46,9 @@ async function sendPaymentConfirmation({
     body { font-family: Arial, sans-serif; background: #f4f4f5; padding: 32px 16px; }
     .wrap { max-width: 560px; margin: 0 auto; background: #fff; border-radius: 12px; overflow: hidden; }
     .header { background: #0a0a0a; padding: 36px 32px; text-align: center; }
-    .header h1 { color: #f59e0b; font-size: 26px; letter-spacing: 5px; margin-bottom: 6px; }
+    .header h1 { color: ${BRAND_ACCENT}; font-size: 26px; letter-spacing: 3px; margin-bottom: 6px; }
     .header p { color: #9ca3af; font-size: 13px; }
-    .badge { display: inline-block; background: #f59e0b; color: #000; font-size: 11px; font-weight: 700; padding: 6px 18px; border-radius: 20px; margin-top: 14px; }
+    .badge { display: inline-block; background: ${BRAND_ACCENT}; color: #000; font-size: 11px; font-weight: 700; padding: 6px 18px; border-radius: 20px; margin-top: 14px; }
     .body { padding: 32px; }
     .greeting { font-size: 18px; font-weight: 600; color: #111; margin-bottom: 6px; }
     .subtitle { color: #6b7280; font-size: 14px; line-height: 1.5; margin-bottom: 24px; }
@@ -56,17 +57,17 @@ async function sendPaymentConfirmation({
     .card-value { font-size: 15px; font-weight: 600; color: #111; }
     .total-row { background: #0a0a0a; border-radius: 8px; padding: 18px 20px; display: flex; justify-content: space-between; align-items: center; margin-top: 4px; }
     .total-label { color: #9ca3af; font-size: 14px; }
-    .total-value { color: #f59e0b; font-size: 24px; font-weight: 700; }
-    .notice { background: #fffbeb; border: 1px solid #fcd34d; border-radius: 8px; padding: 14px 16px; margin-top: 20px; font-size: 13px; color: #92400e; line-height: 1.5; }
+    .total-value { color: ${BRAND_ACCENT}; font-size: 24px; font-weight: 700; }
+    .notice { background: #effcff; border: 1px solid #8aeaff; border-radius: 8px; padding: 14px 16px; margin-top: 20px; font-size: 13px; color: #075985; line-height: 1.5; }
     .footer { background: #f9fafb; padding: 20px 32px; text-align: center; font-size: 12px; color: #9ca3af; border-top: 1px solid #f3f4f6; }
   </style>
 </head>
 <body>
   <div class="wrap">
     <div class="header">
-      <h1>EVENTFLOW</h1>
-      <p>Professional Event Management</p>
-      <span class="badge">✓ BOOKING CONFIRMED</span>
+      <h1>${BRAND_NAME.toUpperCase()}</h1>
+      <p>${BRAND_TAGLINE}</p>
+      <span class="badge">BOOKING CONFIRMED</span>
     </div>
     <div class="body">
       <p class="greeting">Hello, ${buyerName}!</p>
@@ -80,10 +81,10 @@ async function sendPaymentConfirmation({
         <span class="total-label">Total</span>
         <span class="total-value">PKR ${Number(totalAmount).toLocaleString()}</span>
       </div>
-      <div class="notice">🎟️ Your ticket PDF is on its way in a second email. Present the QR code at the venue entrance.</div>
+      <div class="notice">Your ticket PDF is on its way in a second email. Present the QR code at the venue entrance.</div>
       <p style="font-size:11px;color:#d1d5db;margin-top:16px">Order Reference: ${purchaseId}</p>
     </div>
-    <div class="footer"><p><strong>EventFlow</strong> — Professional Event Management</p></div>
+    <div class="footer"><p><strong>${BRAND_NAME}</strong> - ${BRAND_TAGLINE}</p></div>
   </div>
 </body>
 </html>`;
@@ -91,14 +92,12 @@ async function sendPaymentConfirmation({
   await transporter.sendMail({
     from:    FROM,
     to:      buyerEmail,
-    subject: `✅ Booking Confirmed — ${eventName}`,
+    subject: `Booking Confirmed - ${eventName}`,
     html,
   });
 }
 
-// ============================================================
-// EMAIL 2 — Ticket with PDF attachment
-// ============================================================
+// EMAIL 2 - Ticket with PDF attachment
 async function sendTicketEmail({
   buyerEmail,
   buyerName,
@@ -116,7 +115,7 @@ async function sendTicketEmail({
     body { font-family: Arial, sans-serif; background: #f4f4f5; padding: 32px 16px; }
     .wrap { max-width: 560px; margin: 0 auto; background: #fff; border-radius: 12px; overflow: hidden; }
     .header { background: #0a0a0a; padding: 36px 32px; text-align: center; }
-    .header h1 { color: #f59e0b; font-size: 26px; letter-spacing: 5px; }
+    .header h1 { color: ${BRAND_ACCENT}; font-size: 26px; letter-spacing: 3px; }
     .body { padding: 36px 32px; }
     .icon { font-size: 52px; text-align: center; margin-bottom: 16px; }
     .title { font-size: 22px; font-weight: 700; color: #111; text-align: center; margin-bottom: 8px; }
@@ -129,9 +128,9 @@ async function sendTicketEmail({
 </head>
 <body>
   <div class="wrap">
-    <div class="header"><h1>EVENTFLOW</h1></div>
+    <div class="header"><h1>${BRAND_NAME.toUpperCase()}</h1></div>
     <div class="body">
-      <div class="icon">🎟️</div>
+      <div class="icon">TICKET</div>
       <div class="title">Your Ticket${tickets.length > 1 ? 's Are' : ' Is'} Here!</div>
       <div class="subtitle">Hi ${buyerName}, your ticket${tickets.length > 1 ? 's are' : ' is'} attached as a PDF.</div>
       <div style="border-radius:8px;overflow:hidden;margin-bottom:28px">
@@ -139,7 +138,7 @@ async function sendTicketEmail({
       </div>
       <p style="font-size:13px;color:#374151;line-height:1.6">Open the attached PDF, save it to your phone or print it, and show the QR code at the entrance. Each QR code is valid for one scan only.</p>
     </div>
-    <div class="footer"><p><strong>EventFlow</strong> — Professional Event Management</p></div>
+    <div class="footer"><p><strong>${BRAND_NAME}</strong> - ${BRAND_TAGLINE}</p></div>
   </div>
 </body>
 </html>`;
@@ -147,7 +146,7 @@ async function sendTicketEmail({
   await transporter.sendMail({
     from:    FROM,
     to:      buyerEmail,
-    subject: `🎟️ Your Tickets — ${eventName}`,
+    subject: `Your Tickets - ${eventName}`,
     html,
     attachments: [{
       filename: `tickets-${eventName.replace(/\s+/g, '-').toLowerCase()}.pdf`,
@@ -156,9 +155,7 @@ async function sendTicketEmail({
   });
 }
 
-// ============================================================
-// EMAIL 3 — Event Reminder (1 day before)
-// ============================================================
+// EMAIL 3 - Event Reminder (1 day before)
 async function sendEventReminder({
   buyerEmail,
   buyerName,
@@ -193,13 +190,13 @@ async function sendEventReminder({
     body { font-family: Arial, sans-serif; background: #f4f4f5; padding: 32px 16px; }
     .wrap { max-width: 560px; margin: 0 auto; background: #fff; border-radius: 12px; overflow: hidden; }
     .header { background: #0a0a0a; padding: 36px 32px; text-align: center; }
-    .header h1 { color: #f59e0b; font-size: 26px; letter-spacing: 5px; margin-bottom: 6px; }
+    .header h1 { color: ${BRAND_ACCENT}; font-size: 26px; letter-spacing: 3px; margin-bottom: 6px; }
     .header p { color: #9ca3af; font-size: 13px; }
     .badge { display: inline-block; background: #ef4444; color: #fff; font-size: 11px; font-weight: 700; padding: 6px 18px; border-radius: 20px; margin-top: 14px; letter-spacing: 1px; }
     .body { padding: 32px; }
     .countdown-box { background: #0a0a0a; border-radius: 10px; padding: 22px; text-align: center; margin-bottom: 24px; }
     .countdown-label { color: #9ca3af; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 6px; }
-    .countdown-value { color: #f59e0b; font-size: 32px; font-weight: 700; letter-spacing: 1px; }
+    .countdown-value { color: ${BRAND_ACCENT}; font-size: 32px; font-weight: 700; letter-spacing: 1px; }
     .countdown-sub { color: #6b7280; font-size: 13px; margin-top: 4px; }
     .greeting { font-size: 18px; font-weight: 600; color: #111; margin-bottom: 6px; }
     .subtitle { color: #6b7280; font-size: 14px; line-height: 1.5; margin-bottom: 24px; }
@@ -215,9 +212,9 @@ async function sendEventReminder({
 <body>
   <div class="wrap">
     <div class="header">
-      <h1>EVENTFLOW</h1>
-      <p>Professional Event Management</p>
-      <span class="badge">⏰ TOMORROW'S THE DAY</span>
+      <h1>${BRAND_NAME.toUpperCase()}</h1>
+      <p>${BRAND_TAGLINE}</p>
+      <span class="badge">TOMORROW'S THE DAY</span>
     </div>
     <div class="body">
       <div class="countdown-box">
@@ -233,15 +230,15 @@ async function sendEventReminder({
       <div class="card"><div class="card-label">Category</div><div class="card-value">${categoryName}</div></div>
       <div class="card"><div class="card-label">Quantity</div><div class="card-value">${quantity} ticket${quantity > 1 ? 's' : ''}</div></div>
       <div class="checklist">
-        <div class="checklist-title">✅ Pre-Event Checklist</div>
-        <div class="checklist-item">🎟️ Save your ticket PDF to your phone or print it</div>
-        <div class="checklist-item">📍 Check the venue location in advance</div>
-        <div class="checklist-item">🕐 Arrive a few minutes early to avoid queues</div>
-        <div class="checklist-item">📵 Have your QR code ready to scan at the gate</div>
+        <div class="checklist-title">Pre-Event Checklist</div>
+        <div class="checklist-item">Save your ticket PDF to your phone or print it</div>
+        <div class="checklist-item">Check the venue location in advance</div>
+        <div class="checklist-item">Arrive a few minutes early to avoid queues</div>
+        <div class="checklist-item">Have your QR code ready to scan at the gate</div>
       </div>
       <p style="font-size:11px;color:#d1d5db;margin-top:16px">Order Reference: ${purchaseId}</p>
     </div>
-    <div class="footer"><p><strong>EventFlow</strong> — Professional Event Management</p></div>
+    <div class="footer"><p><strong>${BRAND_NAME}</strong> - ${BRAND_TAGLINE}</p></div>
   </div>
 </body>
 </html>`;
@@ -249,9 +246,11 @@ async function sendEventReminder({
   await transporter.sendMail({
     from:    FROM,
     to:      buyerEmail,
-    subject: `⏰ Reminder: ${eventName} is Tomorrow!`,
+    subject: `Reminder: ${eventName} is Tomorrow!`,
     html,
   });
 }
 
 module.exports = { sendPaymentConfirmation, sendTicketEmail, sendEventReminder };
+Manus is browsing...
+Take over
