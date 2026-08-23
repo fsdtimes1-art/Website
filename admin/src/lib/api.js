@@ -24,6 +24,8 @@ export function clearStoredKey() {
 async function request(path, options = {}, useAdminBase = true) {
   const base = useAdminBase ? BASE : (import.meta.env.VITE_API_URL || '') + '/api'
   const res  = await fetch(`${base}${path}`, {
+    // Required for Vercel-authenticated cross-origin Preview API requests.
+    credentials: 'include',
     headers: {
       'Content-Type':  'application/json',
       'x-admin-key':   getStoredKey(),
@@ -47,6 +49,8 @@ async function request(path, options = {}, useAdminBase = true) {
 
 export async function verifyAdminKey(key) {
   const res = await fetch(`${BASE}/me`, {
+    // Carry the logged-in browser's Vercel Preview credential to the backend Preview.
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
       'x-admin-key':  key,
@@ -119,6 +123,10 @@ export async function createManualSale(payload) {
 
 export async function verifyWhatsappPurchase(id) {
   return request(`/purchases/${id}/verify-whatsapp`, { method: 'PATCH' })
+}
+
+export async function deletePendingPurchase(id) {
+  return request(`/purchases/${id}`, { method: 'DELETE' })
 }
 
 // ============================================================

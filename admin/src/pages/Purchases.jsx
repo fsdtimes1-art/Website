@@ -1,6 +1,6 @@
 // admin/src/pages/Purchases.jsx
 import { useEffect, useState } from 'react'
-import { getPurchases, getAdminEvents, createManualSale, verifyWhatsappPurchase } from '../lib/api'
+import { getPurchases, getAdminEvents, createManualSale, verifyWhatsappPurchase, deletePendingPurchase } from '../lib/api'
 
 export default function Purchases() {
   const [purchases, setPurchases] = useState([])
@@ -12,6 +12,8 @@ export default function Purchases() {
   const [expanded,  setExpanded]  = useState(null)
   const [statusFilter, setStatusFilter] = useState('all') // all | whatsapp | completed
   const [verifyingId,  setVerifyingId]  = useState(null)
+  const [deleteTarget, setDeleteTarget] = useState(null)
+  const [deletingId,   setDeletingId]   = useState(null)
 
   // ── Manual-sale modal state ──
   const [showModal,   setShowModal]   = useState(false)
@@ -93,6 +95,22 @@ export default function Purchases() {
       alert(`Failed to verify: ${err.message}`)
     } finally {
       setVerifyingId(null)
+    }
+  }
+
+  async function handleDelete() {
+    if (!deleteTarget) return
+
+    setDeletingId(deleteTarget.id)
+    try {
+      await deletePendingPurchase(deleteTarget.id)
+      setExpanded(prev => prev === deleteTarget.id ? null : prev)
+      setDeleteTarget(null)
+      await fetchPurchases()
+    } catch (err) {
+      alert(`Failed to delete: ${err.message}`)
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -306,6 +324,8 @@ export default function Purchases() {
                     displayAmount={getDisplayAmount(p)}
                     onVerify={() => handleVerify(p.id)}
                     verifying={verifyingId === p.id}
+                    onDelete={() => setDeleteTarget(p)}
+                    deleting={deletingId === p.id}
                   />
                 ))}
               </tbody>
@@ -313,6 +333,65 @@ export default function Purchases() {
           </div>
         )}
       </div>
+
+      {/* ── Permanent deletion confirmation — eligible pending orders only ── */}
+      {deleteTarget && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 10000,
+          background: 'rgba(0,0,0,0.76)', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: '20px',
+        }}>
+          <div style={{
+            background: 'var(--black-2)', border: '1px solid rgba(239,68,68,0.38)',
+            borderRadius: '16px', width: '100%', maxWidth: '460px', padding: '30px',
+            boxShadow: '0 20px 70px rgba(0,0,0,0.5)',
+          }}>
+            <p style={{ color: '#f87171', fontSize: '10px', fontWeight: '700', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '6px' }}>
+              Irreversible action
+            </p>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '25px', letterSpacing: '2px', color: 'var(--white)', marginBottom: '14px' }}>
+              DELETE PENDING PURCHASE
+            </h2>
+            <p style={{ color: 'var(--gray-light)', fontSize: '13px', lineHeight: '1.65', marginBottom: '14px' }}>
+              Permanently delete the unverified WhatsApp order for <strong style={{ color: 'var(--white)' }}>{deleteTarget.buyer_name}</strong>?
+            </p>
+            <div style={{
+              background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.22)',
+              borderRadius: '8px', padding: '11px 13px', color: '#fca5a5', fontSize: '12px', lineHeight: '1.55',
+              marginBottom: '22px',
+            }}>
+              This cannot be undone. Only the pending purchase record will be removed; no tickets or seats have been issued for it.
+            </div>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                type="button"
+                onClick={() => setDeleteTarget(null)}
+                disabled={Boolean(deletingId)}
+                style={{
+                  flex: 1, background: 'transparent', border: '1px solid rgba(255,255,255,0.1)',
+                  color: 'var(--gray-light)', fontSize: '13px', padding: '11px', borderRadius: '8px',
+                  cursor: deletingId ? 'not-allowed' : 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={Boolean(deletingId)}
+                style={{
+                  flex: 1.35, background: deletingId ? 'rgba(239,68,68,0.45)' : '#ef4444', border: 'none',
+                  color: '#ffffff', fontSize: '13px', fontWeight: '700', padding: '11px', borderRadius: '8px',
+                  cursor: deletingId ? 'not-allowed' : 'pointer', letterSpacing: '0.3px',
+                }}
+              >
+                {deletingId ? 'Deleting…' : 'Delete permanently'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Add Sale Modal ── */}
       {showModal && (
@@ -499,9 +578,10 @@ function getDisplayAmount(p) {
   return Number(p.total_amount)
 }
 
-function PurchaseRow({ purchase: p, expanded, onToggle, displayAmount, onVerify, verifying }) {
+function PurchaseRow({ purchase: p, expanded, onToggle, displayAmount, onVerify, verifying, onDelete, deleting }) {
     const tickets = p.tickets || []
   const scanned = tickets.filter(t => t.scanned).length
+  const canDelete = p.status === 'whatsapp_pending' && tickets.length === 0
 
   const formattedDate = new Date(p.created_at).toLocaleDateString('en-PK', {
     day: 'numeric', month: 'short', year: 'numeric',
@@ -596,8 +676,23 @@ function PurchaseRow({ purchase: p, expanded, onToggle, displayAmount, onVerify,
           )}
         </td>
 
-        {/* Expand toggle */}
+        {/* Row actions */}
         <td style={{ minWidth: '40px', textAlign: 'center' }}>
+          {canDelete && (
+            <button
+              type="button"
+              onClick={e => { e.stopPropagation(); onDelete() }}
+              disabled={deleting}
+              title="Delete unverified pending purchase"
+              style={{
+                background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.28)',
+                color: '#f87171', fontSize: '11px', fontWeight: '700', padding: '5px 9px',
+                borderRadius: '14px', cursor: deleting ? 'not-allowed' : 'pointer', marginRight: '9px',
+              }}
+            >
+              {deleting ? 'Deleting…' : 'Delete'}
+            </button>
+          )}
           <span style={{
             color: 'var(--gray-mid)', fontSize: '14px',
             transition: 'transform 0.2s',
