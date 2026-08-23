@@ -121,6 +121,10 @@ export async function verifyWhatsappPurchase(id) {
   return request(`/purchases/${id}/verify-whatsapp`, { method: 'PATCH' })
 }
 
+export async function deletePendingPurchase(id) {
+  return request(`/purchases/${id}`, { method: 'DELETE' })
+}
+
 // ============================================================
 // PORTFOLIO
 // ============================================================
