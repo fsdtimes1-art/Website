@@ -252,5 +252,3 @@ async function sendEventReminder({
 }
 
 module.exports = { sendPaymentConfirmation, sendTicketEmail, sendEventReminder };
-Manus is browsing...
-Take over
