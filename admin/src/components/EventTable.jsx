@@ -73,11 +73,7 @@ function EventRow({ event, onToggle, onDelete }) {
     minute: '2-digit',
   })
 
-  function handleDelete() {
-    if (window.confirm(`Delete "${event.name}"? This cannot be undone.`)) {
-      onDelete(event.id)
-    }
-  }
+  const canPermanentlyDelete = isPast && !event.is_active
 
   return (
     <tr>
@@ -283,17 +279,19 @@ function EventRow({ event, onToggle, onDelete }) {
           </Link>
 
           <button
-            onClick={handleDelete}
+            onClick={() => onDelete(event)}
+            disabled={!canPermanentlyDelete}
             style={{
               display:      'inline-flex',
               alignItems:   'center',
               background:   'transparent',
               border:       '1px solid rgba(239,68,68,0.2)',
-              color:        '#f87171',
+              color:        canPermanentlyDelete ? '#f87171' : 'var(--gray-dark)',
               fontSize:     '12px',
               padding:      '6px 10px',
               borderRadius: '4px',
-              cursor:       'pointer',
+              cursor:       canPermanentlyDelete ? 'pointer' : 'not-allowed',
+              opacity:       canPermanentlyDelete ? 1 : 0.45,
               transition:   'all 0.15s',
             }}
             onMouseEnter={e => {
@@ -304,7 +302,9 @@ function EventRow({ event, onToggle, onDelete }) {
               e.currentTarget.style.background  = 'transparent'
               e.currentTarget.style.borderColor = 'rgba(239,68,68,0.2)'
             }}
-            title="Delete event"
+            title={canPermanentlyDelete
+              ? 'Permanently delete this hidden past event and its related records'
+              : 'Only hidden past events can be permanently deleted'}
           >
             🗑️
           </button>
