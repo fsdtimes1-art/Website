@@ -8,6 +8,9 @@ export default function Events() {
   const [loading, setLoading] = useState(true)
   const [error,   setError]   = useState(null)
   const [filter,  setFilter]  = useState('all') // all | active | hidden | past
+  const [deleteTarget, setDeleteTarget] = useState(null)
+  const [deleteName, setDeleteName] = useState('')
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     fetchEvents()
@@ -37,12 +40,23 @@ export default function Events() {
     }
   }
 
-  async function handleDelete(id) {
+  function handleDelete(event) {
+    setDeleteTarget(event)
+    setDeleteName('')
+  }
+
+  async function confirmDelete() {
+    if (!deleteTarget || deleteName !== deleteTarget.name) return
+    setDeleting(true)
     try {
-      await deleteEvent(id)
-      setEvents(prev => prev.filter(e => e.id !== id))
+      await deleteEvent(deleteTarget.id, deleteName)
+      setEvents(prev => prev.filter(e => e.id !== deleteTarget.id))
+      setDeleteTarget(null)
+      setDeleteName('')
     } catch (err) {
-      alert(`Failed to delete: ${err.message}`)
+      alert(`Failed to delete event: ${err.message}`)
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -269,9 +283,32 @@ export default function Events() {
           <span style={{ fontSize: '14px', flexShrink: 0 }}>💡</span>
           <p style={{ color: 'var(--gray-mid)', fontSize: '12px', lineHeight: '1.6' }}>
             Use the <strong style={{ color: 'var(--gold)' }}>LIVE / HIDDEN</strong> toggle to show
-            or hide events from the public site without deleting them. Events with existing
-            purchases cannot be deleted — hide them instead.
+            or hide events from the public site. Only a <strong style={{ color: '#f87171' }}>hidden past event</strong>
+            can be permanently removed, after typing its exact name. That cleanup removes its related
+            tickets and customer purchase records and cannot be undone.
           </p>
+        </div>
+      )}
+
+      {deleteTarget && (
+        <div style={{ position:'fixed', inset:0, zIndex:300, background:'rgba(0,0,0,0.8)', backdropFilter:'blur(5px)', display:'grid', placeItems:'center', padding:'24px' }}>
+          <div style={{ width:'min(100%, 520px)', background:'var(--black-2)', border:'1px solid rgba(239,68,68,0.38)', borderRadius:'14px', padding:'24px' }}>
+            <p style={{ color:'#f87171', fontSize:'11px', fontWeight:'700', letterSpacing:'1.5px', textTransform:'uppercase', marginBottom:'8px' }}>Permanent past-event cleanup</p>
+            <h2 style={{ color:'var(--white)', fontFamily:'var(--font-display)', fontSize:'26px', letterSpacing:'1px', margin:'0 0 12px' }}>DELETE {deleteTarget.name}</h2>
+            <p style={{ color:'var(--gray-light)', fontSize:'13px', lineHeight:'1.6', marginBottom:'18px' }}>
+              This permanently removes the hidden past event, its ticket categories, issued tickets, customer purchases, QR records, and any linked historical order records. It cannot be undone by a code rollback.
+            </p>
+            <label style={{ display:'block', color:'var(--gray-light)', fontSize:'11px', fontWeight:'700', letterSpacing:'1px', textTransform:'uppercase', marginBottom:'8px' }}>
+              Type <span style={{ color:'#f87171' }}>{deleteTarget.name}</span> to confirm
+            </label>
+            <input className="input" value={deleteName} onChange={e => setDeleteName(e.target.value)} placeholder={deleteTarget.name} autoFocus />
+            <div style={{ display:'flex', justifyContent:'flex-end', gap:'10px', marginTop:'20px' }}>
+              <button className="btn-ghost" onClick={() => { if (!deleting) { setDeleteTarget(null); setDeleteName('') } }}>Cancel</button>
+              <button onClick={confirmDelete} disabled={deleting || deleteName !== deleteTarget.name} style={{ border:'1px solid rgba(239,68,68,0.5)', borderRadius:'7px', padding:'10px 15px', background:'#b91c1c', color:'#fff', fontWeight:'700', cursor: deleting || deleteName !== deleteTarget.name ? 'not-allowed' : 'pointer', opacity: deleting || deleteName !== deleteTarget.name ? 0.45 : 1 }}>
+                {deleting ? 'Deleting…' : 'Permanently Delete'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

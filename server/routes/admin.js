@@ -148,6 +148,7 @@ router.post('/events', requireAdmin, async (req, res) => {
         event_id:    event.id,
         name:        c.name,
         price:       c.price,
+        service_fee: c.service_fee ?? 220,
         total_seats: c.total_seats
       }));
 
@@ -186,12 +187,12 @@ router.put('/events/:id', requireAdmin, async (req, res) => {
         if (cat.id) {
           await supabase
             .from('seat_categories')
-            .update({ name: cat.name, price: cat.price, total_seats: cat.total_seats })
+            .update({ name: cat.name, price: cat.price, service_fee: cat.service_fee ?? 220, total_seats: cat.total_seats })
             .eq('id', cat.id);
         } else {
           await supabase
             .from('seat_categories')
-            .insert({ event_id: req.params.id, name: cat.name, price: cat.price, total_seats: cat.total_seats });
+            .insert({ event_id: req.params.id, name: cat.name, price: cat.price, service_fee: cat.service_fee ?? 220, total_seats: cat.total_seats });
         }
       }
     }
@@ -232,26 +233,29 @@ router.patch('/events/:id/toggle', requireAdmin, async (req, res) => {
 
 router.delete('/events/:id', requireAdmin, async (req, res) => {
   try {
-    const { data: purchases } = await supabase
-      .from('purchases')
-      .select('id')
-      .eq('event_id', req.params.id)
-      .limit(1);
+    const { confirmationName } = req.body || {};
+    const { data: event, error: eventError } = await supabase
+      .from('events')
+      .select('id, name, date, is_active')
+      .eq('id', req.params.id)
+      .single();
 
-    if (purchases && purchases.length > 0) {
-      return res.status(400).json({
-        error: 'Cannot delete event with existing purchases. Use toggle to hide it instead.'
-      });
+    if (eventError || !event) return res.status(404).json({ error: 'Event not found' });
+    if (confirmationName !== event.name) {
+      return res.status(400).json({ error: 'Type the exact event name to confirm permanent deletion' });
     }
 
-    const { error } = await supabase
-      .from('events')
-      .delete()
-      .eq('id', req.params.id);
+    if (event.is_active || new Date(event.date) >= new Date()) {
+      return res.status(400).json({ error: 'Only hidden past events can be permanently deleted' });
+    }
+
+    const { data, error } = await supabase
+      .rpc('admin_delete_past_event', { p_event_id: req.params.id });
 
     if (error) throw error;
-    res.json({ success: true });
+    res.json({ success: true, cleanup: Array.isArray(data) ? data[0] : data });
   } catch (err) {
+    console.error('Delete past event error:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -495,9 +499,20 @@ router.get('/portfolio', requireAdmin, async (req, res) => {
 });
 
 router.post('/portfolio', requireAdmin, async (req, res) => {
+  const { client_name, event_name, description, image_url, event_date, attendees, is_featured } = req.body;
+  const { data: latest } = await supabase
+    .from('portfolio_items')
+    .select('display_order')
+    .order('display_order', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
   const { data, error } = await supabase
     .from('portfolio_items')
-    .insert(req.body)
+    .insert({
+      client_name, event_name, description, image_url, event_date, attendees, is_featured,
+      display_order: Number(latest?.display_order || 0) + 1,
+    })
     .select()
     .single();
 
@@ -505,10 +520,22 @@ router.post('/portfolio', requireAdmin, async (req, res) => {
   res.status(201).json(data);
 });
 
+router.put('/portfolio/order', requireAdmin, async (req, res) => {
+  const { orderedIds } = req.body || {};
+  if (!Array.isArray(orderedIds)) return res.status(400).json({ error: 'orderedIds must be an array' });
+
+  const { data, error } = await supabase
+    .rpc('admin_set_portfolio_order', { p_item_ids: orderedIds });
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
+});
+
 router.put('/portfolio/:id', requireAdmin, async (req, res) => {
+  const { client_name, event_name, description, image_url, event_date, attendees, is_featured } = req.body;
   const { data, error } = await supabase
     .from('portfolio_items')
-    .update(req.body)
+    .update({ client_name, event_name, description, image_url, event_date, attendees, is_featured })
     .eq('id', req.params.id)
     .select()
     .single();

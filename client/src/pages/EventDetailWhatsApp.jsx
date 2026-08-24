@@ -4,7 +4,7 @@
  */
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
-import { createWhatsappOrder, getEvent, getOrderTotal, getOrderTotals, TICKET_FEES } from '../lib/api'
+import { createWhatsappOrder, getEvent, getOrderTotal, getOrderTotals } from '../lib/api'
 
 const WHATSAPP_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER || '923001234567'
 
@@ -71,12 +71,12 @@ export default function EventDetailWhatsApp() {
     const waTab = window.open('', '_blank')
     try {
       const { purchaseId } = await createWhatsappOrder({ eventId: event.id, categoryId: selection.category.id, quantity: selection.quantity, buyerName: form.name.trim(), buyerEmail: form.email.trim(), buyerPhone: form.phone.trim(), ticketNames })
-      const totals = getOrderTotals(selection.category.price, selection.quantity, event.discounts || [])
+      const totals = getOrderTotals(selection.category.price, selection.quantity, event.discounts || [], selection.category.service_fee)
       const discountLines = (event.discounts || []).map(discount => {
         const amount = discount.type === 'percent' ? totals.subtotal * Number(discount.value) / 100 : Number(discount.value)
         return `*${discount.label}${discount.type === 'percent' ? ` (-${discount.value}%)` : ''}:* − PKR ${amount.toLocaleString()}`
       })
-      const lines = [`🎟️ *New Ticket Order — ${event.name}*`, '', `*Name:* ${form.name.trim()}`, `*Email:* ${form.email.trim()}`, form.phone.trim() ? `*Phone:* ${form.phone.trim()}` : null, `*Category:* ${selection.category.name}`, `*Quantity:* ${selection.quantity}`, `*Attendees:* ${ticketNames.join(', ')}`, `*Ticket Price:* PKR ${totals.subtotal.toLocaleString()}`, ...discountLines, `*Fees (Booking + Processing + Platform):* PKR ${totals.fees.toLocaleString()}`, `*Total:* PKR ${totals.total.toLocaleString()}`, '', `*Order Ref:* ${purchaseId}`].filter(Boolean).join('\n')
+      const lines = [`🎟️ *New Ticket Order — ${event.name}*`, '', `*Name:* ${form.name.trim()}`, `*Email:* ${form.email.trim()}`, form.phone.trim() ? `*Phone:* ${form.phone.trim()}` : null, `*Category:* ${selection.category.name}`, `*Quantity:* ${selection.quantity}`, `*Attendees:* ${ticketNames.join(', ')}`, `*Ticket Price:* PKR ${totals.subtotal.toLocaleString()}`, ...discountLines, `*Service fee:* PKR ${totals.fees.toLocaleString()}`, `*Total:* PKR ${totals.total.toLocaleString()}`, '', `*Order Ref:* ${purchaseId}`].filter(Boolean).join('\n')
       const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(lines)}`
       if (waTab) waTab.location.href = url
       else window.location.href = url
@@ -93,8 +93,8 @@ export default function EventDetailWhatsApp() {
   const eventDate = new Date(event.date)
   const date = Number.isNaN(eventDate.getTime()) ? 'Date to be announced' : eventDate.toLocaleDateString('en-PK', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
   const time = Number.isNaN(eventDate.getTime()) ? '' : eventDate.toLocaleTimeString('en-PK', { hour: '2-digit', minute: '2-digit' })
-  const orderTotal = selection.category ? getOrderTotal(selection.category.price, selection.quantity, event.discounts || []) : 0
-  const totals = selection.category ? getOrderTotals(selection.category.price, selection.quantity, event.discounts || []) : null
+  const orderTotal = selection.category ? getOrderTotal(selection.category.price, selection.quantity, event.discounts || [], selection.category.service_fee) : 0
+  const totals = selection.category ? getOrderTotals(selection.category.price, selection.quantity, event.discounts || [], selection.category.service_fee) : null
 
   return <main className="flow-page"><style>{ticketFlowCss}</style>
     <section className="flow-hero">{event.image_url ? <img src={event.image_url} alt={event.name} /> : <div /> }<div className="flow-hero-shade" /><button onClick={() => navigate('/events')}>← Back to events</button><span>LIVE EVENT</span></section>
@@ -110,7 +110,7 @@ export default function EventDetailWhatsApp() {
         <Field label="Email address *" name="email" type="email" value={form.email} onChange={event => setForm(current => ({ ...current, email: event.target.value }))} placeholder="tickets@email.com" hint="Your confirmed ticket will be sent here." />
         <Field label="Phone number" name="phone" type="tel" value={form.phone} onChange={event => setForm(current => ({ ...current, phone: event.target.value }))} placeholder="+92 300 000 0000" />
         {extraNames.length > 0 && <div className="flow-extra"><p>Additional attendee names *</p>{extraNames.map((name, index) => <input key={index} value={name} onChange={event => setExtraNames(current => current.map((item, itemIndex) => itemIndex === index ? event.target.value : item))} placeholder={`Ticket ${index + 2} — full name`} />)}</div>}
-        <div className="flow-total">{totals ? <><div><span>{selection.quantity} × {selection.category.name}</span><b>PKR {totals.subtotal.toLocaleString()}</b></div><div><span>Processing and platform fees</span><b>PKR {totals.fees.toLocaleString()}</b></div><div className="flow-grand"><span>Total due</span><strong>PKR {orderTotal.toLocaleString()}</strong></div></> : <p>Select a ticket type to see your total.</p>}</div>
+        <div className="flow-total">{totals ? <><div><span>{selection.quantity} × {selection.category.name}</span><b>PKR {totals.subtotal.toLocaleString()}</b></div><div><span>Service fee</span><b>PKR {totals.fees.toLocaleString()}</b></div><div className="flow-grand"><span>Total due</span><strong>PKR {orderTotal.toLocaleString()}</strong></div></> : <p>Select a ticket type to see your total.</p>}</div>
         {formError && <p className="flow-error">{formError}</p>}<button className="flow-whatsapp" onClick={handleSendWhatsapp} disabled={sending}>{sending ? 'Preparing order…' : 'Continue on WhatsApp →'}</button><p className="flow-note">No payment is collected here. We send payment instructions in WhatsApp; the verified ticket is then emailed to you.</p>
       </div>}
     </aside></div>

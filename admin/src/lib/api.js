@@ -97,8 +97,11 @@ export async function toggleEvent(id) {
   return request(`/events/${id}/toggle`, { method: 'PATCH' })
 }
 
-export async function deleteEvent(id) {
-  return request(`/events/${id}`, { method: 'DELETE' })
+export async function deleteEvent(id, confirmationName) {
+  return request(`/events/${id}`, {
+    method: 'DELETE',
+    body: JSON.stringify({ confirmationName }),
+  })
 }
 
 export async function deleteCategory(eventId, catId) {
@@ -153,6 +156,13 @@ export async function updatePortfolioItem(id, payload) {
 
 export async function deletePortfolioItem(id) {
   return request(`/portfolio/${id}`, { method: 'DELETE' })
+}
+
+export async function reorderPortfolioItems(orderedIds) {
+  return request('/portfolio/order', {
+    method: 'PUT',
+    body: JSON.stringify({ orderedIds }),
+  })
 }
 
 // ============================================================

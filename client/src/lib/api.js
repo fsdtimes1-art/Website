@@ -119,14 +119,14 @@ export async function getTicketsByPurchase(purchaseId) {
 // ============================================================
 // FEES
 // ============================================================
-export const TICKET_FEES = {
-  booking: 80,
-  processing: 70,
-  platform: 70,
-}
+export const DEFAULT_SERVICE_FEE = 220
 
-export function getFeesTotal(quantity = 1) {
-  return (TICKET_FEES.booking + TICKET_FEES.processing + TICKET_FEES.platform) * quantity
+export function getFeesTotal(serviceFee = DEFAULT_SERVICE_FEE, quantity = 1) {
+  const configuredFee = serviceFee == null ? NaN : Number(serviceFee)
+  const feePerCategoryUnit = Number.isFinite(configuredFee) && configuredFee >= 0
+    ? configuredFee
+    : DEFAULT_SERVICE_FEE
+  return feePerCategoryUnit * Number(quantity)
 }
 
 export function computeDiscountAmount(subtotal, discounts = []) {
@@ -137,14 +137,14 @@ export function computeDiscountAmount(subtotal, discounts = []) {
   return Math.min(amount, subtotal)
 }
 
-export function getOrderTotals(price, quantity, discounts = []) {
+export function getOrderTotals(price, quantity, discounts = [], serviceFee = DEFAULT_SERVICE_FEE) {
   const subtotal = Number(price) * quantity
   const discountAmount = computeDiscountAmount(subtotal, discounts)
-  const fees = getFeesTotal(quantity)
+  const fees = getFeesTotal(serviceFee, quantity)
   const total = Math.max(subtotal - discountAmount, 0) + fees
   return { subtotal, discountAmount, fees, total }
 }
 
-export function getOrderTotal(price, quantity, discounts = []) {
-  return getOrderTotals(price, quantity, discounts).total
+export function getOrderTotal(price, quantity, discounts = [], serviceFee = DEFAULT_SERVICE_FEE) {
+  return getOrderTotals(price, quantity, discounts, serviceFee).total
 }

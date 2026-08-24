@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { TICKET_FEES, getOrderTotals } from '../lib/api'
+import { getOrderTotals } from '../lib/api'
 
 export default function SeatSelector({ categories, discounts = [], onSelectionChange }) {
   const [selectedCategoryId, setSelectedCategoryId] = useState(null)
@@ -8,7 +8,7 @@ export default function SeatSelector({ categories, discounts = [], onSelectionCh
   const selected  = categories.find(c => c.id === selectedCategoryId)
   const available = selected ? selected.total_seats - selected.sold_seats : 0
   const maxQty    = Math.min(available, 10)
-  const totals    = selected ? getOrderTotals(selected.price, quantity, discounts) : null
+  const totals    = selected ? getOrderTotals(selected.price, quantity, discounts, selected.service_fee) : null
 
   function handleCategorySelect(cat) {
     setSelectedCategoryId(cat.id)
@@ -222,7 +222,7 @@ export default function SeatSelector({ categories, discounts = [], onSelectionCh
             </div>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
               <span style={{ color:'var(--gray-mid)', fontSize:'11px' }}>
-                Booking + Processing + Platform Fee
+                Service fee
               </span>
               <span style={{ color:'var(--gray-mid)', fontSize:'11px' }}>
                 PKR {totals.fees.toLocaleString()}

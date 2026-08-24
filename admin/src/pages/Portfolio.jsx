@@ -2,7 +2,7 @@
 import { useEffect, useState, useRef } from 'react'
 import {
   getAdminPortfolio, createPortfolioItem,
-  updatePortfolioItem, deletePortfolioItem
+  updatePortfolioItem, deletePortfolioItem, reorderPortfolioItems
 } from '../lib/api'
 
 const EMPTY_FORM = {
@@ -13,7 +13,6 @@ const EMPTY_FORM = {
   event_date:    '',
   attendees:     '',
   is_featured:   false,
-  display_order: '',
 }
 
 export default function Portfolio() {
@@ -44,6 +43,24 @@ export default function Portfolio() {
       setItems(prev => prev.filter(i => i.id !== id))
     } catch (err) {
       alert(`Failed to delete: ${err.message}`)
+    }
+  }
+
+  async function moveItem(id, direction) {
+    const fromIndex = items.findIndex(item => item.id === id)
+    const toIndex = direction === 'top' ? 0 : items.length - 1
+    if (fromIndex < 0 || fromIndex === toIndex) return
+
+    const reordered = [...items]
+    const [moved] = reordered.splice(fromIndex, 1)
+    reordered.splice(toIndex, 0, moved)
+    setItems(reordered)
+    try {
+      const saved = await reorderPortfolioItems(reordered.map(item => item.id))
+      setItems(saved)
+    } catch (err) {
+      setError(`Could not change project order: ${err.message}`)
+      fetchItems()
     }
   }
 
@@ -137,6 +154,10 @@ export default function Portfolio() {
               item={item}
               onEdit={() => setModal(item)}
               onDelete={() => handleDelete(item.id, item.event_name)}
+              onMoveTop={() => moveItem(item.id, 'top')}
+              onMoveBottom={() => moveItem(item.id, 'bottom')}
+              canMoveTop={items[0]?.id !== item.id}
+              canMoveBottom={items[items.length - 1]?.id !== item.id}
             />
           ))}
         </div>
@@ -154,7 +175,7 @@ export default function Portfolio() {
   )
 }
 
-function PortfolioCard({ item, onEdit, onDelete }) {
+function PortfolioCard({ item, onEdit, onDelete, onMoveTop, onMoveBottom, canMoveTop, canMoveBottom }) {
   const formattedDate = item.event_date
     ? new Date(item.event_date).toLocaleDateString('en-PK', {
         year: 'numeric', month: 'short', day: 'numeric',
@@ -241,7 +262,9 @@ function PortfolioCard({ item, onEdit, onDelete }) {
         )}
 
         {/* Actions */}
-        <div style={{ display: 'flex', gap: '8px', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+        <div style={{ display: 'flex', gap: '8px', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.06)', flexWrap:'wrap' }}>
+          <button onClick={onMoveTop} disabled={!canMoveTop} title="Show first" style={{ background:'transparent', border:'1px solid rgba(245,158,11,0.22)', color:'var(--gold)', fontSize:'12px', padding:'8px 10px', borderRadius:'4px', cursor:canMoveTop ? 'pointer' : 'not-allowed', opacity:canMoveTop ? 1 : 0.35 }}>↑ Top</button>
+          <button onClick={onMoveBottom} disabled={!canMoveBottom} title="Show last" style={{ background:'transparent', border:'1px solid rgba(245,158,11,0.22)', color:'var(--gold)', fontSize:'12px', padding:'8px 10px', borderRadius:'4px', cursor:canMoveBottom ? 'pointer' : 'not-allowed', opacity:canMoveBottom ? 1 : 0.35 }}>↓ Bottom</button>
           <button
             onClick={onEdit}
             style={{
@@ -283,7 +306,6 @@ function PortfolioModal({ item, onClose, onSaved }) {
     event_date:    item.event_date   || '',
     attendees:     item.attendees != null ? String(item.attendees) : '',
     is_featured:   item.is_featured  ?? false,
-    display_order: item.display_order != null ? String(item.display_order) : '',
   } : { ...EMPTY_FORM })
 
   const [saving, setSaving] = useState(false)
@@ -322,7 +344,6 @@ function handleDrop(e) {
       event_date:    form.event_date          || null,
       attendees:     form.attendees ? Number(form.attendees) : null,
       is_featured:   form.is_featured,
-      display_order: form.display_order ? Number(form.display_order) : 0,
     }
 
     try {
@@ -488,17 +509,18 @@ function handleDrop(e) {
             />
           </MField>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
             <MField label="Event Date">
               <input className="input" type="date" name="event_date" value={form.event_date} onChange={handleField} />
             </MField>
             <MField label="Attendees">
               <input className="input" type="number" name="attendees" placeholder="e.g. 500" value={form.attendees} onChange={handleField} min="0" />
             </MField>
-            <MField label="Display Order">
-              <input className="input" type="number" name="display_order" placeholder="0" value={form.display_order} onChange={handleField} min="0" />
-            </MField>
           </div>
+
+          <p style={{ margin:0, color:'var(--gray-mid)', fontSize:'12px', lineHeight:'1.5' }}>
+            New projects are added at the bottom. Use the <strong style={{ color:'var(--gold)' }}>Top</strong> and <strong style={{ color:'var(--gold)' }}>Bottom</strong> buttons on the portfolio list to choose exactly where each brand appears.
+          </p>
 
           {/* Featured toggle */}
           <label style={{

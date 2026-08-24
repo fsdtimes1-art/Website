@@ -1,6 +1,6 @@
 import { useEffect, useState }                        from 'react'
 import { useParams, useNavigate, useSearchParams }    from 'react-router-dom'
-import { getEvent, createCheckout, getOrderTotals, TICKET_FEES } from '../lib/api'
+import { getEvent, createCheckout, getOrderTotals } from '../lib/api'
 import SeatSelector                                   from '../components/SeatSelector'
 
 export default function EventDetail() {
@@ -115,7 +115,7 @@ export default function EventDetail() {
   const totalRemaining = totalSeats - soldSeats
   const soldPct = Math.max(0, Math.round(50 - (soldSeats / totalSeats) * 50))
   const orderTotals = selection.category
-    ? getOrderTotals(selection.category.price, selection.quantity, event.discounts || [])
+    ? getOrderTotals(selection.category.price, selection.quantity, event.discounts || [], selection.category.service_fee)
     : { subtotal: 0, discountAmount: 0, fees: 0, total: 0 }
   const orderTotal = orderTotals.total
 
@@ -468,21 +468,9 @@ export default function EventDetail() {
                       </span>
                     </div>
                     <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                      <span style={{ color:'var(--gray-mid)', fontSize:'12px' }}>Booking Fee</span>
+                      <span style={{ color:'var(--gray-mid)', fontSize:'12px' }}>Service Fee</span>
                       <span style={{ color:'var(--gray-mid)', fontSize:'12px' }}>
-                        PKR {(TICKET_FEES.booking * selection.quantity).toLocaleString()}
-                      </span>
-                    </div>
-                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                      <span style={{ color:'var(--gray-mid)', fontSize:'12px' }}>Processing Fee</span>
-                      <span style={{ color:'var(--gray-mid)', fontSize:'12px' }}>
-                        PKR {(TICKET_FEES.processing * selection.quantity).toLocaleString()}
-                      </span>
-                    </div>
-                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                      <span style={{ color:'var(--gray-mid)', fontSize:'12px' }}>Platform Fee</span>
-                      <span style={{ color:'var(--gray-mid)', fontSize:'12px' }}>
-                        PKR {(TICKET_FEES.platform * selection.quantity).toLocaleString()}
+                        PKR {orderTotals.fees.toLocaleString()}
                       </span>
                     </div>
                     {(event.discounts || []).map(d => (
