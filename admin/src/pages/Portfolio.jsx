@@ -1,9 +1,10 @@
-// admin/src/pages/Portfolio.jsx
 import { useEffect, useState, useRef } from 'react'
 import {
   getAdminPortfolio, createPortfolioItem,
   updatePortfolioItem, deletePortfolioItem, reorderPortfolioItems
 } from '../lib/api'
+
+// Design reminder: keep the compact dark-and-gold admin card language while making order changes explicit and safe.
 
 const EMPTY_FORM = {
   client_name:   '',
@@ -20,6 +21,7 @@ export default function Portfolio() {
   const [loading, setLoading] = useState(true)
   const [error,   setError]   = useState(null)
   const [modal,   setModal]   = useState(null)  // null | 'create' | { ...item }
+  const [movingId, setMovingId] = useState(null)
 
   useEffect(() => { fetchItems() }, [])
 
@@ -46,14 +48,22 @@ export default function Portfolio() {
     }
   }
 
-  async function moveItem(id, direction) {
+  async function moveItem(id, requestedPosition) {
+    const targetPosition = Number(requestedPosition)
+    if (!Number.isInteger(targetPosition) || targetPosition < 1 || targetPosition > items.length) {
+      setError(`Enter a whole position from 1 to ${items.length}.`)
+      return
+    }
+
     const fromIndex = items.findIndex(item => item.id === id)
-    const toIndex = direction === 'top' ? 0 : items.length - 1
+    const toIndex = targetPosition - 1
     if (fromIndex < 0 || fromIndex === toIndex) return
 
     const reordered = [...items]
     const [moved] = reordered.splice(fromIndex, 1)
     reordered.splice(toIndex, 0, moved)
+    setError(null)
+    setMovingId(id)
     setItems(reordered)
     try {
       const saved = await reorderPortfolioItems(reordered.map(item => item.id))
@@ -61,6 +71,8 @@ export default function Portfolio() {
     } catch (err) {
       setError(`Could not change project order: ${err.message}`)
       fetchItems()
+    } finally {
+      setMovingId(null)
     }
   }
 
@@ -148,16 +160,16 @@ export default function Portfolio() {
           display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
           gap: '20px',
         }}>
-          {items.map(item => (
+          {items.map((item, index) => (
             <PortfolioCard
               key={item.id}
               item={item}
+              currentPosition={index + 1}
               onEdit={() => setModal(item)}
               onDelete={() => handleDelete(item.id, item.event_name)}
-              onMoveTop={() => moveItem(item.id, 'top')}
-              onMoveBottom={() => moveItem(item.id, 'bottom')}
-              canMoveTop={items[0]?.id !== item.id}
-              canMoveBottom={items[items.length - 1]?.id !== item.id}
+              onMoveToPosition={position => moveItem(item.id, position)}
+              itemCount={items.length}
+              isMoving={movingId === item.id}
             />
           ))}
         </div>
@@ -175,7 +187,18 @@ export default function Portfolio() {
   )
 }
 
-function PortfolioCard({ item, onEdit, onDelete, onMoveTop, onMoveBottom, canMoveTop, canMoveBottom }) {
+function PortfolioCard({ item, currentPosition, onEdit, onDelete, onMoveToPosition, itemCount, isMoving }) {
+  const [requestedPosition, setRequestedPosition] = useState(String(currentPosition))
+
+  useEffect(() => {
+    setRequestedPosition(String(currentPosition))
+  }, [currentPosition])
+
+  function submitPosition(event) {
+    event.preventDefault()
+    onMoveToPosition(requestedPosition)
+  }
+
   const formattedDate = item.event_date
     ? new Date(item.event_date).toLocaleDateString('en-PK', {
         year: 'numeric', month: 'short', day: 'numeric',
@@ -221,7 +244,7 @@ function PortfolioCard({ item, onEdit, onDelete, onMoveTop, onMoveBottom, canMov
           color: 'var(--gray-mid)', fontSize: '11px',
           padding: '3px 8px', borderRadius: '4px',
         }}>
-          Order: {item.display_order ?? 0}
+          Position: {currentPosition}
         </span>
       </div>
 
@@ -263,8 +286,30 @@ function PortfolioCard({ item, onEdit, onDelete, onMoveTop, onMoveBottom, canMov
 
         {/* Actions */}
         <div style={{ display: 'flex', gap: '8px', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.06)', flexWrap:'wrap' }}>
-          <button onClick={onMoveTop} disabled={!canMoveTop} title="Show first" style={{ background:'transparent', border:'1px solid rgba(245,158,11,0.22)', color:'var(--gold)', fontSize:'12px', padding:'8px 10px', borderRadius:'4px', cursor:canMoveTop ? 'pointer' : 'not-allowed', opacity:canMoveTop ? 1 : 0.35 }}>↑ Top</button>
-          <button onClick={onMoveBottom} disabled={!canMoveBottom} title="Show last" style={{ background:'transparent', border:'1px solid rgba(245,158,11,0.22)', color:'var(--gold)', fontSize:'12px', padding:'8px 10px', borderRadius:'4px', cursor:canMoveBottom ? 'pointer' : 'not-allowed', opacity:canMoveBottom ? 1 : 0.35 }}>↓ Bottom</button>
+          <form onSubmit={submitPosition} style={{ display:'flex', alignItems:'center', gap:'6px', flex:'1 1 168px' }}>
+            <label htmlFor={`portfolio-position-${item.id}`} style={{ color:'var(--gray-mid)', fontSize:'11px', whiteSpace:'nowrap' }}>Position</label>
+            <input
+              id={`portfolio-position-${item.id}`}
+              type="number"
+              min="1"
+              max={itemCount}
+              step="1"
+              inputMode="numeric"
+              value={requestedPosition}
+              onChange={event => setRequestedPosition(event.target.value)}
+              aria-label={`Position for ${item.event_name}`}
+              style={{ width:'50px', background:'var(--black-3)', border:'1px solid rgba(245,158,11,0.28)', color:'var(--white)', fontSize:'12px', padding:'8px 6px', borderRadius:'4px', textAlign:'center' }}
+            />
+            <span style={{ color:'var(--gray-mid)', fontSize:'11px', whiteSpace:'nowrap' }}>of {itemCount}</span>
+            <button
+              type="submit"
+              disabled={isMoving || Number(requestedPosition) === currentPosition}
+              title="Move this project to the entered position"
+              style={{ background:'transparent', border:'1px solid rgba(245,158,11,0.22)', color:'var(--gold)', fontSize:'12px', padding:'8px 10px', borderRadius:'4px', cursor:isMoving ? 'wait' : 'pointer', opacity:(isMoving || Number(requestedPosition) === currentPosition) ? 0.45 : 1 }}
+            >
+              {isMoving ? 'Moving…' : 'Move'}
+            </button>
+          </form>
           <button
             onClick={onEdit}
             style={{
@@ -519,7 +564,7 @@ function handleDrop(e) {
           </div>
 
           <p style={{ margin:0, color:'var(--gray-mid)', fontSize:'12px', lineHeight:'1.5' }}>
-            New projects are added at the bottom. Use the <strong style={{ color:'var(--gold)' }}>Top</strong> and <strong style={{ color:'var(--gold)' }}>Bottom</strong> buttons on the portfolio list to choose exactly where each brand appears.
+            New projects are added at the bottom. Use the <strong style={{ color:'var(--gold)' }}>Position</strong> number on the portfolio list to place a brand exactly where you want it; position 1 appears first.
           </p>
 
           {/* Featured toggle */}
