@@ -1,6 +1,6 @@
 /**
  * Midnight Circuit home: real EventFlow data is shown in an event-first, dark neon-blue landing page.
- * The portfolio section uses the live client/project image records as a moving case-study carousel—never invented brands. Mobile movement is intentionally slow and the FSD Live planning block is omitted.
+ * The hero uses a calm, automatic carousel of real active events; it preserves the reference card composition, ticket navigation, and reduced-motion preference. The portfolio section uses live client/project records only.
  */
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
@@ -19,6 +19,7 @@ const REVIEW_EVENTS = [
   { id: 'review-workshop', is_review_fixture: true, name: 'Ink, Colour & Your Own Rules', image_url: 'https://images.unsplash.com/photo-1547891654-e66ed7ebb968?auto=format&fit=crop&w=1400&q=88', date: '2026-09-27T14:00:00+05:00', venue: 'Canal Road Studio', seat_categories: [{ id: 'review-studio', name: 'Studio pass', price: 2200, total_seats: 40, sold_seats: 9 }] },
 ]
 
+const EVENT_AUTOPLAY_MS = 1400
 
 function eventMeta(event) {
   const date = new Date(event.date)
@@ -37,26 +38,30 @@ export default function Home() {
   const [loadingEvents, setLoadingEvents] = useState(true)
   const [eventIndex, setEventIndex] = useState(0)
   const [reviewMode, setReviewMode] = useState(false)
+  const [isEventCarouselPaused, setIsEventCarouselPaused] = useState(false)
 
   useEffect(() => {
     getEvents().then(data => setEvents(Array.isArray(data) ? data : [])).catch(() => { setEvents(REVIEW_EVENTS); setReviewMode(true) }).finally(() => setLoadingEvents(false))
     getPortfolio().then(data => setPortfolio(Array.isArray(data) ? data : [])).catch(() => setPortfolio([]))
   }, [])
 
-  useEffect(() => { if (eventIndex >= events.length) setEventIndex(0) }, [eventIndex, events.length])
+  const carouselEvents = useMemo(() => events.filter(event => event && event.is_active !== false), [events])
+
+  useEffect(() => { if (eventIndex >= carouselEvents.length) setEventIndex(0) }, [eventIndex, carouselEvents.length])
 
   useEffect(() => {
-    if (events.length < 2 || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined
-    const rotation = window.setInterval(() => setEventIndex(index => (index + 1) % events.length), 1400)
+    if (carouselEvents.length < 2 || isEventCarouselPaused || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined
+    const rotation = window.setInterval(() => setEventIndex(index => (index + 1) % carouselEvents.length), EVENT_AUTOPLAY_MS)
     return () => window.clearInterval(rotation)
-  }, [events.length])
+  }, [carouselEvents.length, isEventCarouselPaused])
 
-  const featured = events[eventIndex]
+  const featured = carouselEvents[eventIndex]
   const portfolioProjects = useMemo(() => portfolio.filter(item => item && (item.client_name || item.event_name || item.image_url)), [portfolio])
   const projectRail = portfolioProjects.length > 1 ? [...portfolioProjects, ...portfolioProjects] : portfolioProjects
 
   return <div className="mc-home">
     <style>{homeCss}</style>
+    <style>{eventCarouselCss}</style>
     <style>{portfolioCarouselCss}</style>
 
     <section className="mc-event-banner">
@@ -66,15 +71,18 @@ export default function Home() {
           <h1>THE CITY<br />IS <em>LIVE.</em></h1>
           <p className="mc-lead">Find the next room, stage, or city moment worth showing up for.</p>
           <Link className="mc-text-link" to="/events">Explore all events <span>·</span></Link>
-          {events.length > 1 && <div className="mc-banner-counter"><span>{String(eventIndex + 1).padStart(2, '0')}</span><i /><b>{String(events.length).padStart(2, '0')}</b><div className="mc-counter-controls"><button onClick={() => setEventIndex(index => (index - 1 + events.length) % events.length)} aria-label="Previous event">Prev</button><button onClick={() => setEventIndex(index => (index + 1) % events.length)} aria-label="Next event">Next</button></div></div>}
+          {carouselEvents.length > 1 && <div className="mc-banner-counter"><span>{String(eventIndex + 1).padStart(2, '0')}</span><i /><b>{String(carouselEvents.length).padStart(2, '0')}</b><div className="mc-counter-controls"><button type="button" onClick={() => setEventIndex(index => (index - 1 + carouselEvents.length) % carouselEvents.length)} aria-label="Previous event">Prev</button><button type="button" onClick={() => setEventIndex(index => (index + 1) % carouselEvents.length)} aria-label="Next event">Next</button></div></div>}
         </div>
 
-        {loadingEvents ? <div className="mc-event-placeholder"><span className="mc-spinner" />Loading current events</div> : featured ? <Link key={featured.id} className="mc-feature-event" to={`/events/${featured.id}/whatsapp`} state={featured.is_review_fixture ? { reviewEvent: featured } : undefined}>
-          {featured.image_url ? <img src={featured.image_url} alt={featured.name} /> : <div className="mc-feature-image" />}
-          <div className="mc-feature-overlay" />
-          <div className="mc-feature-badge"><i /> Live listing</div>
-          <div className="mc-feature-content"><p>Featured this week</p><h2>{featured.name}</h2><div><span>{eventMeta(featured)}{reviewMode && ' · Review preview'}</span><strong>{cheapestTicket(featured)}</strong></div></div>
-        </Link> : <div className="mc-event-placeholder mc-empty-event"><p className="mc-kicker"><i /> Event desk</p><h2>New event listings will appear here.</h2><Link to="/events" className="mc-text-link">Browse events <span>·</span></Link></div>}
+        {loadingEvents ? <div className="mc-event-placeholder"><span className="mc-spinner" />Loading current events</div> : featured ? <div className="mc-event-carousel" role="region" aria-roledescription="carousel" aria-label="Current live events" onMouseEnter={() => setIsEventCarouselPaused(true)} onMouseLeave={() => setIsEventCarouselPaused(false)}>
+          <Link key={featured.id} className="mc-feature-event" to={`/events/${featured.id}/whatsapp`} state={featured.is_review_fixture ? { reviewEvent: featured } : undefined} aria-label={`View tickets for ${featured.name}`}>
+            {featured.image_url ? <img src={featured.image_url} alt={featured.name} /> : <div className="mc-feature-image" />}
+            <div className="mc-feature-overlay" />
+            <div className="mc-feature-badge"><i /> Live listing</div>
+            <div className="mc-feature-content"><p>Featured this week</p><h2>{featured.name}</h2><div><span>{eventMeta(featured)}{reviewMode && ' · Review preview'}</span><strong>{cheapestTicket(featured)}</strong></div></div>
+          </Link>
+          {carouselEvents.length > 1 && <div className="mc-carousel-dots" aria-label="Choose a live event">{carouselEvents.map((event, index) => <button type="button" key={event.id} onClick={() => setEventIndex(index)} aria-label={`Show ${event.name}`} aria-pressed={index === eventIndex} className={index === eventIndex ? 'is-active' : ''} />)}</div>}
+        </div> : <div className="mc-event-placeholder mc-empty-event"><p className="mc-kicker"><i /> Event desk</p><h2>New event listings will appear here.</h2><Link to="/events" className="mc-text-link">Browse events <span>·</span></Link></div>}
       </div>
     </section>
 
@@ -98,6 +106,11 @@ export default function Home() {
     <section className="mc-how-section"><div className="container"><div className="mc-section-header"><div><p className="mc-kicker"><i /> Ticketing</p><h2>CURIOUS HOW<br /><em>BOOKING WORKS?</em></h2></div><Link to="/how-it-works" className="mc-blue-button"><i /> See the process</Link></div></div></section>
   </div>
 }
+
+const eventCarouselCss = `
+  /* Homepage refinement: real active events remain the only carousel content; controls are subtle, and motion pauses on hover or when reduced motion is requested. */
+  .mc-event-carousel{position:relative;min-width:0}.mc-event-carousel>.mc-feature-event{display:block;width:100%}.mc-carousel-dots{position:absolute;z-index:3;top:24px;right:22px;display:flex;align-items:center;gap:7px;padding:6px 8px;border:1px solid rgba(150,241,255,.18);border-radius:999px;background:rgba(3,11,20,.48);backdrop-filter:blur(10px)}.mc-carousel-dots button{width:6px;height:6px;border:0;border-radius:50%;padding:0;background:rgba(230,250,255,.42);cursor:pointer;transition:transform .18s ease,background .18s ease,box-shadow .18s ease}.mc-carousel-dots button:hover,.mc-carousel-dots button:focus-visible{background:#e9fdff;outline:none;transform:scale(1.25)}.mc-carousel-dots button.is-active{background:var(--mc-blue);box-shadow:0 0 9px rgba(41,220,255,.9);transform:scale(1.32)}@media(prefers-reduced-motion:reduce){.mc-feature-event{animation:none}}@media(max-width:600px){.mc-carousel-dots{top:13px;right:12px;gap:5px;padding:5px 7px}.mc-carousel-dots button{width:5px;height:5px}}
+`
 
 const portfolioCarouselCss = `
   .mc-project-window{position:relative;overflow:hidden;margin-top:28px;padding:4px 0;border-top:1px solid rgba(45,119,160,.42);border-bottom:1px solid rgba(45,119,160,.42)}.mc-project-window:before,.mc-project-window:after{position:absolute;z-index:3;top:0;bottom:0;width:8%;content:'';pointer-events:none}.mc-project-window:before{left:0;background:linear-gradient(90deg,#07121f,transparent)}.mc-project-window:after{right:0;background:linear-gradient(-90deg,#07121f,transparent)}.mc-project-rail{display:flex;gap:14px;width:max-content;padding:17px 0;animation:mcProjectScroll 48s linear infinite}.mc-project-window:hover .mc-project-rail{animation-play-state:paused}.mc-project-card{position:relative;display:block;width:344px;height:218px;overflow:hidden;border:1px solid rgba(57,141,190,.58);border-radius:15px;background:#0a1725;color:#eefaff;text-decoration:none;box-shadow:0 16px 28px rgba(0,0,0,.24);transition:transform .22s,border-color .22s,box-shadow .22s}.mc-project-card:hover{z-index:2;border-color:#29dcff;box-shadow:0 18px 38px rgba(24,173,231,.24);transform:translateY(-5px)}.mc-project-image{position:absolute;inset:0;overflow:hidden;background:#0a1725}.mc-project-image img,.mc-project-image-empty{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform .42s}.mc-project-card:hover .mc-project-image img{transform:scale(1.06)}.mc-project-image-empty{display:block;background:radial-gradient(circle at 30% 25%,rgba(41,220,255,.28),transparent 24%),linear-gradient(135deg,#104366,#07121f)}.mc-project-image:after{position:absolute;inset:0;content:'';background:linear-gradient(180deg,rgba(3,10,18,.03) 24%,rgba(3,10,18,.12) 38%,rgba(3,10,18,.94) 100%)}.mc-project-image p{display:none}.mc-project-copy{position:absolute;z-index:3;right:18px;bottom:15px;left:18px;display:block;padding:0;text-shadow:0 2px 11px rgba(0,0,0,.8)}.mc-project-copy>p{margin:0;color:#a9f4ff;font-size:9px;font-weight:900;letter-spacing:.14em;line-height:1.3;text-transform:uppercase}.mc-project-copy h3{display:-webkit-box;overflow:hidden;margin:6px 0 9px;color:#f7fdff;font-family:'Bebas Neue',Impact,sans-serif;font-size:2rem;font-weight:400;letter-spacing:.025em;line-height:.9;-webkit-box-orient:vertical;-webkit-line-clamp:2}.mc-project-copy>span{color:#29dcff;font-size:9px;font-weight:900;letter-spacing:.06em;text-transform:uppercase}.mc-project-copy b{font-size:14px;font-weight:400}.mc-partner-empty{margin-top:28px;border:1px solid rgba(45,119,160,.42);padding:27px;background:rgba(8,23,37,.58)}.mc-partner-empty h3{max-width:340px;margin:12px 0 0;font-family:'Bebas Neue',Impact,sans-serif;font-size:2rem;font-weight:400;line-height:.95}@keyframes mcProjectScroll{to{transform:translateX(calc(-50% - 7px))}}@media(max-width:600px){.mc-project-window{margin-top:20px}.mc-project-rail{gap:10px;padding:12px 0;animation-duration:76s}.mc-project-card{width:286px;height:184px}.mc-project-copy{right:14px;bottom:13px;left:14px}.mc-project-copy h3{font-size:1.7rem;margin:5px 0 8px}.mc-project-window:before,.mc-project-window:after{width:5%}}
