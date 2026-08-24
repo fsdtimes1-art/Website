@@ -1,6 +1,6 @@
 /**
  * Midnight Circuit header: compact glass navigation where Get tickets is the single event route and responsive mobile drawers stay uncluttered.
- * It preserves the public ticket CTA behavior used throughout the application.
+ * The Faisalabad Times wordmark is enlarged by two pixels while preserving the mark, alignment, navigation, and ticket CTA behavior.
  */
 import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
@@ -68,8 +68,15 @@ export default function Navbar() {
     </div>
 
     <style>{headerCss}</style>
+    <style>{headerRefinementCss}</style>
   </>
 }
+
+const headerRefinementCss = `
+  /* Header refinement: retain the compact dark-glass silhouette while making the Faisalabad Times wordmark easier to read at a glance. */
+  .ft-brand-name b{font-size:13px}.ft-brand-name small{font-size:10px}
+  @media(max-width:768px){.ft-brand-name b{font-size:12px}.ft-brand-name small{font-size:9px}}
+`
 
 const headerCss = `
   .ft-header { position:fixed; z-index:100; top:0; right:0; left:0; padding:14px 0 0; pointer-events:none; transition:padding .22s ease; }.ft-header-shell { pointer-events:none; }.ft-header-bar { display:flex; min-height:60px; align-items:center; justify-content:space-between; border:1px solid rgba(117,208,255,.16); border-radius:17px; padding:7px 8px 7px 10px; background:linear-gradient(115deg,rgba(5,12,21,.82),rgba(10,28,45,.72)); box-shadow:0 12px 32px rgba(0,0,0,.18); backdrop-filter:blur(18px) saturate(130%); pointer-events:auto; transition:border-color .22s ease,box-shadow .22s ease,border-radius .22s ease; }.ft-header.is-scrolled { padding-top:8px; }.ft-header.is-scrolled .ft-header-bar { border-color:rgba(41,220,255,.38); box-shadow:0 14px 34px rgba(0,0,0,.32),0 0 24px rgba(41,220,255,.08); }
