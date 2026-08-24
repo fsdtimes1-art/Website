@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate }      from 'react-router-dom'
 import { getAdminEvents, createEvent, updateEvent, deleteCategory } from '../lib/api'
 
-const EMPTY_CAT      = { name: '', price: '', total_seats: '' }
+const EMPTY_CAT      = { name: '', price: '', service_fee: '220', total_seats: '' }
 const EMPTY_DISCOUNT = { id: null, label: '', type: 'flat', value: '' }
 
 function emptyForm() {
@@ -126,6 +126,7 @@ export default function EventForm() {
                 id:          c.id,
                 name:        c.name,
                 price:       String(c.price),
+                service_fee: String(c.service_fee ?? 220),
                 total_seats: String(c.total_seats),
                 sold_seats:  c.sold_seats,
               }))
@@ -267,6 +268,8 @@ export default function EventForm() {
       if (!c.name.trim())   return `Category ${i+1}: name is required.`
       if (!c.price || isNaN(Number(c.price)) || Number(c.price) < 0)
                             return `Category ${i+1}: valid price is required.`
+      if (c.service_fee === '' || isNaN(Number(c.service_fee)) || Number(c.service_fee) < 0)
+                            return `Category ${i+1}: service fee must be zero or more.`
       if (!c.total_seats || isNaN(Number(c.total_seats)) || Number(c.total_seats) < 1)
                             return `Category ${i+1}: seat count must be at least 1.`
     }
@@ -298,6 +301,7 @@ export default function EventForm() {
         ...(c.id ? { id: c.id } : {}),
         name:        c.name.trim(),
         price:       Number(c.price),
+        service_fee: Number(c.service_fee),
         total_seats: Number(c.total_seats),
       })),
       discounts: form.discounts.map(d => ({
@@ -857,7 +861,7 @@ function CategoryRow({ cat, index, total, onChange, onRemove }) {
           </button>
         )}
       </div>
-      <div style={{ display:'grid', gridTemplateColumns:'2fr 1fr 1fr', gap:'12px' }}>
+      <div style={{ display:'grid', gridTemplateColumns:'2fr 1fr 1fr 1fr', gap:'12px' }}>
         <div>
           <label style={catLabelStyle}>Category Name *</label>
           <input className="input" name="name"
@@ -869,6 +873,12 @@ function CategoryRow({ cat, index, total, onChange, onRemove }) {
           <input className="input" name="price" type="number"
             placeholder="5000" value={cat.price}
             onChange={e => onChange(index, e)} min="0" />
+        </div>
+        <div>
+          <label style={catLabelStyle}>Service Fee (PKR) *</label>
+          <input className="input" name="service_fee" type="number"
+            placeholder="220" value={cat.service_fee}
+            onChange={e => onChange(index, e)} min="0" step="1" />
         </div>
         <div>
           <label style={catLabelStyle}>Total Seats *</label>
