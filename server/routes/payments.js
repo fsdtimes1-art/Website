@@ -6,9 +6,13 @@ const { generateTicketsAndSendEmails } = require('../services/ticketService');
 
 const VARIANT_ID = '1738929';
 
-const TICKET_FEES = { booking: 80, processing: 70, platform: 70 };
-function feesFor(quantity) {
-  return (TICKET_FEES.booking + TICKET_FEES.processing + TICKET_FEES.platform) * quantity;
+const DEFAULT_SERVICE_FEE = 220;
+function feesFor(category, quantity) {
+  const configuredFee = category?.service_fee == null ? NaN : Number(category.service_fee);
+  const feePerCategoryUnit = Number.isFinite(configuredFee) && configuredFee >= 0
+    ? configuredFee
+    : DEFAULT_SERVICE_FEE;
+  return feePerCategoryUnit * Number(quantity);
 }
 
 // Must mirror client/src/lib/api.js computeDiscountAmount
@@ -50,7 +54,7 @@ router.post('/create-checkout', async (req, res) => {
 
     const subtotal       = category.price * quantity;
     const discountAmount = discountFor(subtotal, category.events.discounts);
-    const totalAmount    = subtotal - discountAmount + feesFor(quantity);
+    const totalAmount    = subtotal - discountAmount + feesFor(category, quantity);
 
     // Save pending purchase first so we have an ID for the redirect URL
     const { data: purchase, error: purchaseError } = await supabase
@@ -168,7 +172,7 @@ router.post('/create-whatsapp-order', async (req, res) => {
 
     const subtotal       = category.price * quantity;
     const discountAmount = discountFor(subtotal, category.events.discounts);
-    const totalAmount    = subtotal - discountAmount + feesFor(quantity);
+    const totalAmount    = subtotal - discountAmount + feesFor(category, quantity);
 
     const { data: purchase, error: purchaseError } = await supabase
       .from('purchases')
