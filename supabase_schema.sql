@@ -24,6 +24,7 @@ CREATE TABLE seat_categories (
   event_id UUID REFERENCES events(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   price NUMERIC(10,2) NOT NULL,
+  service_fee NUMERIC(10,2) NOT NULL DEFAULT 220 CHECK (service_fee >= 0),
   total_seats INTEGER NOT NULL,
   sold_seats INTEGER DEFAULT 0,
   created_at TIMESTAMPTZ DEFAULT NOW()
