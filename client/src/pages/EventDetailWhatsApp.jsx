@@ -20,7 +20,7 @@ function TicketPicker({ categories = [], selection, onSelectionChange }) {
       const soldOut = remaining <= 0
       const active = selected?.id === category.id
       return <button key={category.id} className={`flow-ticket-row ${active ? 'is-selected' : ''} ${soldOut ? 'is-sold' : ''}`} disabled={soldOut} onClick={() => onSelectionChange({ category, quantity: active ? quantity : 1 })}>
-        <span className="flow-ticket-radio" aria-hidden="true"><i /></span><span className="flow-ticket-copy"><strong>{category.name}</strong><small>{soldOut ? 'Sold out' : `${remaining} tickets available`}</small></span><span className="flow-ticket-price">PKR {Number(category.price).toLocaleString()}<small>per ticket</small></span>
+        <span className="flow-ticket-radio" aria-hidden="true"><i /></span><span className="flow-ticket-copy"><strong>{category.name}</strong>{soldOut && <small>Sold out</small>}</span><span className="flow-ticket-price">PKR {Number(category.price).toLocaleString()}<small>per ticket</small></span>
       </button>
     })}
     {selected && <div className="flow-quantity"><div><p>Quantity</p><span>{maxQty < 10 ? `Maximum ${maxQty} tickets per order` : 'Select how many tickets you need'}</span></div><div className="flow-stepper"><button disabled={quantity <= 1} onClick={() => onSelectionChange({ category: selected, quantity: quantity - 1 })}>−</button><b>{quantity}</b><button disabled={quantity >= maxQty} onClick={() => onSelectionChange({ category: selected, quantity: quantity + 1 })}>+</button></div></div>}
