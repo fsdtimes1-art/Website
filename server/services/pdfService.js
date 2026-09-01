@@ -62,12 +62,14 @@ async function generateTicketPDF(tickets, event, category) {
 
         // Date and venue
         const dateStr = new Date(event.date).toLocaleDateString('en-PK', {
+          timeZone: 'Asia/Karachi',
           weekday: 'long',
           year:    'numeric',
           month:   'long',
           day:     'numeric',
           hour:    '2-digit',
           minute:  '2-digit'
+          hour12:   true
         });
 
         doc
