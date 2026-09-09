@@ -385,17 +385,17 @@ export default function Purchases() {
               Irreversible action
             </p>
             <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '25px', letterSpacing: '2px', color: 'var(--white)', marginBottom: '14px' }}>
-              DELETE PENDING PURCHASE
+              DELETE PURCHASE
             </h2>
             <p style={{ color: 'var(--gray-light)', fontSize: '13px', lineHeight: '1.65', marginBottom: '14px' }}>
-              Permanently delete the unverified WhatsApp order for <strong style={{ color: 'var(--white)' }}>{deleteTarget.buyer_name}</strong>?
+              Permanently delete the order for <strong style={{ color: 'var(--white)' }}>{deleteTarget.buyer_name}</strong>?
             </p>
             <div style={{
               background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.22)',
               borderRadius: '8px', padding: '11px 13px', color: '#fca5a5', fontSize: '12px', lineHeight: '1.55',
               marginBottom: '22px',
             }}>
-              This cannot be undone. Only the pending purchase record will be removed; no tickets or seats have been issued for it.
+              This cannot be undone. The purchase record and all its unscanned tickets will be permanently deleted. Revenue totals will update automatically. <strong>Tickets already scanned at the gate cannot be deleted.</strong>
             </div>
             <div style={{ display: 'flex', gap: '10px' }}>
               <button
@@ -616,7 +616,8 @@ function PurchaseRow({ purchase: p, expanded, onToggle, displayAmount, onVerify,
     const tickets = p.tickets || []
   const scanned = tickets.filter(t => t.scanned).length
   const voided  = tickets.filter(t => t.voided).length
-  const canDelete = p.status === 'whatsapp_pending' && tickets.length === 0
+  // Allow delete on ALL statuses — server will guard against deleting scanned-at-gate tickets
+  const canDelete = !tickets.some(t => t.scanned)
 
   const formattedDate = new Date(p.created_at).toLocaleDateString('en-PK', {
     day: 'numeric', month: 'short', year: 'numeric',

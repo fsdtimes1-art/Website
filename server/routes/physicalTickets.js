@@ -141,7 +141,65 @@ router.get('/batches', async (req, res) => {
 });
 
 // ============================================================
+// DELETE /api/admin/physical-tickets/batches/:id
+// Deletes a batch and ALL its physical tickets from the database.
+// Guard: blocked if any ticket in the batch has been scanned at the gate.
+// ============================================================
+router.delete('/batches/:id', async (req, res) => {
+  try {
+    const batchId = req.params.id;
+
+    // Check batch exists
+    const { data: batch, error: batchErr } = await supabase
+      .from('physical_ticket_batches')
+      .select('id, batch_ref')
+      .eq('id', batchId)
+      .maybeSingle();
+
+    if (batchErr) throw batchErr;
+    if (!batch) return res.status(404).json({ error: 'Batch not found' });
+
+    // Block if any ticket in this batch has been scanned
+    const { data: scanned, error: scanErr } = await supabase
+      .from('physical_tickets')
+      .select('serial_code')
+      .eq('batch_id', batchId)
+      .eq('scanned', true)
+      .limit(1);
+
+    if (scanErr) throw scanErr;
+    if (scanned && scanned.length > 0) {
+      return res.status(400).json({
+        error: `Cannot delete batch ${batch.batch_ref} — ticket ${scanned[0].serial_code} has already been scanned at the gate.`
+      });
+    }
+
+    // Delete tickets first, then the batch
+    const { error: ticketDelErr } = await supabase
+      .from('physical_tickets')
+      .delete()
+      .eq('batch_id', batchId);
+
+    if (ticketDelErr) throw ticketDelErr;
+
+    const { error: batchDelErr } = await supabase
+      .from('physical_ticket_batches')
+      .delete()
+      .eq('id', batchId);
+
+    if (batchDelErr) throw batchDelErr;
+
+    console.log(`🗑️ Physical ticket batch ${batch.batch_ref} (id: ${batchId}) deleted`);
+    res.json({ success: true, batchId, batchRef: batch.batch_ref });
+  } catch (err) {
+    console.error('Delete batch error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ============================================================
 // POST /api/admin/physical-tickets/batches
+
 // Create a new batch: validate → generate serials → render PDF → upload → respond
 //
 // Accepts multipart/form-data:

@@ -458,12 +458,15 @@ router.patch('/purchases/:id/verify-whatsapp', requireAdmin, async (req, res) =>
 });
 
 // DELETE /admin/purchases/:id
-// Permanently removes an unverified WhatsApp-pending purchase only.
+// Permanently deletes a purchase and its associated tickets.
+// Works for ALL statuses (whatsapp_pending, completed, etc.).
+// Revenue totals and ticket counts drop automatically since dashboard queries are live.
+// Guard: blocks deletion if ANY ticket in the order has already been scanned at the gate.
 router.delete('/purchases/:id', requireAdmin, async (req, res) => {
   try {
     const { data: purchase, error: purchaseError } = await supabase
       .from('purchases')
-      .select('id, status')
+      .select('id, status, buyer_name, total_amount')
       .eq('id', req.params.id)
       .single();
 
@@ -471,42 +474,48 @@ router.delete('/purchases/:id', requireAdmin, async (req, res) => {
       return res.status(404).json({ error: 'Purchase not found' });
     }
 
-    if (purchase.status !== 'whatsapp_pending') {
-      return res.status(400).json({ error: 'Only unverified WhatsApp-pending purchases can be deleted' });
-    }
-
-    const { data: tickets, error: ticketsError } = await supabase
+    // Block if any ticket has been scanned (entry already granted — can't un-admit someone)
+    const { data: scannedTickets, error: scanErr } = await supabase
       .from('tickets')
-      .select('id, scanned')
+      .select('id, seat_number, scanned')
       .eq('purchase_id', purchase.id)
+      .eq('scanned', true)
       .limit(1);
 
-    if (ticketsError) throw ticketsError;
-    if (tickets && tickets.length > 0) {
-      return res.status(400).json({ error: 'Cannot delete a purchase with issued or scanned tickets' });
+    if (scanErr) throw scanErr;
+
+    if (scannedTickets && scannedTickets.length > 0) {
+      return res.status(400).json({
+        error: `Cannot delete — ticket ${scannedTickets[0].seat_number} has already been scanned at the gate. The holder has been admitted.`
+      });
     }
 
-    // Re-check status in the mutation to avoid deleting a purchase verified concurrently.
-    const { data: deletedRows, error: deleteError } = await supabase
+    // Delete tickets first (cascade safety), then purchase
+    const { error: ticketDeleteErr } = await supabase
+      .from('tickets')
+      .delete()
+      .eq('purchase_id', purchase.id);
+
+    if (ticketDeleteErr) throw ticketDeleteErr;
+
+    const { error: deleteErr } = await supabase
       .from('purchases')
       .delete()
-      .eq('id', purchase.id)
-      .eq('status', 'whatsapp_pending')
-      .select('id');
+      .eq('id', purchase.id);
 
-    if (deleteError) throw deleteError;
-    if (!deletedRows || deletedRows.length === 0) {
-      return res.status(409).json({ error: 'Purchase was updated before deletion. Refresh and try again.' });
-    }
+    if (deleteErr) throw deleteErr;
 
+    console.log(`🗑️ Purchase ${purchase.id} (${purchase.buyer_name}, ${purchase.status}, PKR ${purchase.total_amount}) deleted by ${req.adminAccount}`);
     res.json({ success: true, id: purchase.id });
   } catch (err) {
-    console.error('Delete WhatsApp purchase error:', err);
+    console.error('Delete purchase error:', err);
     res.status(500).json({ error: err.message });
   }
 });
 
+
 // ============================================================
+
 // VOID E-TICKET — admin only
 // PATCH /admin/tickets/:id/void
 // Voids a specific e-ticket (e.g. after customer refund).

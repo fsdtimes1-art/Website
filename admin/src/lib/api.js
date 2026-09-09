@@ -226,6 +226,10 @@ export async function getPhysicalBatchPdfUrl(batchId) {
   return ptRequest(`/batches/${batchId}/pdf`)
 }
 
+export async function deletePhysicalBatch(batchId) {
+  return ptRequest(`/batches/${batchId}`, { method: 'DELETE' })
+}
+
 export async function getPhysicalTickets(params = {}) {
   const qs = new URLSearchParams()
   if (params.batchId) qs.set('batchId', params.batchId)

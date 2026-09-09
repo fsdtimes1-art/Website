@@ -63,11 +63,11 @@ export default function Sidebar({ isOpen, onClose }) {
         <div>
           <span style={{
             fontFamily:    'var(--font-display)',
-            fontSize:      '22px',
-            letterSpacing: '4px',
+            fontSize:      '17px',
+            letterSpacing: '3px',
             color:         'var(--gold)',
           }}>
-            EVENT<span style={{ color: 'var(--white)' }}>FLOW</span>
+            FAISALABAD <span style={{ color: 'var(--white)' }}>TIMES</span>
           </span>
           <p style={{
             color:         'var(--gray-mid)',

@@ -11,6 +11,7 @@ import {
   getPhysicalTicketStats,
   getPhysicalBatches,
   getPhysicalBatchPdfUrl,
+  deletePhysicalBatch,
   createPhysicalBatch,
   getPhysicalTickets,
   activateSerialRange,
@@ -117,8 +118,14 @@ function Toast({ msg, type, onClose }) {
 // ═══════════════════════════════════════════════════════════════
 // TAB 1 — OVERVIEW
 // ═══════════════════════════════════════════════════════════════
-function OverviewTab({ stats, batches, loadingStats, loadingBatches, onDownloadPdf }) {
+function OverviewTab({ stats, batches, loadingStats, loadingBatches, onDownloadPdf, onDeleteBatch, events }) {
   const [downloadingId, setDownloadingId] = useState(null)
+  const [deletingId,    setDeletingId]    = useState(null)
+  const [filterEventId, setFilterEventId] = useState('')
+
+  const filteredBatches = filterEventId
+    ? batches.filter(b => b.event_id === filterEventId)
+    : batches
 
   async function handleDownload(batch) {
     setDownloadingId(batch.id)
@@ -128,13 +135,30 @@ function OverviewTab({ stats, batches, loadingStats, loadingBatches, onDownloadP
       a.href     = signedUrl
       a.target   = '_blank'
       a.download = `${batch.batch_ref}.pdf`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
+      document.body.appendChild(a); a.click(); document.body.removeChild(a)
     } catch (err) {
       alert(`PDF download failed: ${err.message}`)
     } finally {
       setDownloadingId(null)
+    }
+  }
+
+  async function handleDelete(batch) {
+    const hasScanned = (batch.ticketCounts?.scanned ?? 0) > 0
+    const msg = hasScanned
+      ? `Batch ${batch.batch_ref} has ${batch.ticketCounts.scanned} already-scanned ticket(s) — it CANNOT be deleted.`
+      : `Delete batch ${batch.batch_ref} and ALL ${batch.quantity} tickets permanently? This cannot be undone.`
+
+    if (hasScanned) { alert(msg); return }
+    if (!window.confirm(msg)) return
+
+    setDeletingId(batch.id)
+    try {
+      await onDeleteBatch(batch.id)
+    } catch (err) {
+      alert(`Delete failed: ${err.message}`)
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -150,22 +174,35 @@ function OverviewTab({ stats, batches, loadingStats, loadingBatches, onDownloadP
         <MetricCard label="Void"           value={loadingStats ? '…' : stats?.voided}       icon="❌" accent="#f87171" />
       </div>
 
+      {/* Event filter + section label */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+        <p style={{ ...S.label, margin: 0 }}>Print Batches ({filteredBatches.length})</p>
+        <select
+          className="input"
+          value={filterEventId}
+          onChange={e => setFilterEventId(e.target.value)}
+          style={{ fontSize: '12px', padding: '7px 12px', maxWidth: '240px' }}
+        >
+          <option value="">All Events</option>
+          {events.map(ev => <option key={ev.id} value={ev.id}>{ev.name}</option>)}
+        </select>
+      </div>
+
       {/* Batch cards */}
-      <p style={{ ...S.label, marginBottom: '16px' }}>Print Batches</p>
       {loadingBatches ? (
         <div style={{ display: 'flex', justifyContent: 'center', padding: '60px 0' }}>
           <div className="spinner" />
         </div>
-      ) : batches.length === 0 ? (
+      ) : filteredBatches.length === 0 ? (
         <div style={{ ...S.card, padding: '60px', textAlign: 'center' }}>
           <p style={{ fontSize: '40px', marginBottom: '12px' }}>🎟️</p>
           <p style={{ color: 'var(--gray-mid)', fontSize: '14px' }}>
-            No batches yet. Create your first batch in the Generator tab.
+            {filterEventId ? 'No batches for this event.' : 'No batches yet. Create your first batch in the Generator tab.'}
           </p>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {batches.map(b => (
+          {filteredBatches.map(b => (
             <div key={b.id} style={{ ...S.card, padding: '20px 24px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
                 <div>
@@ -185,6 +222,7 @@ function OverviewTab({ stats, batches, loadingStats, loadingBatches, onDownloadP
                     📋 {b.ticketCounts?.inactive ?? 0} unused &nbsp;
                     📷 {b.ticketCounts?.scanned ?? 0} scanned
                   </span>
+                  {/* PDF Download */}
                   <button
                     onClick={() => handleDownload(b)}
                     disabled={!b.pdf_url || downloadingId === b.id}
@@ -192,6 +230,22 @@ function OverviewTab({ stats, batches, loadingStats, loadingBatches, onDownloadP
                     style={{ fontSize: '12px', padding: '8px 16px', opacity: !b.pdf_url ? 0.4 : 1 }}
                   >
                     {downloadingId === b.id ? '…' : '⬇ PDF'}
+                  </button>
+                  {/* Delete batch */}
+                  <button
+                    onClick={() => handleDelete(b)}
+                    disabled={deletingId === b.id}
+                    style={{
+                      fontSize: '12px', padding: '8px 12px',
+                      background: 'rgba(239,68,68,0.1)',
+                      border: '1px solid rgba(239,68,68,0.3)',
+                      color: '#f87171', borderRadius: '8px',
+                      cursor: deletingId === b.id ? 'not-allowed' : 'pointer',
+                      opacity: deletingId === b.id ? 0.6 : 1,
+                    }}
+                    title="Delete entire batch from database"
+                  >
+                    {deletingId === b.id ? '…' : '🗑️'}
                   </button>
                 </div>
               </div>
@@ -202,6 +256,7 @@ function OverviewTab({ stats, batches, loadingStats, loadingBatches, onDownloadP
     </div>
   )
 }
+
 
 // ═══════════════════════════════════════════════════════════════
 // TAB 2 — GENERATOR
@@ -351,12 +406,12 @@ function GeneratorTab({ events, onCreated, onToast }) {
           </div>
         </div>
 
-        {/* Right column — QR placement */}
+        {/* Right column — QR placement + live preview */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <div style={{ ...S.card, padding: '20px' }}>
             <p style={{ ...S.sectionHead, marginBottom: '16px' }}>QR CODE PLACEMENT</p>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
               <div>
                 <label style={S.label}>QR Left Edge (% of width)</label>
                 <input type="number" min={0} max={95} step={1} className="input"
@@ -373,6 +428,58 @@ function GeneratorTab({ events, onCreated, onToast }) {
                   value={form.qrSize} onChange={e => setField('qrSize', parseFloat(e.target.value))} />
               </div>
             </div>
+
+            {/* ── LIVE PREVIEW ── */}
+            <p style={{ ...S.label, marginBottom: '8px' }}>Live Preview</p>
+            <div style={{
+              position: 'relative',
+              width: '100%',
+              // keep the aspect ratio of the real ticket
+              paddingBottom: `${(form.ticketH / form.ticketW) * 100}%`,
+              background: template
+                ? `url(${URL.createObjectURL(template)}) center/cover no-repeat`
+                : 'linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%)',
+              border: '1px solid rgba(255,255,255,0.12)',
+              borderRadius: '8px',
+              overflow: 'hidden',
+            }}>
+              {/* dark overlay if using template */}
+              {template && (
+                <div style={{
+                  position: 'absolute', inset: 0,
+                  background: 'rgba(0,0,0,0.45)',
+                }} />
+              )}
+
+              {/* Ticket label placeholder */}
+              <div style={{
+                position: 'absolute', left: '5%', top: '18%',
+                color: 'rgba(255,255,255,0.25)', fontSize: '10px', fontFamily: 'var(--font-display)',
+                letterSpacing: '2px', pointerEvents: 'none',
+              }}>
+                FAISALABAD TIMES
+              </div>
+
+              {/* QR box */}
+              <div style={{
+                position: 'absolute',
+                left:   `${form.qrX}%`,
+                top:    `${form.qrY}%`,
+                width:  `${(form.qrSize / form.ticketW) * 100}%`,
+                aspectRatio: '1 / 1',
+                border: '2px solid #29dcff',
+                background: 'rgba(41, 220, 255, 0.1)',
+                borderRadius: '4px',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 0 12px rgba(41,220,255,0.4)',
+                pointerEvents: 'none',
+              }}>
+                <span style={{ fontSize: '10px', color: '#29dcff', fontWeight: '700', letterSpacing: '0.5px' }}>QR</span>
+              </div>
+            </div>
+            <p style={{ color: 'var(--gray-dark)', fontSize: '10px', marginTop: '6px' }}>
+              Cyan box = QR code position on the printed ticket
+            </p>
           </div>
 
           <div style={{ ...S.card, padding: '20px' }}>
@@ -383,6 +490,7 @@ function GeneratorTab({ events, onCreated, onToast }) {
                 <input type="number" min={80} max={350} step={1} className="input"
                   value={form.ticketW} onChange={e => setField('ticketW', parseFloat(e.target.value))} />
               </div>
+
               <div>
                 <label style={S.label}>Height (mm)</label>
                 <input type="number" min={40} max={200} step={1} className="input"
@@ -836,6 +944,12 @@ export default function PhysicalTickets() {
     getAdminEvents().then(setEvents).catch(console.error)
   }, [])
 
+  async function handleDeleteBatch(batchId) {
+    await deletePhysicalBatch(batchId)
+    showToast('Batch deleted successfully', 'success')
+    await fetchData()
+  }
+
   return (
     <div style={{ padding: '36px 40px', maxWidth: '1200px' }}>
 
@@ -870,11 +984,14 @@ export default function PhysicalTickets() {
         <OverviewTab
           stats={stats}
           batches={batches}
+          events={events}
           loadingStats={loadingStats}
           loadingBatches={loadingBatches}
           onDownloadPdf={getPhysicalBatchPdfUrl}
+          onDeleteBatch={handleDeleteBatch}
         />
       )}
+
 
       {tab === 'generator' && (
         <GeneratorTab
