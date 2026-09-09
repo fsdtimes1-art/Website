@@ -122,6 +122,9 @@ function OverviewTab({ stats, batches, loadingStats, loadingBatches, onDownloadP
   const [downloadingId, setDownloadingId] = useState(null)
   const [deletingId,    setDeletingId]    = useState(null)
   const [filterEventId, setFilterEventId] = useState('')
+  // After async fetch, store blob URLs here so user gets a real <a> link
+  // (Chrome blocks programmatic a.click() triggered after a long await)
+  const [readyPdfs, setReadyPdfs] = useState({})   // { [batchId]: { blobUrl, filename } }
 
   const filteredBatches = filterEventId
     ? batches.filter(b => b.event_id === filterEventId)
@@ -130,15 +133,11 @@ function OverviewTab({ stats, batches, loadingStats, loadingBatches, onDownloadP
   async function handleDownload(batch) {
     setDownloadingId(batch.id)
     try {
-      const { blobUrl, filename } = await onDownloadPdf(batch.id, batch.batch_ref)
-      const a = document.createElement('a')
-      a.href     = blobUrl
-      a.download = filename
-      document.body.appendChild(a); a.click(); document.body.removeChild(a)
-      // Free the blob memory after a short delay
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 5000)
+      const result = await onDownloadPdf(batch.id, batch.batch_ref)
+      // Store blob URL — user will click the rendered <a> link (popup-blocker safe)
+      setReadyPdfs(prev => ({ ...prev, [batch.id]: result }))
     } catch (err) {
-      alert(`PDF download failed: ${err.message}`)
+      alert(`PDF generation failed: ${err.message}`)
     } finally {
       setDownloadingId(null)
     }
@@ -223,15 +222,32 @@ function OverviewTab({ stats, batches, loadingStats, loadingBatches, onDownloadP
                     📋 {b.ticketCounts?.inactive ?? 0} unused &nbsp;
                     📷 {b.ticketCounts?.scanned ?? 0} scanned
                   </span>
-                  {/* PDF Download */}
-                  <button
-                    onClick={() => handleDownload(b)}
-                    disabled={!b.pdf_url || downloadingId === b.id}
-                    className="btn-gold"
-                    style={{ fontSize: '12px', padding: '8px 16px', opacity: !b.pdf_url ? 0.4 : 1 }}
-                  >
-                    {downloadingId === b.id ? '…' : '⬇ PDF'}
-                  </button>
+                  {/* PDF Download — 3 states */}
+                  {readyPdfs[b.id] ? (
+                    // PDF ready — real <a> link so browser downloads without popup-block
+                    <a
+                      href={readyPdfs[b.id].blobUrl}
+                      download={readyPdfs[b.id].filename}
+                      className="btn-gold"
+                      style={{ fontSize: '12px', padding: '8px 16px', textDecoration: 'none', display: 'inline-block' }}
+                      onClick={() => {
+                        // Revoke blob URL after 10s to free memory
+                        setTimeout(() => URL.revokeObjectURL(readyPdfs[b.id].blobUrl), 10000)
+                        setReadyPdfs(prev => { const n = {...prev}; delete n[b.id]; return n })
+                      }}
+                    >
+                      💾 Save PDF
+                    </a>
+                  ) : (
+                    <button
+                      onClick={() => handleDownload(b)}
+                      disabled={downloadingId === b.id}
+                      className="btn-gold"
+                      style={{ fontSize: '12px', padding: '8px 16px', opacity: downloadingId === b.id ? 0.6 : 1, minWidth: '100px' }}
+                    >
+                      {downloadingId === b.id ? '⏳ Generating…' : '⬇ PDF'}
+                    </button>
+                  )}
                   {/* Delete batch */}
                   <button
                     onClick={() => handleDelete(b)}
