@@ -172,3 +172,129 @@ export async function reorderPortfolioItems(orderedIds) {
 export async function verifyTicket(qrCode) {
   return request(`/tickets/verify/${qrCode}`, { method: 'POST' }, false)
 }
+
+// ============================================================
+// PHYSICAL TICKETS
+// ============================================================
+
+const PT_BASE = (import.meta.env.VITE_API_URL || '') + '/api/admin/physical-tickets'
+
+async function ptRequest(path, options = {}) {
+  const res = await fetch(`${PT_BASE}${path}`, {
+    credentials: 'include',
+    headers: {
+      'x-admin-key': getStoredKey(),
+      ...options.headers,
+    },
+    ...options,
+  })
+  // Handle non-JSON responses (e.g. PDF stream errors)
+  const contentType = res.headers.get('content-type') || ''
+  const data = contentType.includes('application/json') ? await res.json() : await res.text()
+  if (!res.ok) throw new Error((typeof data === 'object' ? data.error : data) || `Request failed: ${res.status}`)
+  return data
+}
+
+export async function getPhysicalTicketStats() {
+  return ptRequest('/stats')
+}
+
+export async function getPhysicalBatches() {
+  return ptRequest('/batches')
+}
+
+/**
+ * Creates a new batch. Sends multipart/form-data so the server
+ * receives the optional template image file.
+ *
+ * @param {FormData} formData  - Must include eventId, categoryId, quantity,
+ *                               startSerial, and optionally a "template" file.
+ */
+export async function createPhysicalBatch(formData) {
+  // Note: do NOT set Content-Type — browser sets it with boundary automatically
+  return ptRequest('/batches', {
+    method: 'POST',
+    body:   formData,
+  })
+}
+
+export async function getPhysicalBatchPdfUrl(batchId) {
+  return ptRequest(`/batches/${batchId}/pdf`)
+}
+
+export async function getPhysicalTickets(params = {}) {
+  const qs = new URLSearchParams()
+  if (params.batchId) qs.set('batchId', params.batchId)
+  if (params.status)  qs.set('status',  params.status)
+  if (params.scanned !== undefined) qs.set('scanned', String(params.scanned))
+  if (params.page)    qs.set('page',    String(params.page))
+  if (params.limit)   qs.set('limit',   String(params.limit))
+  const suffix = qs.toString() ? `?${qs.toString()}` : ''
+  return ptRequest(`/tickets${suffix}`)
+}
+
+export async function activateSerialRange(payload) {
+  return ptRequest('/tickets/activate', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify(payload),
+  })
+}
+
+export async function voidSerialRange(payload) {
+  return ptRequest('/tickets/void', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify(payload),
+  })
+}
+
+// ============================================================
+// PURCHASES — CSV EXPORT (client-side, no API call)
+// ============================================================
+
+/**
+ * Converts a filtered purchases array to a CSV Blob and triggers browser download.
+ * Called from Purchases.jsx "Export CSV" button.
+ *
+ * @param {Array}  purchases   - filtered purchases array from state
+ * @param {string} filename    - optional filename (default: purchases-YYYY-MM-DD.csv)
+ */
+export function exportPurchasesCSV(purchases, filename) {
+  const headers = [
+    'Date', 'Buyer Name', 'Email', 'Phone',
+    'Event', 'Status', 'Total (PKR)',
+    'Tickets', 'Seats',
+  ]
+
+  const rows = purchases.map(p => {
+    const date    = p.created_at ? new Date(p.created_at).toLocaleDateString('en-PK') : ''
+    const event   = p.events?.name   || ''
+    const seats   = (p.tickets || []).map(t => t.seat_number).join(' | ')
+    const tickets = (p.tickets || []).length
+
+    return [
+      date,
+      p.buyer_name    || '',
+      p.buyer_email   || '',
+      p.buyer_phone   || '',
+      event,
+      p.status        || '',
+      Number(p.total_amount || 0).toFixed(2),
+      tickets,
+      seats,
+    ].map(v => `"${String(v).replace(/"/g, '""')}"`)
+  })
+
+  const csv     = [headers.join(','), ...rows.map(r => r.join(','))].join('\r\n')
+  const blob    = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url     = URL.createObjectURL(blob)
+  const link    = document.createElement('a')
+  const today   = new Date().toISOString().split('T')[0]
+  link.href     = url
+  link.download = filename || `purchases-${today}.csv`
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
+}

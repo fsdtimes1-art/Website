@@ -1,14 +1,15 @@
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useState }                              from 'react'
 import { getStoredKey, getStoredRole, getStoredLoginAt, clearStoredKey } from './lib/api'
-import Sidebar    from './components/Sidebar'
-import Login      from './pages/Login'
-import Dashboard  from './pages/Dashboard'
-import Events     from './pages/Events'
-import EventForm  from './pages/EventForm'
-import Purchases  from './pages/Purchases'
-import ScanTicket from './pages/ScanTicket'
-import Portfolio  from './pages/Portfolio'
+import Sidebar        from './components/Sidebar'
+import Login          from './pages/Login'
+import Dashboard      from './pages/Dashboard'
+import Events         from './pages/Events'
+import EventForm      from './pages/EventForm'
+import Purchases      from './pages/Purchases'
+import ScanTicket     from './pages/ScanTicket'
+import Portfolio      from './pages/Portfolio'
+import PhysicalTickets from './pages/PhysicalTickets'
 
 const SCANNER_SESSION_MS = 30 * 60 * 1000 // 30 minutes
 
@@ -132,6 +133,9 @@ export default function App() {
       } />
       <Route path="/purchases" element={
         <RequireAuth><RequireAdmin><AdminShell><Purchases /></AdminShell></RequireAdmin></RequireAuth>
+      } />
+      <Route path="/physical-tickets" element={
+        <RequireAuth><RequireAdmin><AdminShell><PhysicalTickets /></AdminShell></RequireAdmin></RequireAuth>
       } />
       <Route path="/portfolio" element={
         <RequireAuth><RequireAdmin><AdminShell><Portfolio /></AdminShell></RequireAdmin></RequireAuth>

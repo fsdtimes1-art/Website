@@ -3,11 +3,12 @@ require('./services/reminderScheduler');
 const express = require('express');
 const cors    = require('cors');
 
-const eventsRouter    = require('./routes/events');
-const ticketsRouter   = require('./routes/tickets');
-const adminRouter     = require('./routes/admin');
-const portfolioRouter = require('./routes/portfolio');
-const paymentsRouter  = require('./routes/payments');
+const eventsRouter          = require('./routes/events');
+const ticketsRouter         = require('./routes/tickets');
+const adminRouter           = require('./routes/admin');
+const portfolioRouter       = require('./routes/portfolio');
+const paymentsRouter        = require('./routes/payments');
+const physicalTicketsRouter = require('./routes/physicalTickets');
 
 const app = express();
 
@@ -15,6 +16,8 @@ const app = express();
 const allowedOrigins = [
   'https://faisalabadtimes.vercel.app',
   'https://www.faisalabadtimes.co',
+  'https://faisalabadtimes.co',           // ← apex domain (no www)
+  'https://faisalabadtimes-admin.vercel.app',
   process.env.CLIENT_URL,
   process.env.ADMIN_URL,
   'http://localhost:5173',
@@ -53,6 +56,16 @@ app.use('/api/tickets',   ticketsRouter);
 app.use('/api/admin',     adminRouter);
 app.use('/api/portfolio', portfolioRouter);
 app.use('/api/payments',  paymentsRouter);
+
+// Physical ticketing — admin-only, inline auth guard (mirrors admin.js key logic)
+app.use('/api/admin/physical-tickets', (req, res, next) => {
+  const key = req.headers['x-admin-key'];
+  if (!key) return res.status(401).json({ error: 'Unauthorized' });
+  const validKeys = [process.env.ADMIN_SECRET_KEY, process.env.ADMIN2_SECRET_KEY].filter(Boolean);
+  if (!validKeys.includes(key)) return res.status(403).json({ error: 'Forbidden' });
+  req.adminAccount = key === process.env.ADMIN_SECRET_KEY ? 'admin' : 'admin2';
+  next();
+}, physicalTicketsRouter);
 
 // Health check
 app.get('/api/health', (req, res) => {

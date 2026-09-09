@@ -2,11 +2,12 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { clearStoredKey, getStoredRole }  from '../lib/api'
 
 const NAV = [
-  { path: '/',          icon: '📊', label: 'Dashboard'   },
-  { path: '/events',    icon: '🎭', label: 'Events'      },
-  { path: '/purchases', icon: '🧾', label: 'Purchases'   },
-  { path: '/scan',      icon: '📷', label: 'Scan Ticket' },
-  { path: '/portfolio', icon: '🏆', label: 'Portfolio'   },
+  { path: '/',                 icon: '📊', label: 'Dashboard'        },
+  { path: '/events',           icon: '🎭', label: 'Events'           },
+  { path: '/purchases',        icon: '🧾', label: 'Purchases'        },
+  { path: '/physical-tickets', icon: '🎟️', label: 'Physical Tickets' },
+  { path: '/scan',             icon: '📷', label: 'Scan Ticket'      },
+  { path: '/portfolio',        icon: '🏆', label: 'Portfolio'        },
 ]
 
 export default function Sidebar({ isOpen, onClose }) {

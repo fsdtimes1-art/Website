@@ -1,0 +1,518 @@
+// server/routes/physicalTickets.js
+//
+// Physical Ticketing API — admin only.
+// All routes are protected by the adminAuth + requireAdmin middleware
+// applied in the parent router mount in index.js.
+
+const express  = require('express');
+const router   = express.Router();
+const multer   = require('multer');
+const supabase = require('../lib/supabase');
+const {
+  generateBatchSerials,
+  generatePhysicalTicketPDF,
+  uploadPDFToStorage,
+  uploadTemplateToStorage,
+  createSignedUrl,
+  currentYear,
+} = require('../services/physicalTicketService');
+
+// Multer — memory storage (no disk writes, safe for Vercel serverless)
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits:  { fileSize: 5 * 1024 * 1024 }, // 5 MB max template
+  fileFilter: (_req, file, cb) => {
+    if (['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only JPEG, PNG or WebP images are accepted'));
+    }
+  },
+});
+
+// ============================================================
+// HELPER: auto-increment batch reference
+// ============================================================
+async function nextBatchRef() {
+  const year = currentYear();
+  const prefix = `BATCH-${year}-`;
+
+  const { data, error } = await supabase
+    .from('physical_ticket_batches')
+    .select('batch_ref')
+    .like('batch_ref', `${prefix}%`)
+    .order('batch_ref', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw error;
+
+  let nextNum = 1;
+  if (data?.batch_ref) {
+    const last = parseInt(data.batch_ref.replace(prefix, ''), 10);
+    if (!isNaN(last)) nextNum = last + 1;
+  }
+  return `${prefix}${String(nextNum).padStart(3, '0')}`;
+}
+
+// ============================================================
+// GET /api/admin/physical-tickets/stats
+// Aggregate metrics for the batch dashboard
+// ============================================================
+router.get('/stats', async (req, res) => {
+  try {
+    const [batchRes, ticketRes] = await Promise.all([
+      supabase.from('physical_ticket_batches').select('id', { count: 'exact', head: true }),
+      supabase.from('physical_tickets').select('status, scanned'),
+    ]);
+
+    if (batchRes.error) throw batchRes.error;
+    if (ticketRes.error) throw ticketRes.error;
+
+    const tickets = ticketRes.data || [];
+    const total     = tickets.length;
+    const active    = tickets.filter(t => t.status === 'active').length;
+    const inactive  = tickets.filter(t => t.status === 'inactive').length;
+    const voided    = tickets.filter(t => t.status === 'void').length;
+    const scanned   = tickets.filter(t => t.scanned).length;
+
+    res.json({
+      totalBatches: batchRes.count || 0,
+      totalPrinted: total,
+      active,
+      inactive,
+      voided,
+      scanned,
+    });
+  } catch (err) {
+    console.error('Physical ticket stats error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ============================================================
+// GET /api/admin/physical-tickets/batches
+// List all batches with event and category details
+// ============================================================
+router.get('/batches', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('physical_ticket_batches')
+      .select(`
+        *,
+        events          (id, name, date, venue),
+        seat_categories (id, name, price)
+      `)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    // Attach per-batch ticket counts
+    const batchIds = (data || []).map(b => b.id);
+    let countsMap = {};
+
+    if (batchIds.length > 0) {
+      const { data: counts, error: cErr } = await supabase
+        .from('physical_tickets')
+        .select('batch_id, status, scanned')
+        .in('batch_id', batchIds);
+
+      if (cErr) throw cErr;
+
+      (counts || []).forEach(t => {
+        if (!countsMap[t.batch_id]) {
+          countsMap[t.batch_id] = { active: 0, inactive: 0, void: 0, scanned: 0 };
+        }
+        countsMap[t.batch_id][t.status]++;
+        if (t.scanned) countsMap[t.batch_id].scanned++;
+      });
+    }
+
+    const enriched = (data || []).map(b => ({
+      ...b,
+      ticketCounts: countsMap[b.id] || { active: 0, inactive: 0, void: 0, scanned: 0 },
+    }));
+
+    res.json(enriched);
+  } catch (err) {
+    console.error('List batches error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ============================================================
+// POST /api/admin/physical-tickets/batches
+// Create a new batch: validate → generate serials → render PDF → upload → respond
+//
+// Accepts multipart/form-data:
+//   eventId, categoryId, quantity, startSerial,
+//   qrX, qrY, qrSize, ticketW, ticketH
+//   template (optional file)
+// ============================================================
+router.post('/batches', upload.single('template'), async (req, res) => {
+  try {
+    const {
+      eventId,
+      categoryId,
+      quantity:    quantityRaw,
+      startSerial: startSerialRaw,
+      qrX   = '76',
+      qrY   = '15',
+      qrSize = '24',
+      ticketW = '180',
+      ticketH = '70',
+    } = req.body;
+
+    const quantity    = parseInt(quantityRaw, 10);
+    const startSerial = parseInt(startSerialRaw, 10);
+
+    // ── Validate ──────────────────────────────────────────────
+    if (!eventId || !categoryId) {
+      return res.status(400).json({ error: 'eventId and categoryId are required' });
+    }
+    if (!quantity || quantity < 1 || quantity > 250) {
+      return res.status(400).json({ error: 'Quantity must be between 1 and 250' });
+    }
+    if (!startSerial || startSerial < 1) {
+      return res.status(400).json({ error: 'startSerial must be >= 1' });
+    }
+
+    // ── Fetch event + category ────────────────────────────────
+    const [evRes, catRes] = await Promise.all([
+      supabase.from('events').select('*').eq('id', eventId).single(),
+      supabase.from('seat_categories').select('*').eq('id', categoryId).single(),
+    ]);
+    if (evRes.error || !evRes.data)  return res.status(404).json({ error: 'Event not found' });
+    if (catRes.error || !catRes.data) return res.status(404).json({ error: 'Category not found' });
+
+    const event    = evRes.data;
+    const category = catRes.data;
+
+    // ── Check serial range doesn't collide ────────────────────
+    const endSerial = startSerial + quantity - 1;
+    const year      = currentYear();
+    const firstCode = `PT-${year}-${String(startSerial).padStart(6, '0')}`;
+    const lastCode  = `PT-${year}-${String(endSerial).padStart(6, '0')}`;
+
+    const { data: existing, error: chkErr } = await supabase
+      .from('physical_tickets')
+      .select('serial_code')
+      .gte('serial_code', firstCode)
+      .lte('serial_code', lastCode)
+      .limit(1);
+
+    if (chkErr) throw chkErr;
+    if (existing && existing.length > 0) {
+      return res.status(409).json({
+        error: `Serial range conflicts with existing ticket ${existing[0].serial_code}. Choose a different start serial.`,
+      });
+    }
+
+    // ── Generate batch ref ────────────────────────────────────
+    const batchRef = await nextBatchRef();
+
+    // ── Upload template if provided ───────────────────────────
+    let templateStoragePath = null;
+    if (req.file) {
+      templateStoragePath = await uploadTemplateToStorage(
+        req.file.buffer,
+        batchRef,
+        req.file.mimetype
+      );
+    }
+
+    // ── Insert batch record ───────────────────────────────────
+    const { data: batch, error: batchErr } = await supabase
+      .from('physical_ticket_batches')
+      .insert({
+        event_id:         eventId,
+        seat_category_id: categoryId,
+        batch_ref:        batchRef,
+        quantity,
+        start_serial:     startSerial,
+        end_serial:       endSerial,
+        template_url:     templateStoragePath,
+        created_by:       req.adminAccount || 'admin',
+      })
+      .select()
+      .single();
+
+    if (batchErr) throw batchErr;
+
+    // ── Generate serial rows ──────────────────────────────────
+    const tickets = await generateBatchSerials(
+      batch.id, eventId, categoryId, quantity, startSerial
+    );
+
+    // ── Generate PDF ──────────────────────────────────────────
+    const layout = {
+      qrX:    parseFloat(qrX),
+      qrY:    parseFloat(qrY),
+      qrSize: parseFloat(qrSize),
+      ticketW: parseFloat(ticketW),
+      ticketH: parseFloat(ticketH),
+    };
+
+    const pdfBuffer = await generatePhysicalTicketPDF(
+      { batchRef, quantity, startSerial, endSerial },
+      tickets,
+      event,
+      category,
+      req.file?.buffer || null,
+      layout
+    );
+
+    // ── Upload PDF to Storage ─────────────────────────────────
+    const pdfPath   = await uploadPDFToStorage(pdfBuffer, batchRef);
+    const signedUrl = await createSignedUrl(pdfPath);
+
+    // ── Update batch record with PDF path ─────────────────────
+    await supabase
+      .from('physical_ticket_batches')
+      .update({ pdf_url: pdfPath })
+      .eq('id', batch.id);
+
+    res.status(201).json({
+      batch:      { ...batch, pdf_url: pdfPath },
+      ticketCount: tickets.length,
+      pdfSignedUrl: signedUrl,
+    });
+  } catch (err) {
+    console.error('Create batch error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ============================================================
+// GET /api/admin/physical-tickets/batches/:id/pdf
+// Returns a fresh 24h signed download URL for the batch PDF
+// ============================================================
+router.get('/batches/:id/pdf', async (req, res) => {
+  try {
+    const { data: batch, error } = await supabase
+      .from('physical_ticket_batches')
+      .select('batch_ref, pdf_url')
+      .eq('id', req.params.id)
+      .single();
+
+    if (error || !batch) return res.status(404).json({ error: 'Batch not found' });
+    if (!batch.pdf_url)  return res.status(404).json({ error: 'PDF not yet generated for this batch' });
+
+    const signedUrl = await createSignedUrl(batch.pdf_url);
+    res.json({ signedUrl, batchRef: batch.batch_ref });
+  } catch (err) {
+    console.error('Get batch PDF error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ============================================================
+// GET /api/admin/physical-tickets/tickets
+// Serial ledger — paginated, filterable
+// Query params: batchId, status, scanned, page (default 1), limit (default 50)
+// ============================================================
+router.get('/tickets', async (req, res) => {
+  try {
+    const { batchId, status, scanned, page = '1', limit = '50' } = req.query;
+    const pageNum  = Math.max(1, parseInt(page, 10));
+    const limitNum = Math.min(200, Math.max(1, parseInt(limit, 10)));
+    const from     = (pageNum - 1) * limitNum;
+    const to       = from + limitNum - 1;
+
+    let query = supabase
+      .from('physical_tickets')
+      .select(`
+        *,
+        physical_ticket_batches (batch_ref),
+        events                  (name),
+        seat_categories         (name)
+      `, { count: 'exact' })
+      .order('serial_code', { ascending: true })
+      .range(from, to);
+
+    if (batchId) query = query.eq('batch_id', batchId);
+    if (status && status !== 'all') query = query.eq('status', status);
+    if (scanned === 'true')  query = query.eq('scanned', true);
+    if (scanned === 'false') query = query.eq('scanned', false);
+
+    const { data, error, count } = await query;
+    if (error) throw error;
+
+    res.json({ tickets: data || [], total: count, page: pageNum, limit: limitNum });
+  } catch (err) {
+    console.error('List tickets error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ============================================================
+// POST /api/admin/physical-tickets/tickets/activate
+// Activate a range of serials (from sold/distributed tickets)
+// Body: { batchId, fromSerial, toSerial }
+// ============================================================
+router.post('/tickets/activate', async (req, res) => {
+  try {
+    const { batchId, fromSerial, toSerial } = req.body;
+
+    if (!batchId || fromSerial == null || toSerial == null) {
+      return res.status(400).json({ error: 'batchId, fromSerial, and toSerial are required' });
+    }
+    if (fromSerial > toSerial) {
+      return res.status(400).json({ error: 'fromSerial must be <= toSerial' });
+    }
+
+    // Fetch batch to build serial code range
+    const { data: batch, error: bErr } = await supabase
+      .from('physical_ticket_batches')
+      .select('batch_ref, seat_category_id')
+      .eq('id', batchId)
+      .single();
+
+    if (bErr || !batch) return res.status(404).json({ error: 'Batch not found' });
+
+    const year     = currentYear();
+    const fromCode = `PT-${year}-${String(fromSerial).padStart(6, '0')}`;
+    const toCode   = `PT-${year}-${String(toSerial).padStart(6, '0')}`;
+
+    // Fetch tickets to activate (must be inactive and belong to this batch)
+    const { data: toActivate, error: fetchErr } = await supabase
+      .from('physical_tickets')
+      .select('id, status, serial_code')
+      .eq('batch_id', batchId)
+      .gte('serial_code', fromCode)
+      .lte('serial_code', toCode)
+      .eq('status', 'inactive');
+
+    if (fetchErr) throw fetchErr;
+    if (!toActivate || toActivate.length === 0) {
+      return res.status(400).json({
+        error: 'No inactive tickets found in that range for this batch. Verify the serial numbers.',
+      });
+    }
+
+    const ids = toActivate.map(t => t.id);
+    const now = new Date().toISOString();
+
+    // Activate tickets
+    const { error: updateErr } = await supabase
+      .from('physical_tickets')
+      .update({ status: 'active', activated_at: now, activated_by: req.adminAccount || 'admin' })
+      .in('id', ids);
+
+    if (updateErr) throw updateErr;
+
+    // Atomically increment sold_seats on seat_category
+    const qty = toActivate.length;
+    const { data: cat, error: catErr } = await supabase
+      .from('seat_categories')
+      .select('sold_seats, total_seats')
+      .eq('id', batch.seat_category_id)
+      .single();
+
+    if (catErr) throw catErr;
+
+    const newSold = cat.sold_seats + qty;
+    if (newSold > cat.total_seats) {
+      return res.status(400).json({
+        error: `Activation would exceed total seats (${cat.total_seats}). Only ${cat.total_seats - cat.sold_seats} seats remaining.`,
+      });
+    }
+
+    const { error: seatErr } = await supabase
+      .from('seat_categories')
+      .update({ sold_seats: newSold })
+      .eq('id', batch.seat_category_id);
+
+    if (seatErr) throw seatErr;
+
+    res.json({
+      activated:  qty,
+      fromSerial: fromCode,
+      toSerial:   toCode,
+    });
+  } catch (err) {
+    console.error('Activate serials error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ============================================================
+// POST /api/admin/physical-tickets/tickets/void
+// Void a range of serials (damaged, returned, etc.)
+// Body: { batchId, fromSerial, toSerial }
+// ============================================================
+router.post('/tickets/void', async (req, res) => {
+  try {
+    const { batchId, fromSerial, toSerial } = req.body;
+
+    if (!batchId || fromSerial == null || toSerial == null) {
+      return res.status(400).json({ error: 'batchId, fromSerial, and toSerial are required' });
+    }
+
+    const { data: batch, error: bErr } = await supabase
+      .from('physical_ticket_batches')
+      .select('batch_ref, seat_category_id')
+      .eq('id', batchId)
+      .single();
+
+    if (bErr || !batch) return res.status(404).json({ error: 'Batch not found' });
+
+    const year     = currentYear();
+    const fromCode = `PT-${year}-${String(fromSerial).padStart(6, '0')}`;
+    const toCode   = `PT-${year}-${String(toSerial).padStart(6, '0')}`;
+
+    // Only void active or inactive tickets (not already scanned ones)
+    const { data: toVoid, error: fetchErr } = await supabase
+      .from('physical_tickets')
+      .select('id, status, scanned')
+      .eq('batch_id', batchId)
+      .gte('serial_code', fromCode)
+      .lte('serial_code', toCode)
+      .neq('status', 'void');
+
+    if (fetchErr) throw fetchErr;
+    if (!toVoid || toVoid.length === 0) {
+      return res.status(400).json({ error: 'No voidable tickets found in that range.' });
+    }
+
+    const scannedCount = toVoid.filter(t => t.scanned).length;
+    if (scannedCount > 0) {
+      return res.status(400).json({
+        error: `${scannedCount} ticket(s) in this range have already been scanned at the gate and cannot be voided.`,
+      });
+    }
+
+    const activeCount = toVoid.filter(t => t.status === 'active').length;
+    const ids = toVoid.map(t => t.id);
+
+    const { error: updateErr } = await supabase
+      .from('physical_tickets')
+      .update({ status: 'void' })
+      .in('id', ids);
+
+    if (updateErr) throw updateErr;
+
+    // Decrement sold_seats for previously-active tickets that were voided
+    if (activeCount > 0) {
+      const { data: cat, error: catErr } = await supabase
+        .from('seat_categories')
+        .select('sold_seats')
+        .eq('id', batch.seat_category_id)
+        .single();
+
+      if (catErr) throw catErr;
+
+      await supabase
+        .from('seat_categories')
+        .update({ sold_seats: Math.max(0, cat.sold_seats - activeCount) })
+        .eq('id', batch.seat_category_id);
+    }
+
+    res.json({ voided: toVoid.length, activeDecrement: activeCount });
+  } catch (err) {
+    console.error('Void serials error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+module.exports = router;

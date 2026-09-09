@@ -22,65 +22,31 @@ router.get('/purchase/:purchaseId', async (req, res) => {
 });
 
 // POST /api/tickets/verify/:qrCode — scan ticket at entry gate
+// Handles BOTH online UUID tickets (from purchases) and physical PT-... tickets.
+// Uses the admin_verify_ticket_by_qr RPC for atomic, race-condition-safe scanning.
 router.post('/verify/:qrCode', async (req, res) => {
   try {
-    const { data: ticket, error } = await supabase
-      .from('tickets')
-      .select(`
-        *,
-        events (name, date, venue),
-        seat_categories (name)
-      `)
-      .eq('qr_code', req.params.qrCode)
-      .single();
+    const qrCode = req.params.qrCode.trim();
 
-    // QR code not found in DB
-    if (error || !ticket) {
-      return res.status(404).json({
-        valid: false,
-        message: '❌ Invalid ticket — QR code not recognised'
-      });
+    if (!qrCode) {
+      return res.status(400).json({ valid: false, message: '❌ No QR code provided' });
     }
 
-    // Already scanned
-    if (ticket.scanned) {
-      return res.status(200).json({
-        valid: false,
-        alreadyScanned: true,
-        message: `❌ Ticket already scanned at ${new Date(ticket.scanned_at).toLocaleString('en-PK')}`,
-        ticket: {
-          buyerName: ticket.buyer_name,
-          event:     ticket.events?.name,
-          seat:      ticket.seat_number,
-          category:  ticket.seat_categories?.name
-        }
-      });
+    const { data, error } = await supabase
+      .rpc('admin_verify_ticket_by_qr', { p_qr: qrCode });
+
+    if (error) {
+      console.error('Verify ticket RPC error:', error);
+      return res.status(500).json({ error: error.message });
     }
 
-    // Valid — mark as scanned
-    await supabase
-      .from('tickets')
-      .update({
-        scanned:    true,
-        scanned_at: new Date().toISOString()
-      })
-      .eq('id', ticket.id);
-
-    res.json({
-      valid: true,
-      message: '✅ Ticket verified — welcome!',
-      ticket: {
-        buyerName: ticket.buyer_name,
-        event:     ticket.events?.name,
-        venue:     ticket.events?.venue,
-        date:      ticket.events?.date,
-        seat:      ticket.seat_number,
-        category:  ticket.seat_categories?.name
-      }
-    });
+    // The RPC returns a JSONB object matching the frontend result shape:
+    // { valid: bool, message: string, alreadyScanned?: bool, ticket?: {...} }
+    return res.json(data);
   } catch (err) {
+    console.error('Verify ticket error:', err);
     res.status(500).json({ error: err.message });
   }
 });
 
-module.exports = router;
+module.exports = router;

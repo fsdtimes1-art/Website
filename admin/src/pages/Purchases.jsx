@@ -1,6 +1,6 @@
 // admin/src/pages/Purchases.jsx
 import { useEffect, useState } from 'react'
-import { getPurchases, getAdminEvents, createManualSale, verifyWhatsappPurchase, deletePendingPurchase } from '../lib/api'
+import { getPurchases, getAdminEvents, createManualSale, verifyWhatsappPurchase, deletePendingPurchase, exportPurchasesCSV } from '../lib/api'
 
 export default function Purchases() {
   const [purchases, setPurchases] = useState([])
@@ -58,7 +58,8 @@ export default function Purchases() {
     return (
       p.buyer_name?.toLowerCase().includes(q)  ||
       p.buyer_email?.toLowerCase().includes(q) ||
-      p.buyer_phone?.toLowerCase().includes(q)
+      p.buyer_phone?.toLowerCase().includes(q) ||
+      p.tickets?.some(t => t.seat_number?.toLowerCase().includes(q))
     )
   })
 
@@ -218,7 +219,7 @@ export default function Purchases() {
           </span>
           <input
             className="input"
-            placeholder="Search name, email, phone..."
+            placeholder="Search name, email, phone, seat…"
             value={search}
             onChange={e => setSearch(e.target.value)}
             style={{ paddingLeft: '36px' }}
@@ -240,6 +241,24 @@ export default function Purchases() {
           onMouseLeave={e => e.currentTarget.style.opacity = '1'}
         >
           + Add Sale
+        </button>
+
+        {/* Export CSV */}
+        <button
+          onClick={() => exportPurchasesCSV(filtered)}
+          disabled={filtered.length === 0}
+          style={{
+            background: 'transparent', border: '1px solid rgba(255,255,255,0.08)',
+            color: 'var(--gray-light)', fontSize: '12px', padding: '8px 14px',
+            borderRadius: '20px', cursor: filtered.length === 0 ? 'default' : 'pointer',
+            transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: '6px',
+            opacity: filtered.length === 0 ? 0.4 : 1,
+          }}
+          onMouseEnter={e => { if (filtered.length > 0) { e.currentTarget.style.borderColor = 'rgba(245,158,11,0.3)'; e.currentTarget.style.color = 'var(--gold)' } }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = 'var(--gray-light)' }}
+          title={`Export ${filtered.length} rows to CSV`}
+        >
+          ⬇ Export CSV
         </button>
 
         {/* Refresh */}
