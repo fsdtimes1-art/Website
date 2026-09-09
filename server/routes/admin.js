@@ -48,23 +48,33 @@ router.get('/me', (req, res) => {
 // ============================================================
 router.get('/dashboard', requireAdmin, async (req, res) => {
   try {
-    const [eventsRes, purchasesRes, ticketsRes] = await Promise.all([
+    const [eventsRes, purchasesRes, ticketsRes, physTicketRes] = await Promise.all([
       supabase.from('events').select('id, name, is_active, date'),
       supabase.from('purchases').select('id, total_amount, status, event_id, created_at'),
-      supabase.from('tickets').select('id, event_id, scanned')
+      supabase.from('tickets').select('id, event_id, scanned, voided'),
+      supabase.from('physical_tickets').select('id, status, scanned, event_id'),
     ]);
 
     const events    = eventsRes.data    || [];
     const purchases = purchasesRes.data || [];
     const tickets   = ticketsRes.data   || [];
+    const physTickets = physTicketRes.data || [];
 
     const totalRevenue = purchases
       .filter(p => p.status === 'completed')
       .reduce((sum, p) => sum + Number(p.total_amount), 0);
 
-    const totalTickets   = tickets.length;
-    const scannedTickets = tickets.filter(t => t.scanned).length;
-    const activeEvents   = events.filter(e => e.is_active).length;
+    // ── E-Ticket stats ──────────────────────────────────────
+    const totalETickets   = tickets.length;
+    const scannedETickets = tickets.filter(t => t.scanned).length;
+    const voidedETickets  = tickets.filter(t => t.voided).length;
+    const activeEvents    = events.filter(e => e.is_active).length;
+
+    // ── Physical ticket stats ───────────────────────────────
+    const totalPhysical   = physTickets.length;
+    const activePhysical  = physTickets.filter(t => t.status === 'active').length;
+    const scannedPhysical = physTickets.filter(t => t.scanned).length;
+    const voidPhysical    = physTickets.filter(t => t.status === 'void').length;
 
     const revenueByEvent = {};
     purchases
@@ -81,11 +91,22 @@ router.get('/dashboard', requireAdmin, async (req, res) => {
 
     res.json({
       totalRevenue,
-      totalTickets,
-      scannedTickets,
+      // E-Ticket section
+      totalTickets:   totalETickets,
+      scannedTickets: scannedETickets,
+      voidedTickets:  voidedETickets,
+      // Physical ticket section
+      physicalTickets: {
+        total:   totalPhysical,
+        active:  activePhysical,
+        scanned: scannedPhysical,
+        voided:  voidPhysical,
+        inactive: totalPhysical - activePhysical - voidPhysical,
+      },
+      // Events
       activeEvents,
-      totalEvents: events.length,
-      eventStats
+      totalEvents:  events.length,
+      eventStats,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -484,6 +505,54 @@ router.delete('/purchases/:id', requireAdmin, async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+// ============================================================
+// VOID E-TICKET — admin only
+// PATCH /admin/tickets/:id/void
+// Voids a specific e-ticket (e.g. after customer refund).
+// Only tickets that have NOT been scanned at the gate can be voided.
+// ============================================================
+router.patch('/tickets/:id/void', requireAdmin, async (req, res) => {
+  try {
+    const { data: ticket, error: fetchErr } = await supabase
+      .from('tickets')
+      .select('id, voided, scanned, buyer_name, seat_number, purchase_id')
+      .eq('id', req.params.id)
+      .single();
+
+    if (fetchErr || !ticket) {
+      return res.status(404).json({ error: 'Ticket not found' });
+    }
+
+    if (ticket.scanned) {
+      return res.status(400).json({
+        error: `Cannot void ticket ${ticket.seat_number} — it has already been scanned at the entry gate.`
+      });
+    }
+
+    if (ticket.voided) {
+      return res.status(400).json({ error: `Ticket ${ticket.seat_number} is already voided.` });
+    }
+
+    const { error: updateErr } = await supabase
+      .from('tickets')
+      .update({
+        voided:    true,
+        voided_at: new Date().toISOString(),
+        voided_by: req.adminAccount || 'admin',
+      })
+      .eq('id', ticket.id);
+
+    if (updateErr) throw updateErr;
+
+    console.log(`⚠️ Ticket ${ticket.seat_number} (${ticket.buyer_name}) voided by ${req.adminAccount}`);
+    res.json({ success: true, ticketId: ticket.id, seatNumber: ticket.seat_number });
+  } catch (err) {
+    console.error('Void ticket error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 
 // ============================================================
 // PORTFOLIO — admin only

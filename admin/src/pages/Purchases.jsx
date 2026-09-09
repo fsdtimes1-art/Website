@@ -1,6 +1,6 @@
 // admin/src/pages/Purchases.jsx
 import { useEffect, useState } from 'react'
-import { getPurchases, getAdminEvents, createManualSale, verifyWhatsappPurchase, deletePendingPurchase, exportPurchasesCSV } from '../lib/api'
+import { getPurchases, getAdminEvents, createManualSale, verifyWhatsappPurchase, deletePendingPurchase, exportPurchasesCSV, voidETicket } from '../lib/api'
 
 export default function Purchases() {
   const [purchases, setPurchases] = useState([])
@@ -14,6 +14,7 @@ export default function Purchases() {
   const [verifyingId,  setVerifyingId]  = useState(null)
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [deletingId,   setDeletingId]   = useState(null)
+  const [voidingTicketId, setVoidingTicketId] = useState(null)
 
   // ── Manual-sale modal state ──
   const [showModal,   setShowModal]   = useState(false)
@@ -345,8 +346,22 @@ export default function Purchases() {
                     verifying={verifyingId === p.id}
                     onDelete={() => setDeleteTarget(p)}
                     deleting={deletingId === p.id}
+                    onVoidTicket={async (ticketId, seatNumber) => {
+                      if (!window.confirm(`Void ticket ${seatNumber}? The holder will not be able to enter. This cannot be undone.`)) return
+                      setVoidingTicketId(ticketId)
+                      try {
+                        await voidETicket(ticketId)
+                        await fetchPurchases()
+                      } catch (err) {
+                        alert(`Failed to void ticket: ${err.message}`)
+                      } finally {
+                        setVoidingTicketId(null)
+                      }
+                    }}
+                    voidingTicketId={voidingTicketId}
                   />
                 ))}
+
               </tbody>
             </table>
           </div>
@@ -597,9 +612,10 @@ function getDisplayAmount(p) {
   return Number(p.total_amount)
 }
 
-function PurchaseRow({ purchase: p, expanded, onToggle, displayAmount, onVerify, verifying, onDelete, deleting }) {
+function PurchaseRow({ purchase: p, expanded, onToggle, displayAmount, onVerify, verifying, onDelete, deleting, onVoidTicket, voidingTicketId }) {
     const tickets = p.tickets || []
   const scanned = tickets.filter(t => t.scanned).length
+  const voided  = tickets.filter(t => t.voided).length
   const canDelete = p.status === 'whatsapp_pending' && tickets.length === 0
 
   const formattedDate = new Date(p.created_at).toLocaleDateString('en-PK', {
@@ -735,39 +751,83 @@ function PurchaseRow({ purchase: p, expanded, onToggle, displayAmount, onVerify,
                 Tickets in this order
               </p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                {tickets.map((t, i) => (
-                  <div key={i} style={{
-                    background: 'var(--black-2)',
-                    border: t.scanned
-                      ? '1px solid rgba(34,197,94,0.25)'
-                      : '1px solid rgba(245,158,11,0.2)',
-                    borderRadius: '8px', padding: '10px 16px',
-                    minWidth: '180px',
-                  }}>
-                    <p style={{
-                      fontFamily: 'var(--font-display)', fontSize: '16px',
-                      letterSpacing: '2px',
-                      color: t.scanned ? '#4ade80' : 'var(--gold)',
+                {tickets.map((t, i) => {
+                  const isVoiding = voidingTicketId === t.id
+                  const borderCol = t.voided
+                    ? 'rgba(239,68,68,0.3)'
+                    : t.scanned
+                      ? 'rgba(34,197,94,0.25)'
+                      : 'rgba(245,158,11,0.2)'
+
+                  return (
+                    <div key={i} style={{
+                      background: 'var(--black-2)',
+                      border: `1px solid ${borderCol}`,
+                      borderRadius: '8px', padding: '10px 16px',
+                      minWidth: '180px',
                     }}>
-                      {t.seat_number}
-                    </p>
-                    <p style={{ color: 'var(--gray-mid)', fontSize: '11px', marginTop: '3px' }}>
-                      {t.seat_categories?.name || 'General'}
-                    </p>
-                    <p style={{
-                      color: t.scanned ? '#4ade80' : 'var(--gray-dark)',
-                      fontSize: '10px', fontWeight: '700',
-                      letterSpacing: '0.5px', marginTop: '4px',
-                    }}>
-                      {t.scanned ? '✓ SCANNED' : '○ NOT YET SCANNED'}
-                    </p>
-                  </div>
-                ))}
+                      <p style={{
+                        fontFamily: 'var(--font-display)', fontSize: '16px',
+                        letterSpacing: '2px',
+                        color: t.voided ? '#f87171' : t.scanned ? '#4ade80' : 'var(--gold)',
+                      }}>
+                        {t.seat_number}
+                      </p>
+                      <p style={{ color: 'var(--gray-mid)', fontSize: '11px', marginTop: '3px' }}>
+                        {t.seat_categories?.name || 'General'}
+                      </p>
+
+                      {/* Status badge */}
+                      {t.voided ? (
+                        <p style={{
+                          color: '#f87171', fontSize: '10px', fontWeight: '700',
+                          letterSpacing: '0.5px', marginTop: '4px',
+                        }}>
+                          ✕ VOIDED
+                        </p>
+                      ) : t.scanned ? (
+                        <p style={{
+                          color: '#4ade80', fontSize: '10px', fontWeight: '700',
+                          letterSpacing: '0.5px', marginTop: '4px',
+                        }}>
+                          ✓ SCANNED
+                        </p>
+                      ) : (
+                        <>
+                          <p style={{
+                            color: 'var(--gray-dark)', fontSize: '10px', fontWeight: '700',
+                            letterSpacing: '0.5px', marginTop: '4px',
+                          }}>
+                            ○ NOT YET SCANNED
+                          </p>
+                          {/* Void button — only for non-scanned, non-voided tickets */}
+                          <button
+                            onClick={e => { e.stopPropagation(); onVoidTicket(t.id, t.seat_number) }}
+                            disabled={isVoiding}
+                            style={{
+                              marginTop: '8px',
+                              background: 'rgba(239,68,68,0.12)',
+                              border: '1px solid rgba(239,68,68,0.35)',
+                              color: '#f87171', fontSize: '10px', fontWeight: '700',
+                              padding: '4px 10px', borderRadius: '12px',
+                              cursor: isVoiding ? 'not-allowed' : 'pointer',
+                              opacity: isVoiding ? 0.6 : 1,
+                              letterSpacing: '0.3px',
+                            }}
+                          >
+                            {isVoiding ? 'Voiding…' : '✕ Void Ticket'}
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
             </div>
           </td>
         </tr>
       )}
+
 
       {expanded && tickets.length === 0 && (
         <tr>

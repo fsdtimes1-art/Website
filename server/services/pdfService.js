@@ -60,16 +60,18 @@ async function generateTicketPDF(tickets, event, category) {
           .fontSize(20)
           .text(event.name, 22, 72, { width: 350 });
 
-        // Date and venue
-        const dateStr = new Date(event.date).toLocaleDateString('en-PK', {
-        
-          weekday: 'long',
-          year:    'numeric',
-          month:   'long',
-          day:     'numeric',
-          hour:    '2-digit',
-          minute:  '2-digit'
-          
+        // Date and venue — MUST use toLocaleString (not toLocaleDateString)
+        // so hours are included. timeZone: 'Asia/Karachi' is required; without
+        // it Node.js renders the UTC time (e.g. 11:00am UTC instead of 4:00pm PKT).
+        const dateStr = new Date(event.date).toLocaleString('en-PK', {
+          timeZone: 'Asia/Karachi',
+          weekday:  'long',
+          year:     'numeric',
+          month:    'long',
+          day:      'numeric',
+          hour:     '2-digit',
+          minute:   '2-digit',
+          hour12:   true,
         });
 
         doc

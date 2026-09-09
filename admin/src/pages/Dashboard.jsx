@@ -85,12 +85,12 @@ export default function Dashboard() {
 
       {data && (
         <>
-          {/* ── Stat cards ── */}
+          {/* ── E-Ticket stat cards ── */}
           <div style={{
             display:             'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
             gap:                 '20px',
-            marginBottom:        '40px',
+            marginBottom:        '16px',
           }}>
             <StatCard
               label="Total Revenue"
@@ -100,10 +100,10 @@ export default function Dashboard() {
               highlight
             />
             <StatCard
-              label="Tickets Sold"
+              label="E-Tickets Sold"
               value={data.totalTickets.toLocaleString()}
               icon="🎟️"
-              sub={`${data.scannedTickets} scanned at entry`}
+              sub={`${data.scannedTickets} scanned · ${data.voidedTickets ?? 0} voided`}
             />
             <StatCard
               label="Active Events"
@@ -112,7 +112,7 @@ export default function Dashboard() {
               sub={`${data.totalEvents} total events`}
             />
             <StatCard
-              label="Scan Rate"
+              label="E-Ticket Scan Rate"
               value={
                 data.totalTickets > 0
                   ? `${Math.round((data.scannedTickets / data.totalTickets) * 100)}%`
@@ -122,6 +122,52 @@ export default function Dashboard() {
               sub={`${data.scannedTickets} of ${data.totalTickets} scanned`}
             />
           </div>
+
+          {/* ── Physical Tickets section (only if any exist) ── */}
+          {data.physicalTickets && data.physicalTickets.total > 0 && (
+            <div style={{ marginBottom: '32px' }}>
+              <p style={{
+                color: 'var(--gray-mid)', fontSize: '10px', fontWeight: '600',
+                letterSpacing: '2px', textTransform: 'uppercase',
+                marginBottom: '12px', marginTop: '8px',
+              }}>
+                Physical Tickets
+              </p>
+              <div style={{
+                display:             'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+                gap:                 '12px',
+              }}>
+                {[
+                  { label: 'Total Printed', value: data.physicalTickets.total,    icon: '🖨️', highlight: false },
+                  { label: 'Active / Sold', value: data.physicalTickets.active,   icon: '✅', highlight: false },
+                  { label: 'Scanned',       value: data.physicalTickets.scanned,  icon: '📷', highlight: false },
+                  { label: 'Inactive',      value: data.physicalTickets.inactive, icon: '📋', highlight: false },
+                  { label: 'Voided',        value: data.physicalTickets.voided,   icon: '❌', highlight: false },
+                ].map((s, i) => (
+                  <div key={i} style={{
+                    background: 'var(--black-2)',
+                    border: '1px solid rgba(255,255,255,0.06)',
+                    borderRadius: '10px', padding: '16px 18px',
+                    display: 'flex', alignItems: 'center', gap: '12px',
+                  }}>
+                    <span style={{ fontSize: '20px' }}>{s.icon}</span>
+                    <div>
+                      <p style={{ color: 'var(--gray-mid)', fontSize: '10px', fontWeight: '600', letterSpacing: '1px', textTransform: 'uppercase' }}>
+                        {s.label}
+                      </p>
+                      <p style={{
+                        fontFamily: 'var(--font-display)', fontSize: '22px',
+                        letterSpacing: '1px', color: 'var(--white)',
+                      }}>
+                        {s.value ?? 0}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* ── Divider ── */}
           <div className="divider" style={{ marginBottom: '36px' }} />

@@ -1,10 +1,16 @@
 // server/services/physicalTicketService.js
 //
 // Physical Ticket PDF & serial generation service.
-// Uses pdfkit + qrcode (already in package.json) — no new dependencies.
+// Uses pdfkit + qrcode + uuid (already in package.json) — no new dependencies.
+//
+// QR SECURITY MODEL:
+//   serial_code = "PT-2026-000042" — human-readable, printed as text on ticket
+//   qr_token    = uuid4()          — cryptographically random, encoded in QR only
+//   The two are DIFFERENT. Knowing the serial does NOT help forge the QR.
 
 const PDFDocument = require('pdfkit');
 const QRCode      = require('qrcode');
+const { v4: uuidv4 } = require('uuid');
 const supabase    = require('../lib/supabase');
 
 // ── 1. SERIAL CODE HELPERS ────────────────────────────────────
@@ -51,7 +57,11 @@ async function generateBatchSerials(batchId, eventId, categoryId, quantity, star
       event_id:         eventId,
       seat_category_id: categoryId,
       serial_code:      serial,
-      qr_token:         serial, // QR encodes the serial directly (PT- prefix = physical)
+      // ── SECURITY: qr_token is a random UUID, NOT the serial code.
+      // The QR printed on the ticket encodes this UUID only.
+      // serial_code is printed as visible text (for staff reference only).
+      // Even if someone copies the serial number, they cannot construct the QR.
+      qr_token:         uuidv4(),
       status:           'inactive',
     });
   }

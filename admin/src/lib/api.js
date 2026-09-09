@@ -132,6 +132,10 @@ export async function deletePendingPurchase(id) {
   return request(`/purchases/${id}`, { method: 'DELETE' })
 }
 
+export async function voidETicket(ticketId) {
+  return request(`/tickets/${ticketId}/void`, { method: 'PATCH' })
+}
+
 // ============================================================
 // PORTFOLIO
 // ============================================================
