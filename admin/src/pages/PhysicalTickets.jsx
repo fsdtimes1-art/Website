@@ -543,17 +543,39 @@ function GeneratorTab({ events, onCreated, onToast }) {
             ✅ {result.batch.batch_ref} CREATED
           </p>
           <p style={{ color: 'var(--gray-light)', fontSize: '13px', marginTop: '6px' }}>
-            {result.ticketCount} physical tickets generated and PDF uploaded to storage.
+            {result.ticketCount} physical tickets generated.
+            {result.pdfSignedUrl ? ' PDF saved to storage.' : ' PDF generated (storage unavailable — downloading directly).'}
           </p>
-          <a
-            href={result.pdfSignedUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="btn-gold"
-            style={{ marginTop: '14px', display: 'inline-flex', fontSize: '13px', padding: '10px 22px' }}
-          >
-            ⬇ Download Print-Ready PDF
-          </a>
+
+          {/* Primary: storage URL */}
+          {result.pdfSignedUrl && (
+            <a
+              href={result.pdfSignedUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="btn-gold"
+              style={{ marginTop: '14px', display: 'inline-flex', fontSize: '13px', padding: '10px 22px' }}
+            >
+              ⬇ Download Print-Ready PDF
+            </a>
+          )}
+
+          {/* Fallback: base64 inline (storage failed) */}
+          {result.pdfBase64 && !result.pdfSignedUrl && (
+            <button
+              type="button"
+              className="btn-gold"
+              style={{ marginTop: '14px', fontSize: '13px', padding: '10px 22px' }}
+              onClick={() => {
+                const a = document.createElement('a')
+                a.href = result.pdfBase64
+                a.download = `${result.batch.batch_ref}.pdf`
+                document.body.appendChild(a); a.click(); document.body.removeChild(a)
+              }}
+            >
+              ⬇ Download Print-Ready PDF
+            </button>
+          )}
         </div>
       )}
     </form>

@@ -333,20 +333,34 @@ router.post('/batches', upload.single('template'), async (req, res) => {
       layout
     );
 
-    // ── Upload PDF to Storage ─────────────────────────────────
-    const pdfPath   = await uploadPDFToStorage(pdfBuffer, batchRef);
-    const signedUrl = await createSignedUrl(pdfPath);
+    // ── Upload PDF to Storage (with graceful fallback) ────────
+    // If storage rejects (size limit, permissions, etc.) we return the PDF
+    // as a base64 string so the admin can still download it immediately.
+    let pdfPath   = null;
+    let signedUrl = null;
+    let pdfBase64 = null;
 
-    // ── Update batch record with PDF path ─────────────────────
-    await supabase
-      .from('physical_ticket_batches')
-      .update({ pdf_url: pdfPath })
-      .eq('id', batch.id);
+    try {
+      pdfPath   = await uploadPDFToStorage(pdfBuffer, batchRef);
+      signedUrl = await createSignedUrl(pdfPath);
+
+      // ── Update batch record with PDF path ─────────────────
+      await supabase
+        .from('physical_ticket_batches')
+        .update({ pdf_url: pdfPath })
+        .eq('id', batch.id);
+    } catch (storageErr) {
+      // Storage upload failed — fall back to inline base64
+      console.warn(`⚠️  Storage upload failed for ${batchRef}: ${storageErr.message}. Returning PDF inline.`);
+      pdfBase64 = pdfBuffer.toString('base64');
+    }
 
     res.status(201).json({
-      batch:      { ...batch, pdf_url: pdfPath },
-      ticketCount: tickets.length,
+      batch:        { ...batch, pdf_url: pdfPath },
+      ticketCount:  tickets.length,
       pdfSignedUrl: signedUrl,
+      // pdfBase64 is set ONLY when storage upload failed — client should use it as fallback
+      pdfBase64:    pdfBase64 ? `data:application/pdf;base64,${pdfBase64}` : undefined,
     });
   } catch (err) {
     console.error('Create batch error:', err);
