@@ -130,22 +130,13 @@ function OverviewTab({ stats, batches, loadingStats, loadingBatches, onDownloadP
   async function handleDownload(batch) {
     setDownloadingId(batch.id)
     try {
-      const result = await onDownloadPdf(batch.id)
-      if (result.signedUrl) {
-        const a = document.createElement('a')
-        a.href     = result.signedUrl
-        a.target   = '_blank'
-        a.download = `${batch.batch_ref}.pdf`
-        document.body.appendChild(a); a.click(); document.body.removeChild(a)
-      } else if (result.pdfBase64) {
-        // Storage unavailable — trigger direct download from base64
-        const a = document.createElement('a')
-        a.href     = result.pdfBase64
-        a.download = `${batch.batch_ref}.pdf`
-        document.body.appendChild(a); a.click(); document.body.removeChild(a)
-      } else {
-        alert('PDF generation returned no download URL. Please try again.')
-      }
+      const { blobUrl, filename } = await onDownloadPdf(batch.id, batch.batch_ref)
+      const a = document.createElement('a')
+      a.href     = blobUrl
+      a.download = filename
+      document.body.appendChild(a); a.click(); document.body.removeChild(a)
+      // Free the blob memory after a short delay
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 5000)
     } catch (err) {
       alert(`PDF download failed: ${err.message}`)
     } finally {
