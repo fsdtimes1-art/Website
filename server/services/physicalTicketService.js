@@ -160,7 +160,7 @@ async function generatePhysicalTicketPDF(
         // Encode the secure UUID token (NOT the serial_code).
         const qrDataUrl = await QRCode.toDataURL(ticket.qr_token, {
           errorCorrectionLevel: 'H',            // highest redundancy
-          width:  Math.round(qrPs * 2),         // 2× for print quality (was 3×, too large)
+          width:  Math.round(qrPs * 3),         // 3× oversampled — crisp at 300 DPI print
           margin: 1,
           color: { dark: '#000000', light: '#ffffff' },
         });

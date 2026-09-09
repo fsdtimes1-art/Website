@@ -315,52 +315,15 @@ router.post('/batches', upload.single('template'), async (req, res) => {
       batch.id, eventId, categoryId, quantity, startSerial
     );
 
-    // ── Generate PDF ──────────────────────────────────────────
-    const layout = {
-      qrX:    parseFloat(qrX),
-      qrY:    parseFloat(qrY),
-      qrSize: parseFloat(qrSize),
-      ticketW: parseFloat(ticketW),
-      ticketH: parseFloat(ticketH),
-    };
-
-    const pdfBuffer = await generatePhysicalTicketPDF(
-      { batchRef, quantity, startSerial, endSerial },
-      tickets,
-      event,
-      category,
-      req.file?.buffer || null,
-      layout
-    );
-
-    // ── Upload PDF to Storage (with graceful fallback) ────────
-    // If storage rejects (size limit, permissions, etc.) we return the PDF
-    // as a base64 string so the admin can still download it immediately.
-    let pdfPath   = null;
-    let signedUrl = null;
-    let pdfBase64 = null;
-
-    try {
-      pdfPath   = await uploadPDFToStorage(pdfBuffer, batchRef);
-      signedUrl = await createSignedUrl(pdfPath);
-
-      // ── Update batch record with PDF path ─────────────────
-      await supabase
-        .from('physical_ticket_batches')
-        .update({ pdf_url: pdfPath })
-        .eq('id', batch.id);
-    } catch (storageErr) {
-      // Storage upload failed — fall back to inline base64
-      console.warn(`⚠️  Storage upload failed for ${batchRef}: ${storageErr.message}. Returning PDF inline.`);
-      pdfBase64 = pdfBuffer.toString('base64');
-    }
-
+    // ── Respond immediately ───────────────────────────────────
+    // PDF is generated ON-DEMAND via GET /batches/:id/pdf (avoids Vercel timeout).
+    // The admin clicks "Download PDF" in the Overview tab to trigger generation.
+    console.log(`✅ Batch ${batchRef} created — ${tickets.length} tickets inserted (PDF deferred)`);
     res.status(201).json({
-      batch:        { ...batch, pdf_url: pdfPath },
-      ticketCount:  tickets.length,
-      pdfSignedUrl: signedUrl,
-      // pdfBase64 is set ONLY when storage upload failed — client should use it as fallback
-      pdfBase64:    pdfBase64 ? `data:application/pdf;base64,${pdfBase64}` : undefined,
+      batch:       { ...batch, pdf_url: null },
+      ticketCount: tickets.length,
+      pdfSignedUrl: null,
+      pdfBase64:    null,
     });
   } catch (err) {
     console.error('Create batch error:', err);
@@ -368,28 +331,115 @@ router.post('/batches', upload.single('template'), async (req, res) => {
   }
 });
 
+
 // ============================================================
 // GET /api/admin/physical-tickets/batches/:id/pdf
-// Returns a fresh 24h signed download URL for the batch PDF
+// Returns a fresh 24h signed download URL.
+// If the PDF has never been generated (pdf_url is null), it is generated
+// on-demand now, uploaded to storage, and the url is cached in the batch record.
+// Query params: qrX, qrY, qrSize, ticketW, ticketH (optional — defaults preserved)
 // ============================================================
 router.get('/batches/:id/pdf', async (req, res) => {
   try {
-    const { data: batch, error } = await supabase
+    const batchId = req.params.id;
+
+    // ── Fetch batch + tickets + relations ─────────────────────
+    const { data: batch, error: bErr } = await supabase
       .from('physical_ticket_batches')
-      .select('batch_ref, pdf_url')
-      .eq('id', req.params.id)
+      .select(`
+        *,
+        events          (id, name, date, venue),
+        seat_categories (id, name, price)
+      `)
+      .eq('id', batchId)
       .single();
 
-    if (error || !batch) return res.status(404).json({ error: 'Batch not found' });
-    if (!batch.pdf_url)  return res.status(404).json({ error: 'PDF not yet generated for this batch' });
+    if (bErr || !batch) return res.status(404).json({ error: 'Batch not found' });
 
-    const signedUrl = await createSignedUrl(batch.pdf_url);
+    // ── If PDF already cached return signed URL ───────────────
+    if (batch.pdf_url) {
+      try {
+        const signedUrl = await createSignedUrl(batch.pdf_url);
+        return res.json({ signedUrl, batchRef: batch.batch_ref });
+      } catch (_) {
+        // Signed URL failed (file deleted?) — fall through to regenerate
+      }
+    }
+
+    // ── Fetch all tickets for this batch ─────────────────────
+    const { data: tickets, error: tErr } = await supabase
+      .from('physical_tickets')
+      .select('id, serial_code, qr_token')
+      .eq('batch_id', batchId)
+      .order('serial_code', { ascending: true });
+
+    if (tErr) throw tErr;
+    if (!tickets || tickets.length === 0) {
+      return res.status(404).json({ error: 'No tickets found for this batch' });
+    }
+
+    // ── Download template if stored ───────────────────────────
+    let templateBuffer = null;
+    if (batch.template_url) {
+      try {
+        const { data: fileData } = await supabase.storage
+          .from('physical-ticket-templates')
+          .download(batch.template_url);
+        if (fileData) {
+          templateBuffer = Buffer.from(await fileData.arrayBuffer());
+        }
+      } catch (_) {
+        // Template download failed — generate without artwork
+      }
+    }
+
+    // ── Layout — use query params or reasonable defaults ──────
+    const layout = {
+      qrX:    parseFloat(req.query.qrX    || batch.qr_x    || 76),
+      qrY:    parseFloat(req.query.qrY    || batch.qr_y    || 15),
+      qrSize: parseFloat(req.query.qrSize || batch.qr_size || 24),
+      ticketW:parseFloat(req.query.ticketW|| batch.ticket_w|| 180),
+      ticketH:parseFloat(req.query.ticketH|| batch.ticket_h|| 70),
+    };
+
+    // ── Generate PDF ─────────────────────────────────────────
+    const { generatePhysicalTicketPDF } = require('../services/physicalTicketService');
+    const pdfBuffer = await generatePhysicalTicketPDF(
+      { batchRef: batch.batch_ref, quantity: batch.quantity,
+        startSerial: batch.start_serial, endSerial: batch.end_serial },
+      tickets,
+      batch.events    || { name: 'Event', date: new Date().toISOString(), venue: '' },
+      batch.seat_categories || { name: 'General' },
+      templateBuffer,
+      layout
+    );
+
+    // ── Upload to storage & cache ─────────────────────────────
+    let signedUrl = null;
+    try {
+      const pdfPath = await uploadPDFToStorage(pdfBuffer, batch.batch_ref);
+      signedUrl     = await createSignedUrl(pdfPath);
+      await supabase.from('physical_ticket_batches')
+        .update({ pdf_url: pdfPath })
+        .eq('id', batchId);
+    } catch (storageErr) {
+      // Storage failed — stream PDF directly as base64
+      console.warn(`⚠️  PDF storage failed for ${batch.batch_ref}: ${storageErr.message}`);
+      const b64 = pdfBuffer.toString('base64');
+      return res.json({
+        batchRef:  batch.batch_ref,
+        signedUrl: null,
+        pdfBase64: `data:application/pdf;base64,${b64}`,
+      });
+    }
+
     res.json({ signedUrl, batchRef: batch.batch_ref });
   } catch (err) {
     console.error('Get batch PDF error:', err);
     res.status(500).json({ error: err.message });
   }
 });
+
 
 // ============================================================
 // GET /api/admin/physical-tickets/tickets
