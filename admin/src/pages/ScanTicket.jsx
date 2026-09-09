@@ -238,18 +238,29 @@ export default function ScanTicket() {
   const [manualCode, setManualCode] = useState('')
   const [manualMode, setManualMode] = useState(false)
   const [verifying,  setVerifying]  = useState(false)
-  const [jsQR,       setJsQR]       = useState(null)
 
-  // Session state
-  const [session,         setSession]         = useState(() => loadSession())
-  const [showStartModal,  setShowStartModal]  = useState(false)
-  const [showEndModal,    setShowEndModal]    = useState(false)
-  const [events,          setEvents]          = useState([])
-  const [sessionForm,     setSessionForm]     = useState({ eventId: '', label: '' })
+  // ── jsQR as a REF (not state) — critical for RAF closure correctness.
+  // If stored as state, scanFrame captures the value at render time and
+  // never sees it update, so QR codes are never detected.
+  // With a ref, jsQRRef.current is always read fresh on every RAF tick.
+  const jsQRRef = useRef(null)
 
-  // Load jsQR dynamically
+  // ── Session state
+  const [session,        setSession]        = useState(() => loadSession())
+  const sessionRef = useRef(session)          // ref so handleVerify sees latest session
+  const [showStartModal, setShowStartModal] = useState(false)
+  const [showEndModal,   setShowEndModal]   = useState(false)
+  const [events,         setEvents]         = useState([])
+  const [sessionForm,    setSessionForm]    = useState({ eventId: '', label: '' })
+
+  // Keep sessionRef in sync
+  useEffect(() => { sessionRef.current = session }, [session])
+
+  // Load jsQR dynamically — store in REF, not state
   useEffect(() => {
-    import('jsqr').then(mod => setJsQR(() => mod.default)).catch(() => {
+    import('jsqr').then(mod => {
+      jsQRRef.current = mod.default
+    }).catch(() => {
       setError('QR scanning library failed to load. Use manual entry below.')
     })
     getAdminEvents().then(setEvents).catch(console.error)
@@ -271,7 +282,7 @@ export default function ScanTicket() {
         videoRef.current.srcObject = stream
         await videoRef.current.play()
         setMode('scanning')
-        requestAnimationFrame(scanFrame)
+        rafRef.current = requestAnimationFrame(scanFrame)
       }
     } catch (err) {
       setError(`Camera error: ${err.message}. Try manual entry below.`)
@@ -279,7 +290,7 @@ export default function ScanTicket() {
   }
 
   function stopCamera() {
-    if (rafRef.current) cancelAnimationFrame(rafRef.current)
+    if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null }
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(t => t.stop())
       streamRef.current = null
@@ -290,18 +301,22 @@ export default function ScanTicket() {
   function scanFrame() {
     const video  = videoRef.current
     const canvas = canvasRef.current
-    if (!video || !canvas || !jsQR) {
+    const qrFn   = jsQRRef.current   // read from ref — always the live value, no stale closure
+
+    if (!video || !canvas || !qrFn) {
       rafRef.current = requestAnimationFrame(scanFrame); return
     }
     if (video.readyState !== video.HAVE_ENOUGH_DATA) {
       rafRef.current = requestAnimationFrame(scanFrame); return
     }
+
     canvas.width  = video.videoWidth
     canvas.height = video.videoHeight
     const ctx = canvas.getContext('2d')
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
-    const code = jsQR(imageData.data, imageData.width, imageData.height)
+    const code = qrFn(imageData.data, imageData.width, imageData.height)
+
     if (code && code.data) {
       stopCamera()
       handleVerify(code.data)
@@ -320,15 +335,16 @@ export default function ScanTicket() {
       setResult(data)
       setMode('result')
 
-      // Add to session log if session is active
-      if (session) {
+      // Add to session log — read from ref to avoid stale closure
+      const activeSession = sessionRef.current
+      if (activeSession) {
         const t = data.ticket || {}
         const entry = {
-          ticketType: data.ticketType || (qrCode.startsWith('PT-') ? 'physical' : 'eticket'),
+          ticketType: data.ticketType || 'eticket',
           seat:       t.seat       || t.seat_number || '—',
           buyerName:  t.buyerName  || '—',
           category:   t.category   || '—',
-          event:      t.event      || session.eventName,
+          event:      t.event      || activeSession.eventName,
           valid:      data.valid,
           reason:     data.valid ? '' : data.message,
           scannedAt:  new Date().toLocaleTimeString('en-PK', { timeZone: 'Asia/Karachi', hour12: true }),
