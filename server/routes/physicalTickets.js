@@ -252,18 +252,31 @@ router.post('/batches', upload.single('template'), async (req, res) => {
     const firstCode = `PT-${year}-${String(startSerial).padStart(6, '0')}`;
     const lastCode  = `PT-${year}-${String(endSerial).padStart(6, '0')}`;
 
-    const { data: existing, error: chkErr } = await supabase
-      .from('physical_tickets')
-      .select('serial_code')
-      .gte('serial_code', firstCode)
-      .lte('serial_code', lastCode)
-      .limit(1);
+    // ── Check for serial conflicts ────────────────────────────
+    // Only count tickets that still belong to an active batch.
+    // Orphaned tickets (batch deleted via Supabase dashboard) are ignored
+    // so they don't block re-use of the same serial range.
+    const allBatchIds = await supabase
+      .from('physical_ticket_batches')
+      .select('id');
 
-    if (chkErr) throw chkErr;
-    if (existing && existing.length > 0) {
-      return res.status(409).json({
-        error: `Serial range conflicts with existing ticket ${existing[0].serial_code}. Choose a different start serial.`,
-      });
+    const activeBatchIds = (allBatchIds.data || []).map(b => b.id);
+
+    if (activeBatchIds.length > 0) {
+      const { data: existing, error: chkErr } = await supabase
+        .from('physical_tickets')
+        .select('serial_code')
+        .gte('serial_code', firstCode)
+        .lte('serial_code', lastCode)
+        .in('batch_id', activeBatchIds)
+        .limit(1);
+
+      if (chkErr) throw chkErr;
+      if (existing && existing.length > 0) {
+        return res.status(409).json({
+          error: `Serial range conflicts with existing ticket ${existing[0].serial_code}. Choose a different start serial.`,
+        });
+      }
     }
 
     // ── Generate batch ref ────────────────────────────────────

@@ -231,6 +231,7 @@ export default function ScanTicket() {
   const canvasRef = useRef(null)
   const rafRef    = useRef(null)
   const streamRef = useRef(null)
+  const frameRef  = useRef(0)      // frame counter for throttling
 
   const [mode,       setMode]       = useState('idle')   // idle | scanning | result
   const [result,     setResult]     = useState(null)
@@ -310,6 +311,14 @@ export default function ScanTicket() {
       rafRef.current = requestAnimationFrame(scanFrame); return
     }
 
+    // ── Throttle: only run jsQR every 3rd frame (≈20fps instead of 60fps).
+    // jsQR is CPU-heavy; at 60fps it blocks the main thread.
+    // At 20fps the browser stays smooth and a held QR still detects in <150ms.
+    frameRef.current = (frameRef.current + 1) % 3
+    if (frameRef.current !== 0) {
+      rafRef.current = requestAnimationFrame(scanFrame); return
+    }
+
     canvas.width  = video.videoWidth
     canvas.height = video.videoHeight
     const ctx = canvas.getContext('2d')
@@ -324,6 +333,7 @@ export default function ScanTicket() {
     }
     rafRef.current = requestAnimationFrame(scanFrame)
   }
+
 
   // ── Verify ──────────────────────────────────────────────────
   async function handleVerify(qrCode) {

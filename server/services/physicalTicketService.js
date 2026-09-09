@@ -118,14 +118,6 @@ async function generatePhysicalTicketPDF(
   const qrPy = (qrY / 100) * pH;
   const qrPs = qrSize * MM;
 
-  const dateStr = new Date(event.date).toLocaleDateString('en-PK', {
-    timeZone: 'Asia/Karachi',
-    weekday: 'short',
-    year:    'numeric',
-    month:   'short',
-    day:     'numeric',
-  });
-
   return new Promise(async (resolve, reject) => {
     try {
       const doc = new PDFDocument({
@@ -135,24 +127,18 @@ async function generatePhysicalTicketPDF(
       });
 
       const chunks = [];
-      doc.on('data',  c   => chunks.push(c));
-      doc.on('end',   ()  => resolve(Buffer.concat(chunks)));
+      doc.on('data',  c  => chunks.push(c));
+      doc.on('end',   () => resolve(Buffer.concat(chunks)));
       doc.on('error', reject);
 
       for (let i = 0; i < tickets.length; i++) {
         const ticket = tickets[i];
         doc.addPage();
 
-        // ── Background ──────────────────────────────────────
-        doc.rect(0, 0, pW, pH).fill('#0a0a0a');
-
-        // ── Cyan accent bar (left edge) ─────────────────────
-        doc.rect(0, 0, 6, pH).fill('#29dcff');
-
-        // ── Header band ─────────────────────────────────────
-        doc.rect(6, 0, pW - 6, pH * 0.22).fill('#111111');
-
-        // ── Artwork template (if provided) ───────────────────
+        // ── Artwork template (full bleed) ─────────────────────
+        // If an artwork image was uploaded, place it as the full background.
+        // Everything else (event name, date, venue, branding) is already
+        // part of the ticket design — we only add QR + serial on top.
         if (templateBuffer) {
           try {
             doc.image(templateBuffer, 0, 0, {
@@ -160,50 +146,21 @@ async function generatePhysicalTicketPDF(
               height: pH,
               cover:  [pW, pH],
             });
-            // Darken overlay so text stays legible
-            doc.rect(0, 0, pW, pH).fillOpacity(0.45).fill('#000000');
-            doc.fillOpacity(1);
           } catch (_) {
-            // Template image failed — continue with plain background
+            // Template image failed — fall back to dark background
+            doc.rect(0, 0, pW, pH).fill('#0a0a0a');
           }
+        } else {
+          // No template — plain dark Faisalabad Times brand background
+          doc.rect(0, 0, pW, pH).fill('#0a0a0a');
+          doc.rect(0, 0, 5, pH).fill('#29dcff'); // cyan accent stripe
         }
 
-        // ── Brand name ───────────────────────────────────────
-        doc
-          .fillColor('#29dcff')
-          .font('Helvetica-Bold')
-          .fontSize(10)
-          .text('FAISALABAD TIMES', 16, pH * 0.07);
-
-        // ── Event name ───────────────────────────────────────
-        doc
-          .fillColor('#ffffff')
-          .font('Helvetica-Bold')
-          .fontSize(14)
-          .text(event.name, 16, pH * 0.28, { width: pW * 0.62, ellipsis: true });
-
-        // ── Date + venue ─────────────────────────────────────
-        doc
-          .fillColor('#9ca3af')
-          .font('Helvetica')
-          .fontSize(7)
-          .text(dateStr,    16, pH * 0.53)
-          .text(event.venue, 16, pH * 0.65, { width: pW * 0.58 });
-
-        // ── Category badge ───────────────────────────────────
-        const badgeX = 16;
-        const badgeY = pH * 0.78;
-        doc.roundedRect(badgeX, badgeY, 60, 14, 3).fill('#29dcff');
-        doc
-          .fillColor('#000000')
-          .font('Helvetica-Bold')
-          .fontSize(6)
-          .text(category.name.toUpperCase(), badgeX + 4, badgeY + 4);
-
-        // ── QR Code ──────────────────────────────────────────
+        // ── QR Code ───────────────────────────────────────────
+        // Encode the secure UUID token (NOT the serial_code).
         const qrDataUrl = await QRCode.toDataURL(ticket.qr_token, {
-          errorCorrectionLevel: 'H',   // highest, per spec
-          width:  Math.round(qrPs * 3), // generate at 3× for crispness
+          errorCorrectionLevel: 'H',            // highest redundancy
+          width:  Math.round(qrPs * 3),         // 3× for print crispness
           margin: 1,
           color: { dark: '#000000', light: '#ffffff' },
         });
@@ -213,23 +170,15 @@ async function generatePhysicalTicketPDF(
         );
         doc.image(qrBuffer, qrPx, qrPy, { width: qrPs, height: qrPs });
 
-        // ── Serial code under QR ──────────────────────────────
+        // ── Serial number below QR ────────────────────────────
+        // Printed in small text under the QR for staff reference only.
         doc
-          .fillColor('#6b7280')
+          .fillColor('#ffffff')
           .font('Helvetica')
           .fontSize(5.5)
           .text(ticket.serial_code, qrPx, qrPy + qrPs + 3, {
             width: qrPs, align: 'center',
           });
-
-        // ── Ticket count footer ───────────────────────────────
-        if (tickets.length > 1) {
-          doc
-            .fillColor('#374151')
-            .font('Helvetica')
-            .fontSize(5)
-            .text(`${i + 1} / ${tickets.length}`, pW - 30, pH - 10);
-        }
       }
 
       doc.end();
