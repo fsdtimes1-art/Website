@@ -223,19 +223,12 @@ export async function createPhysicalBatch(formData) {
   })
 }
 
-export async function getPhysicalBatchPdfUrl(batchId, batchRef) {
-  // The server now streams raw PDF bytes — fetch as blob
-  const res = await fetch(`${PT_BASE}/batches/${batchId}/pdf`, {
-    credentials: 'include',
-    headers: { 'x-admin-key': getStoredKey() },
-  })
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: res.statusText }))
-    throw new Error(err.error || `Request failed: ${res.status}`)
-  }
-  const blob    = await res.blob()
-  const blobUrl = URL.createObjectURL(blob)
-  return { blobUrl, filename: `${batchRef || batchId}.pdf` }
+export function getPhysicalBatchPdfUrl(batchId, batchRef) {
+  // Return a direct download URL — browser navigates to it (no fetch+blob+popup issues)
+  // The admin key goes in the query param because browser GET requests don't send custom headers.
+  const key = getStoredKey()
+  const url = `${PT_BASE}/batches/${batchId}/pdf?key=${encodeURIComponent(key || '')}`
+  return { directUrl: url, filename: `${batchRef || batchId}.pdf` }
 }
 
 export async function deletePhysicalBatch(batchId) {

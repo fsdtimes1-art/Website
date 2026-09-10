@@ -57,9 +57,12 @@ app.use('/api/admin',     adminRouter);
 app.use('/api/portfolio', portfolioRouter);
 app.use('/api/payments',  paymentsRouter);
 
-// Physical ticketing — admin-only, inline auth guard (mirrors admin.js key logic)
+// Physical ticketing — admin-only, inline auth guard (mirrors admin.js key logic).
+// Accepts key in 'x-admin-key' header OR '?key=' query param.
+// The query param is needed for direct browser navigation (PDF download links)
+// because browser GET requests don't send custom headers.
 app.use('/api/admin/physical-tickets', (req, res, next) => {
-  const key = req.headers['x-admin-key'];
+  const key = req.headers['x-admin-key'] || req.query.key;
   if (!key) return res.status(401).json({ error: 'Unauthorized' });
   const validKeys = [process.env.ADMIN_SECRET_KEY, process.env.ADMIN2_SECRET_KEY].filter(Boolean);
   if (!validKeys.includes(key)) return res.status(403).json({ error: 'Forbidden' });
