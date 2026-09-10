@@ -68,7 +68,6 @@ export default function EventDetailWhatsApp() {
     setFormError(null)
     setSending(true)
     const ticketNames = [form.name.trim(), ...extraNames.map(name => name.trim())]
-    const waTab = window.open('', '_blank')
     try {
       const { purchaseId } = await createWhatsappOrder({ eventId: event.id, categoryId: selection.category.id, quantity: selection.quantity, buyerName: form.name.trim(), buyerEmail: form.email.trim(), buyerPhone: form.phone.trim(), ticketNames })
       const totals = getOrderTotals(selection.category.price, selection.quantity, event.discounts || [], selection.category.service_fee)
@@ -78,11 +77,10 @@ export default function EventDetailWhatsApp() {
       })
       const lines = [`🎟️ *New Ticket Order — ${event.name}*`, '', `*Name:* ${form.name.trim()}`, `*Email:* ${form.email.trim()}`, form.phone.trim() ? `*Phone:* ${form.phone.trim()}` : null, `*Category:* ${selection.category.name}`, `*Quantity:* ${selection.quantity}`, `*Attendees:* ${ticketNames.join(', ')}`, `*Ticket Price:* PKR ${totals.subtotal.toLocaleString()}`, ...discountLines, `*Service fee:* PKR ${totals.fees.toLocaleString()}`, `*Total:* PKR ${totals.total.toLocaleString()}`, '', `*Order Ref:* ${purchaseId}`].filter(Boolean).join('\n')
       const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(lines)}`
-      if (waTab) waTab.location.href = url
-      else window.location.href = url
       setSubmitted(true)
+      // Redirect same tab — no blank tab flash, works on mobile & desktop
+      window.location.href = url
     } catch (err) {
-      if (waTab) waTab.close()
       setFormError(err.message)
     } finally { setSending(false) }
   }
