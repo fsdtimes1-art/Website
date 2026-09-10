@@ -45,7 +45,15 @@ export default function Home() {
     getPortfolio().then(data => setPortfolio(Array.isArray(data) ? data : [])).catch(() => setPortfolio([]))
   }, [])
 
-  const carouselEvents = useMemo(() => events.filter(event => event && event.is_active !== false), [events])
+  const carouselEvents = useMemo(() => {
+    const now = new Date()
+    return events.filter(event => {
+      if (!event || event.is_active === false) return false
+      if (!event.date) return true // no date = show it
+      const d = new Date(event.date)
+      return Number.isNaN(d.getTime()) || d > now // only future events
+    })
+  }, [events])
 
   useEffect(() => { if (eventIndex >= carouselEvents.length) setEventIndex(0) }, [eventIndex, carouselEvents.length])
 
