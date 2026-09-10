@@ -11,6 +11,8 @@ import EventDetailWhatsApp             from './pages/EventDetailWhatsApp'
 import PaymentSuccess                  from './pages/PaymentSuccess'
 import Portfolio                       from './pages/Portfolio'
 import BookMeeting                     from './pages/BookMeeting'
+import Privacy                         from './pages/Privacy'
+import Terms                           from './pages/Terms'
 
 function ScrollToTop() {
   const { pathname } = useLocation()
@@ -38,6 +40,8 @@ export default function App() {
           <Route path="/payment-success"   element={<PaymentSuccess />} />
           <Route path="/portfolio"         element={<Portfolio />} />
           <Route path="/book-meeting"      element={<BookMeeting />} />
+          <Route path="/privacy"           element={<Privacy />} />
+          <Route path="/terms"             element={<Terms />} />
 
           {/* 404 fallback */}
           <Route path="*" element={

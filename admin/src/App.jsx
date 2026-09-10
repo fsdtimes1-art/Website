@@ -103,7 +103,7 @@ function AdminShell({ children }) {
             letterSpacing: '3px',
             color:         'var(--gold)',
           }}>
-            EVENT<span style={{ color: 'var(--white)' }}>FLOW</span>
+            FSD<span style={{ color: 'var(--white)' }}>TIMES</span>
           </span>
           <div style={{ width: 36 }} />
         </div>
