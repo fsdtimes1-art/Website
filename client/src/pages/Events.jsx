@@ -1,7 +1,4 @@
-/**
- * Events-only review page: preserves getEvents and existing checkout routes.
- * PulsePass styling is intentionally scoped to this page so no other route changes.
- */
+/* v2 — past events, Live/Past filter, WhatsApp fix, navbar z-index fix */
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getEvents } from '../lib/api'
