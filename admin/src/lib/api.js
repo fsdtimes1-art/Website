@@ -223,12 +223,23 @@ export async function createPhysicalBatch(formData) {
   })
 }
 
-export function getPhysicalBatchPdfUrl(batchId, batchRef) {
-  // Return a direct download URL — browser navigates to it (no fetch+blob+popup issues)
-  // The admin key goes in the query param because browser GET requests don't send custom headers.
-  const key = getStoredKey()
-  const url = `${PT_BASE}/batches/${batchId}/pdf?key=${encodeURIComponent(key || '')}`
-  return { directUrl: url, filename: `${batchRef || batchId}.pdf` }
+export async function getPhysicalBatchPdfUrl(batchId, batchRef) {
+  // Use authenticated fetch — PT_BASE may be a relative URL so we cannot use
+  // direct browser navigation (relative <a href> would hit the admin server, not backend).
+  // Blob URLs are always same-origin so a.click(download) is never popup-blocked.
+  const res = await fetch(`${PT_BASE}/batches/${batchId}/pdf`, {
+    credentials: 'include',
+    headers: { 'x-admin-key': getStoredKey() },
+  })
+  if (!res.ok) {
+    // Try to parse JSON error, fall back to status text
+    let errMsg = `HTTP ${res.status}`
+    try { const j = await res.json(); errMsg = j.error || errMsg } catch (_) {}
+    throw new Error(errMsg)
+  }
+  const blob    = await res.blob()
+  const blobUrl = URL.createObjectURL(blob)
+  return { blobUrl, filename: `${batchRef || batchId}.pdf` }
 }
 
 export async function deletePhysicalBatch(batchId) {

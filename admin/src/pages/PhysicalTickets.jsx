@@ -119,12 +119,26 @@ function Toast({ msg, type, onClose }) {
 // TAB 1 — OVERVIEW
 // ═══════════════════════════════════════════════════════════════
 function OverviewTab({ stats, batches, loadingStats, loadingBatches, onDownloadPdf, onDeleteBatch, events }) {
+  const [downloadingId, setDownloadingId] = useState(null)
   const [deletingId,    setDeletingId]    = useState(null)
   const [filterEventId, setFilterEventId] = useState('')
+  const [readyPdfs, setReadyPdfs]         = useState({}) // { [batchId]: { blobUrl, filename } }
 
   const filteredBatches = filterEventId
     ? batches.filter(b => b.event_id === filterEventId)
     : batches
+
+  async function handleDownload(batch) {
+    setDownloadingId(batch.id)
+    try {
+      const result = await onDownloadPdf(batch.id, batch.batch_ref)
+      setReadyPdfs(prev => ({ ...prev, [batch.id]: result }))
+    } catch (err) {
+      alert(`PDF failed: ${err.message}`)
+    } finally {
+      setDownloadingId(null)
+    }
+  }
 
   async function handleDelete(batch) {
     const hasScanned = (batch.ticketCounts?.scanned ?? 0) > 0
@@ -205,22 +219,30 @@ function OverviewTab({ stats, batches, loadingStats, loadingBatches, onDownloadP
                     📋 {b.ticketCounts?.inactive ?? 0} unused &nbsp;
                     📷 {b.ticketCounts?.scanned ?? 0} scanned
                   </span>
-                  {/* PDF Download — direct browser navigation (no fetch/blob issues) */}
-                  {(() => {
-                    const { directUrl, filename } = onDownloadPdf(b.id, b.batch_ref)
-                    return (
-                      <a
-                        href={directUrl}
-                        download={filename}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="btn-gold"
-                        style={{ fontSize: '12px', padding: '8px 16px', textDecoration: 'none', display: 'inline-block' }}
-                      >
-                        ⬇ PDF
-                      </a>
-                    )
-                  })()}
+                  {/* PDF Download — 3 states: idle → generating → save */}
+                  {readyPdfs[b.id] ? (
+                    <a
+                      href={readyPdfs[b.id].blobUrl}
+                      download={readyPdfs[b.id].filename}
+                      className="btn-gold"
+                      style={{ fontSize: '12px', padding: '8px 16px', textDecoration: 'none', display: 'inline-block' }}
+                      onClick={() => setTimeout(() => {
+                        URL.revokeObjectURL(readyPdfs[b.id].blobUrl)
+                        setReadyPdfs(prev => { const n = {...prev}; delete n[b.id]; return n })
+                      }, 5000)}
+                    >
+                      💾 Save PDF
+                    </a>
+                  ) : (
+                    <button
+                      onClick={() => handleDownload(b)}
+                      disabled={downloadingId === b.id}
+                      className="btn-gold"
+                      style={{ fontSize: '12px', padding: '8px 16px', opacity: downloadingId === b.id ? 0.6 : 1, minWidth: '110px' }}
+                    >
+                      {downloadingId === b.id ? '⏳ Generating…' : '⬇ PDF'}
+                    </button>
+                  )}
                   {/* Delete batch */}
                   <button
                     onClick={() => handleDelete(b)}
