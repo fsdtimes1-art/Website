@@ -1,6 +1,6 @@
 import { useEffect, useState }                    from 'react'
 import { Link }                                   from 'react-router-dom'
-import { getAdminEvents, toggleEvent, deleteEvent } from '../lib/api'
+import { getAdminEvents, toggleEvent, deleteEvent, duplicateEvent } from '../lib/api'
 import EventTable                                 from '../components/EventTable'
 
 export default function Events() {
@@ -11,6 +11,8 @@ export default function Events() {
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [deleteName, setDeleteName] = useState('')
   const [deleting, setDeleting] = useState(false)
+  const [duplicatingId, setDuplicatingId] = useState(null)
+  const [toast, setToast] = useState(null) // { msg, type }
 
   useEffect(() => {
     fetchEvents()
@@ -43,6 +45,21 @@ export default function Events() {
   function handleDelete(event) {
     setDeleteTarget(event)
     setDeleteName('')
+  }
+
+  async function handleDuplicate(event) {
+    setDuplicatingId(event.id)
+    try {
+      const dup = await duplicateEvent(event.id)
+      setEvents(prev => [dup, ...prev])
+      setToast({ msg: `"${dup.name}" created — click Edit to set the date.`, type: 'success' })
+      setTimeout(() => setToast(null), 5000)
+    } catch (err) {
+      setToast({ msg: `Failed to duplicate: ${err.message}`, type: 'error' })
+      setTimeout(() => setToast(null), 5000)
+    } finally {
+      setDuplicatingId(null)
+    }
   }
 
   async function confirmDelete() {
@@ -265,8 +282,26 @@ export default function Events() {
           loading={loading}
           onToggle={handleToggle}
           onDelete={handleDelete}
+          onDuplicate={handleDuplicate}
+          duplicatingId={duplicatingId}
         />
       </div>
+
+      {/* ── Toast notification ── */}
+      {toast && (
+        <div style={{
+          position: 'fixed', bottom: '24px', right: '24px', zIndex: 9999,
+          background: toast.type === 'success' ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)',
+          border: `1px solid ${toast.type === 'success' ? 'rgba(34,197,94,0.4)' : 'rgba(239,68,68,0.4)'}`,
+          borderRadius: '12px', padding: '14px 20px', maxWidth: '380px',
+          color: toast.type === 'success' ? '#4ade80' : '#f87171',
+          fontSize: '13px', lineHeight: '1.5',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+          animation: 'fadeIn 0.2s ease',
+        }}>
+          {toast.type === 'success' ? '✓ ' : '⚠ '}{toast.msg}
+        </div>
+      )}
 
       {/* ── Help note ── */}
       {!loading && events.length > 0 && (

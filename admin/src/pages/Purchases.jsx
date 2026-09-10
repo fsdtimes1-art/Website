@@ -1,6 +1,6 @@
 // admin/src/pages/Purchases.jsx
 import { useEffect, useState } from 'react'
-import { getPurchases, getAdminEvents, createManualSale, verifyWhatsappPurchase, deletePendingPurchase, exportPurchasesCSV, voidETicket } from '../lib/api'
+import { getPurchases, getAdminEvents, createManualSale, verifyWhatsappPurchase, deletePendingPurchase, exportPurchasesCSV, voidETicket, resendTicketEmail } from '../lib/api'
 
 export default function Purchases() {
   const [purchases, setPurchases] = useState([])
@@ -15,6 +15,10 @@ export default function Purchases() {
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [deletingId,   setDeletingId]   = useState(null)
   const [voidingTicketId, setVoidingTicketId] = useState(null)
+  const [resendingId,  setResendingId]  = useState(null)
+  const [resendOk,     setResendOk]     = useState(null) // purchaseId that was just resent
+  const [dateFrom,     setDateFrom]     = useState('')
+  const [dateTo,       setDateTo]       = useState('')
 
   // ── Manual-sale modal state ──
   const [showModal,   setShowModal]   = useState(false)
@@ -54,6 +58,17 @@ export default function Purchases() {
  const filtered = purchases.filter(p => {
     if (statusFilter === 'whatsapp'  && p.status !== 'whatsapp_pending') return false
     if (statusFilter === 'completed' && p.status !== 'completed')        return false
+    // Date range filter
+    if (dateFrom) {
+      const from = new Date(dateFrom)
+      from.setHours(0, 0, 0, 0)
+      if (new Date(p.created_at) < from) return false
+    }
+    if (dateTo) {
+      const to = new Date(dateTo)
+      to.setHours(23, 59, 59, 999)
+      if (new Date(p.created_at) > to) return false
+    }
     if (!search.trim()) return true
     const q = search.toLowerCase()
     return (
@@ -63,6 +78,19 @@ export default function Purchases() {
       p.tickets?.some(t => t.seat_number?.toLowerCase().includes(q))
     )
   })
+
+  async function handleResend(id) {
+    setResendingId(id)
+    try {
+      await resendTicketEmail(id)
+      setResendOk(id)
+      setTimeout(() => setResendOk(null), 3000)
+    } catch (err) {
+      alert(`Failed to resend: ${err.message}`)
+    } finally {
+      setResendingId(null)
+    }
+  }
 
   const totalRevenue = filtered
     .filter(p => p.status === 'completed')
@@ -167,8 +195,8 @@ export default function Purchases() {
         ))}
       </div>
 
-{/* ── Status filter tabs ── */}
-      <div style={{ display: 'flex', gap: '6px', marginBottom: '16px', flexWrap: 'wrap' }}>
+      {/* ── Status filter tabs ── */}
+      <div style={{ display: 'flex', gap: '6px', marginBottom: '12px', flexWrap: 'wrap' }}>
         {[
           { key: 'all',       label: 'All'             },
           { key: 'whatsapp',  label: 'WhatsApp Pending' },
@@ -191,6 +219,60 @@ export default function Purchases() {
             {f.label}
           </button>
         ))}
+      </div>
+
+      {/* ── Date range filter ── */}
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap', alignItems: 'center' }}>
+        <span style={{ color: 'var(--gray-mid)', fontSize: '11px', fontWeight: '700', letterSpacing: '1px', textTransform: 'uppercase' }}>Date:</span>
+        <input
+          type="date"
+          className="input"
+          value={dateFrom}
+          onChange={e => setDateFrom(e.target.value)}
+          style={{ width: 'auto', padding: '6px 10px', fontSize: '12px', cursor: 'pointer' }}
+          title="From date"
+        />
+        <span style={{ color: 'var(--gray-mid)', fontSize: '12px' }}>→</span>
+        <input
+          type="date"
+          className="input"
+          value={dateTo}
+          onChange={e => setDateTo(e.target.value)}
+          style={{ width: 'auto', padding: '6px 10px', fontSize: '12px', cursor: 'pointer' }}
+          title="To date"
+        />
+        {/* Shortcut buttons */}
+        {[
+          { label: 'This Week', onClick: () => {
+            const now = new Date()
+            const mon = new Date(now); mon.setDate(now.getDate() - now.getDay() + 1); mon.setHours(0,0,0,0)
+            setDateFrom(mon.toISOString().slice(0,10))
+            setDateTo(now.toISOString().slice(0,10))
+          }},
+          { label: 'This Month', onClick: () => {
+            const now = new Date()
+            setDateFrom(`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`)
+            setDateTo(now.toISOString().slice(0,10))
+          }},
+          { label: 'Clear', onClick: () => { setDateFrom(''); setDateTo('') }},
+        ].map(s => (
+          <button
+            key={s.label}
+            onClick={s.onClick}
+            style={{
+              background: 'transparent', border: '1px solid rgba(255,255,255,0.1)',
+              color: 'var(--gray-light)', fontSize: '11px', padding: '5px 10px',
+              borderRadius: '14px', cursor: 'pointer',
+            }}
+          >
+            {s.label}
+          </button>
+        ))}
+        {(dateFrom || dateTo) && (
+          <span style={{ color: 'var(--gold)', fontSize: '11px', fontWeight: '600' }}>
+            {filtered.length} result{filtered.length !== 1 ? 's' : ''}
+          </span>
+        )}
       </div>
 
       {/* ── Filters ── */}
@@ -346,6 +428,9 @@ export default function Purchases() {
                     verifying={verifyingId === p.id}
                     onDelete={() => setDeleteTarget(p)}
                     deleting={deletingId === p.id}
+                    onResend={() => handleResend(p.id)}
+                    resending={resendingId === p.id}
+                    resendOk={resendOk === p.id}
                     onVoidTicket={async (ticketId, seatNumber) => {
                       if (!window.confirm(`Void ticket ${seatNumber}? The holder will not be able to enter. This cannot be undone.`)) return
                       setVoidingTicketId(ticketId)
@@ -612,7 +697,7 @@ function getDisplayAmount(p) {
   return Number(p.total_amount)
 }
 
-function PurchaseRow({ purchase: p, expanded, onToggle, displayAmount, onVerify, verifying, onDelete, deleting, onVoidTicket, voidingTicketId }) {
+function PurchaseRow({ purchase: p, expanded, onToggle, displayAmount, onVerify, verifying, onDelete, deleting, onResend, resending, resendOk, onVoidTicket, voidingTicketId }) {
     const tickets = p.tickets || []
   const scanned = tickets.filter(t => t.scanned).length
   const voided  = tickets.filter(t => t.voided).length
@@ -626,6 +711,10 @@ function PurchaseRow({ purchase: p, expanded, onToggle, displayAmount, onVerify,
     hour: '2-digit', minute: '2-digit',
   })
 
+  // WhatsApp quick-reply number (strip non-digits, add country code if needed)
+  const rawPhone = (p.buyer_phone || '').replace(/\D/g, '')
+  const waPhone  = rawPhone.startsWith('92') ? rawPhone : rawPhone.startsWith('0') ? `92${rawPhone.slice(1)}` : rawPhone ? `92${rawPhone}` : null
+
   return (
     <>
       <tr style={{ cursor: 'pointer' }} onClick={onToggle}>
@@ -638,9 +727,27 @@ function PurchaseRow({ purchase: p, expanded, onToggle, displayAmount, onVerify,
             {p.buyer_email}
           </p>
           {p.buyer_phone && (
-            <p style={{ color: 'var(--gray-dark)', fontSize: '11px', marginTop: '1px' }}>
-              {p.buyer_phone}
-            </p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginTop: '2px' }}>
+              <span style={{ color: 'var(--gray-dark)', fontSize: '11px' }}>{p.buyer_phone}</span>
+              {waPhone && (
+                <a
+                  href={`https://wa.me/${waPhone}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={e => e.stopPropagation()}
+                  title="Open WhatsApp chat with buyer"
+                  style={{
+                    display: 'inline-flex', alignItems: 'center',
+                    background: 'rgba(37,211,102,0.12)', border: '1px solid rgba(37,211,102,0.3)',
+                    color: '#25D366', fontSize: '9px', fontWeight: '700',
+                    padding: '2px 6px', borderRadius: '10px', textDecoration: 'none',
+                    letterSpacing: '0.3px',
+                  }}
+                >
+                  WA ↗
+                </a>
+              )}
+            </div>
           )}
         </td>
 
@@ -709,6 +816,44 @@ function PurchaseRow({ purchase: p, expanded, onToggle, displayAmount, onVerify,
             >
               {verifying ? 'Verifying…' : '✓ Verify Payment'}
             </button>
+          )}
+
+          {p.status === 'completed' && (
+            <button
+              onClick={e => { e.stopPropagation(); onResend() }}
+              disabled={resending}
+              title="Resend ticket email to buyer"
+              style={{
+                display: 'block', marginTop: '6px',
+                background: resendOk ? 'rgba(34,197,94,0.2)' : 'transparent',
+                border: `1px solid ${resendOk ? 'rgba(34,197,94,0.5)' : 'rgba(255,255,255,0.15)'}`,
+                color: resendOk ? '#4ade80' : 'var(--gray-light)',
+                fontSize: '10px', fontWeight: '600',
+                padding: '4px 10px', borderRadius: '14px',
+                cursor: resending ? 'not-allowed' : 'pointer',
+                transition: 'all 0.2s',
+              }}
+            >
+              {resending ? '📧 Sending…' : resendOk ? '✓ Sent!' : '📧 Resend Tickets'}
+            </button>
+          )}
+
+          {p.status === 'completed' && waPhone && (
+            <a
+              href={`https://wa.me/${waPhone}?text=${encodeURIComponent(`Hi ${p.buyer_name}, your tickets are confirmed! ✓ Order Ref: ${p.id.slice(-8).toUpperCase()}`)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={e => e.stopPropagation()}
+              style={{
+                display: 'block', marginTop: '5px',
+                background: 'rgba(37,211,102,0.1)', border: '1px solid rgba(37,211,102,0.3)',
+                color: '#25D366', fontSize: '10px', fontWeight: '600',
+                padding: '4px 10px', borderRadius: '14px', textDecoration: 'none',
+                textAlign: 'center',
+              }}
+            >
+              📲 Message Buyer
+            </a>
           )}
         </td>
 

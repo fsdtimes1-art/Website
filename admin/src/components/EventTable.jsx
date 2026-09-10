@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 
-export default function EventTable({ events, onToggle, onDelete, loading }) {
+export default function EventTable({ events, onToggle, onDelete, onDuplicate, duplicatingId, loading }) {
 
   if (loading) return (
     <div style={{ display: 'flex', justifyContent: 'center', padding: '60px 0' }}>
@@ -46,6 +46,8 @@ export default function EventTable({ events, onToggle, onDelete, loading }) {
               event={event}
               onToggle={onToggle}
               onDelete={onDelete}
+              onDuplicate={onDuplicate}
+              duplicating={duplicatingId === event.id}
             />
           ))}
         </tbody>
@@ -54,7 +56,7 @@ export default function EventTable({ events, onToggle, onDelete, loading }) {
   )
 }
 
-function EventRow({ event, onToggle, onDelete }) {
+function EventRow({ event, onToggle, onDelete, onDuplicate, duplicating }) {
   const cats        = event.seat_categories || []
   const totalSeats  = cats.reduce((s, c) => s + c.total_seats, 0)
   const soldSeats   = cats.reduce((s, c) => s + c.sold_seats,  0)
@@ -277,6 +279,40 @@ function EventRow({ event, onToggle, onDelete }) {
           >
             ✏️ Edit
           </Link>
+
+          {/* Duplicate */}
+          <button
+            onClick={() => onDuplicate && onDuplicate(event)}
+            disabled={duplicating}
+            title="Duplicate this event (creates a hidden copy)"
+            style={{
+              display:      'inline-flex',
+              alignItems:   'center',
+              background:   'transparent',
+              border:       '1px solid rgba(41,220,255,0.2)',
+              color:        'var(--gray-light)',
+              fontSize:     '12px',
+              padding:      '6px 10px',
+              borderRadius: '4px',
+              cursor:       duplicating ? 'wait' : 'pointer',
+              opacity:      duplicating ? 0.6 : 1,
+              transition:   'all 0.15s',
+            }}
+            onMouseEnter={e => {
+              if (!duplicating) {
+                e.currentTarget.style.background  = 'rgba(41,220,255,0.1)'
+                e.currentTarget.style.borderColor = 'rgba(41,220,255,0.4)'
+                e.currentTarget.style.color       = '#29dcff'
+              }
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background  = 'transparent'
+              e.currentTarget.style.borderColor = 'rgba(41,220,255,0.2)'
+              e.currentTarget.style.color       = 'var(--gray-light)'
+            }}
+          >
+            {duplicating ? '…' : '⧉'}
+          </button>
 
           <button
             onClick={() => onDelete(event)}

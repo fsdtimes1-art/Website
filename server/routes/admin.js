@@ -296,6 +296,63 @@ router.delete('/events/:eventId/categories/:catId', requireAdmin, async (req, re
   }
 });
 
+// POST /admin/events/:id/duplicate — clone an event with all categories (no sold_seats)
+router.post('/events/:id/duplicate', requireAdmin, async (req, res) => {
+  try {
+    const { data: src, error: srcErr } = await supabase
+      .from('events')
+      .select('*, seat_categories(*)')
+      .eq('id', req.params.id)
+      .single();
+
+    if (srcErr || !src) return res.status(404).json({ error: 'Event not found' });
+
+    // New date = 7 days from now
+    const newDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+
+    const { data: newEvent, error: insertErr } = await supabase
+      .from('events')
+      .insert({
+        name:        `Copy of ${src.name}`,
+        description: src.description,
+        image_url:   src.image_url,
+        date:        newDate,
+        end_time:    null,
+        venue:       src.venue,
+        is_active:   false,
+        is_featured: false,
+        discounts:   src.discounts || [],
+      })
+      .select()
+      .single();
+
+    if (insertErr) throw insertErr;
+
+    if (src.seat_categories?.length > 0) {
+      const catRows = src.seat_categories.map(c => ({
+        event_id:    newEvent.id,
+        name:        c.name,
+        price:       c.price,
+        service_fee: c.service_fee ?? 220,
+        total_seats: c.total_seats,
+        sold_seats:  0,
+      }));
+      await supabase.from('seat_categories').insert(catRows);
+    }
+
+    const { data: full } = await supabase
+      .from('events')
+      .select('*, seat_categories(*)')
+      .eq('id', newEvent.id)
+      .single();
+
+    res.status(201).json(full);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
 // ============================================================
 // PURCHASES — admin only
 // ============================================================
@@ -515,6 +572,42 @@ router.delete('/purchases/:id', requireAdmin, async (req, res) => {
 
 
 // ============================================================
+
+// POST /admin/purchases/:id/resend-email — re-send ticket confirmation email to buyer
+router.post('/purchases/:id/resend-email', requireAdmin, async (req, res) => {
+  try {
+    const { data: purchase, error: purchaseError } = await supabase
+      .from('purchases')
+      .select('*')
+      .eq('id', req.params.id)
+      .single();
+
+    if (purchaseError || !purchase) {
+      return res.status(404).json({ error: 'Purchase not found' });
+    }
+
+    if (purchase.status !== 'completed') {
+      return res.status(400).json({ error: 'Can only resend emails for completed purchases' });
+    }
+
+    await generateTicketsAndSendEmails({
+      purchaseId:  purchase.id,
+      eventId:     purchase.event_id,
+      categoryId:  purchase.category_id,
+      quantity:    purchase.quantity,
+      buyerName:   purchase.buyer_name,
+      buyerEmail:  purchase.buyer_email,
+      buyerPhone:  purchase.buyer_phone || '',
+      totalAmount: purchase.total_amount,
+      ticketNames: purchase.ticket_names || [],
+    });
+
+    res.json({ success: true, message: `Tickets resent to ${purchase.buyer_email}` });
+  } catch (err) {
+    console.error('Resend email error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // VOID E-TICKET — admin only
 // PATCH /admin/tickets/:id/void

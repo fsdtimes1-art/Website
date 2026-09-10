@@ -3,6 +3,7 @@
  * homepage What we do hierarchy while describing the existing WhatsApp ticket flow.
  */
 import { Link } from 'react-router-dom'
+import { Helmet } from 'react-helmet-async'
 
 const PROCESS_STEPS = [
   {
@@ -39,6 +40,10 @@ export default function HowItWorks() {
   return (
     <main className="hiw-page">
       <style>{howItWorksCss}</style>
+      <Helmet>
+        <title>How It Works — Buy Tickets on WhatsApp | Faisalabad Times</title>
+        <meta name="description" content="Learn how to browse events, pick your tickets, and book instantly on WhatsApp with Faisalabad Times. Simple 4-step process." />
+      </Helmet>
 
       <section className="hiw-hero">
         <div className="container">

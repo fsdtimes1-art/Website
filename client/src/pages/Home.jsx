@@ -1,9 +1,10 @@
-﻿/**
+/**
  * Midnight Circuit home: real EventFlow data is shown in an event-first, dark neon-blue landing page.
  * The hero uses a calm, automatic carousel of real active events; it preserves the reference card composition, ticket navigation, and reduced-motion preference. The portfolio section uses live client/project records only.
  */
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { Helmet } from 'react-helmet-async'
 import { getEvents, getPortfolio } from '../lib/api'
 
 const SERVICES = [
@@ -70,6 +71,14 @@ export default function Home() {
   const projectRail = portfolioProjects.length > 1 ? [...portfolioProjects, ...portfolioProjects] : portfolioProjects
 
   return <div className="mc-home">
+    <Helmet>
+      <title>Live Events in Faisalabad | Faisalabad Times</title>
+      <meta name="description" content="Discover concerts, comedy shows, workshops, and city events in Faisalabad. Book tickets instantly through WhatsApp — no account needed." />
+      <meta property="og:title" content="Live Events in Faisalabad | Faisalabad Times" />
+      <meta property="og:description" content="Discover concerts, comedy shows, workshops, and city events in Faisalabad. Book tickets through WhatsApp." />
+      <meta property="og:type" content="website" />
+      <meta property="og:url" content="https://faisalabadtimes.co" />
+    </Helmet>
     <style>{homeCss}</style>
     <style>{eventCarouselCss}</style>
     <style>{portfolioCarouselCss}</style>

@@ -4,6 +4,7 @@
  */
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { Helmet } from 'react-helmet-async'
 import { getPortfolio } from '../lib/api'
 
 function displayDate(value) {
@@ -24,6 +25,10 @@ export default function Portfolio() {
   const projects = useMemo(() => items.filter(item => item && (item.event_name || item.client_name || item.image_url)), [items])
 
   return <main className="pf-page">
+    <Helmet>
+      <title>Portfolio — Events & Brand Work | Faisalabad Times</title>
+      <meta name="description" content="Browse Faisalabad Times event and brand portfolio — concerts, brand campaigns, media coverage, and local marketing work." />
+    </Helmet>
     <style>{portfolioCss}</style>
     <section className="pf-hero">
       <div className="container">

@@ -4,6 +4,7 @@
  */
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { Helmet } from 'react-helmet-async'
 
 const WHATSAPP_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER || '923001234567'
 
@@ -102,6 +103,10 @@ export default function BookMeeting() {
   return (
     <main className="bm-page">
       <style>{bookMeetingCss}</style>
+      <Helmet>
+        <title>Book a Meeting — Digital Marketing Faisalabad | Faisalabad Times</title>
+        <meta name="description" content="Book a strategy call with Faisalabad Times for event promotion, social media management, paid advertising, and digital marketing in Faisalabad." />
+      </Helmet>
 
       <section className="bm-hero">
         <div className="container">

@@ -1,6 +1,7 @@
-/* v3 — is_featured support, past events, Live/Past filter */
-import { useEffect, useState } from 'react'
+/* v4 — search, skeleton, pulse badge, countdown, SEO */
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { Helmet } from 'react-helmet-async'
 import { getEvents } from '../lib/api'
 
 const REVIEW_EVENTS = [
@@ -35,12 +36,26 @@ function dateDetails(value) {
   }
 }
 
-function EventTicketCard({ event, index }) {
+function getCountdown(dateStr) {
+  if (!dateStr) return null
+  const diff = new Date(dateStr) - new Date()
+  if (diff <= 0) return null
+  const days  = Math.floor(diff / 86400000)
+  const hours = Math.floor((diff % 86400000) / 3600000)
+  const mins  = Math.floor((diff % 3600000) / 60000)
+  if (days >= 7)  return `In ${days} days`
+  if (days >= 1)  return `In ${days}d ${hours}h`
+  if (hours >= 1) return `In ${hours}h ${mins}m`
+  return `In ${mins}m`
+}
+
+function EventTicketCard({ event, index, now }) {
   const { soldOut, almostGone } = availability(event)
   const past     = isPast(event)
   const isReview = event.is_review_fixture === true
   const price    = event.seat_categories?.length ? Math.min(...event.seat_categories.map(c => Number(c.price))) : null
   const { day, time } = dateDetails(event.date)
+  const countdown = !past ? getCountdown(event.date) : null
 
   const isClickable = !past && !soldOut
   const badge   = past ? 'Ended' : soldOut ? 'Sold out' : almostGone ? 'Almost gone' : 'Live'
@@ -48,12 +63,16 @@ function EventTicketCard({ event, index }) {
   const props   = isClickable ? { to: `/events/${event.id}/whatsapp`, state: isReview ? { reviewEvent: event } : undefined } : {}
 
   return <Wrapper {...props} className={`pp-event-card ${!isClickable ? 'is-sold' : ''} ${past ? 'is-past' : ''}`}>
-    {event.image_url ? <img src={event.image_url} alt={event.name} /> : <div className="pp-image-fallback" />}
+    {event.image_url ? <img src={event.image_url} alt={event.name} loading="lazy" /> : <div className="pp-image-fallback" />}
     <div className="pp-card-overlay" />
     <span className={`pp-card-live ${past ? 'pp-card-ended' : ''}`}>{!past && <i />} {badge}</span>
     <span className="pp-card-code">FSD // {String(index + 1).padStart(2, '0')}</span>
-    <div className="pp-card-caption"><p>{event.seat_categories?.[0]?.name || 'Event ticket'}</p><h3>{event.name}</h3><div><span>&#9711; {day}{time && ` · ${time}`}</span></div><strong>{past ? 'Event ended' : soldOut ? 'Tickets unavailable' : price !== null ? `From PKR ${price.toLocaleString()}` : 'View tickets'}{isClickable && ' \u2192'}</strong></div>
+    <div className="pp-card-caption"><p>{event.seat_categories?.[0]?.name || 'Event ticket'}</p><h3>{event.name}</h3><div><span>&#9711; {day}{time && ` · ${time}`}</span>{countdown && <span className="pp-countdown">⏱ {countdown}</span>}</div><strong>{past ? 'Event ended' : soldOut ? 'Tickets unavailable' : price !== null ? `From PKR ${price.toLocaleString()}` : 'View tickets'}{isClickable && ' \u2192'}</strong></div>
   </Wrapper>
+}
+
+function SkeletonCard() {
+  return <div className="pp-skeleton-card"><div className="pp-sk-img" /><div className="pp-sk-body"><div className="pp-sk-line pp-sk-short" /><div className="pp-sk-line pp-sk-long" /><div className="pp-sk-line pp-sk-med" /></div></div>
 }
 
 export default function Events() {
@@ -62,17 +81,30 @@ export default function Events() {
   const [error,      setError]      = useState(null)
   const [reviewMode, setReviewMode] = useState(false)
   const [tab,        setTab]        = useState('live')
+  const [search,     setSearch]     = useState('')
+  const [now,        setNow]        = useState(Date.now())
 
   useEffect(() => {
     getEvents()
-      .then(setEvents)
+      .then(data => setEvents(Array.isArray(data) ? data : []))
       .catch(() => { setEvents(REVIEW_EVENTS); setReviewMode(true) })
       .finally(() => setLoading(false))
   }, [])
 
+  // Tick countdown every 30s
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 30000)
+    return () => clearInterval(t)
+  }, [])
+
   const liveEvents    = events.filter(e => !isPast(e))
   const pastEvents    = events.filter(e =>  isPast(e))
-  const visibleEvents = tab === 'past' ? pastEvents : liveEvents
+  const baseEvents    = tab === 'past' ? pastEvents : liveEvents
+
+  // Search filter
+  const visibleEvents = search.trim()
+    ? baseEvents.filter(e => e.name?.toLowerCase().includes(search.toLowerCase()) || e.venue?.toLowerCase().includes(search.toLowerCase()))
+    : baseEvents
 
   const featured     = liveEvents.find(e => e.is_featured)
                     || liveEvents.find(e => !availability(e).soldOut)
@@ -80,6 +112,12 @@ export default function Events() {
   const featuredDate = featured ? dateDetails(featured.date) : null
 
   return <div className="pp-scope">
+    <Helmet>
+      <title>Upcoming Events in Faisalabad | Faisalabad Times</title>
+      <meta name="description" content="Browse live concerts, comedy nights, workshops, and city events in Faisalabad. Book tickets instantly through WhatsApp." />
+      <meta property="og:title" content="Upcoming Events | Faisalabad Times" />
+      <meta property="og:description" content="Live events in Faisalabad — concerts, comedy, workshops, markets. Book via WhatsApp." />
+    </Helmet>
     <style>{pulsePassEventsCss}</style>
     <section className="pp-events-hero"><div className="container pp-hero-layout"><div className="pp-heading"><p><i /> Faisalabad live desk</p><h1>Find your next <em>live moment.</em></h1><span>Concerts, comedy, maker rooms, and city gatherings now in one clearer ticket desk.</span></div>
       {featured && <Link to={`/events/${featured.id}/whatsapp`} className="pp-feature-card" state={featured.is_review_fixture ? { reviewEvent: featured } : undefined}>{featured.image_url ? <img src={featured.image_url} alt={featured.name} /> : <div className="pp-image-fallback" />}<div className="pp-feature-wash" /><span className="pp-feature-rule" /><span className="pp-feature-badge"><i /> Featured</span><div className="pp-feature-caption"><p>Featured this week</p><h2>{featured.name}</h2><span>&#9711; {featuredDate.day}{featuredDate.time && ` · ${featuredDate.time}`}</span><strong className="pp-feature-cta">Get Tickets →</strong></div></Link>}
@@ -98,15 +136,28 @@ export default function Events() {
         </button>
       </div>
 
+      {/* Search bar */}
+      <div className="pp-search-wrap">
+        <span className="pp-search-icon">⌕</span>
+        <input
+          className="pp-search-input"
+          type="text"
+          placeholder="Search events or venues…"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+        />
+        {search && <button className="pp-search-clear" onClick={() => setSearch('')}>✕</button>}
+      </div>
+
       {reviewMode && <p className="pp-review-mode">Review preview uses sample listings only.</p>}
-      {loading && <div className="pp-state"><span className="pp-spinner" /> Loading events&hellip;</div>}
+      {loading && <div className="pp-card-grid">{[0,1,2,3,4,5].map(i => <SkeletonCard key={i} />)}</div>}
       {error && <div className="pp-state pp-error">Could not load events: {error}</div>}
       {!loading && !error && visibleEvents.length === 0 && (
         <div className="pp-state">
-          {tab === 'past' ? 'No past events to show.' : 'No upcoming events at the moment \u2014 check back soon.'}
+          {search ? `No events matching "${search}"` : tab === 'past' ? 'No past events to show.' : 'No upcoming events at the moment — check back soon.'}
         </div>
       )}
-      {!loading && !error && visibleEvents.length > 0 && <div className="pp-card-grid">{visibleEvents.map((event, index) => <EventTicketCard key={event.id} event={event} index={index} />)}</div>}
+      {!loading && !error && visibleEvents.length > 0 && <div className="pp-card-grid">{visibleEvents.map((event, index) => <EventTicketCard key={event.id} event={event} index={index} now={now} />)}</div>}
     </div></section>
   </div>
 }
@@ -124,5 +175,16 @@ const pulsePassEventsCss = `
   .pp-tab-filter { display:flex; gap:8px; margin:20px 0 4px; }.pp-tab-filter button { display:inline-flex; align-items:center; gap:7px; border:1px solid var(--pp-line); border-radius:999px; padding:8px 16px; background:transparent; color:var(--pp-muted); font:700 12px 'DM Sans',sans-serif; letter-spacing:.05em; cursor:pointer; transition:border-color .18s,background .18s,color .18s; }.pp-tab-filter button i { width:6px; height:6px; border-radius:50%; background:var(--pp-blue); box-shadow:0 0 0 3px rgba(41,220,255,.18); }.pp-tab-filter button span { border-radius:999px; padding:2px 7px; background:rgba(41,220,255,.1); color:var(--pp-blue-soft); font-size:10px; }.pp-tab-filter button.is-active { border-color:var(--pp-blue); background:rgba(41,220,255,.1); color:var(--pp-white); }.pp-tab-filter button.is-active span { background:var(--pp-blue); color:#04151d; }
   .pp-card-ended { background:rgba(80,100,120,.55)!important; color:#b0c4d4!important; }.pp-card-ended i { display:none; }.pp-event-card.is-past { opacity:.72; }.pp-event-card.is-past .pp-card-overlay { background:linear-gradient(0deg,rgba(3,10,18,.98),rgba(3,10,18,.25) 67%)!important; }.pp-event-card.is-past img { filter:grayscale(30%) brightness(.85); }
   @media (max-width:600px) { .pp-scope::before { background-size:42px 42px; }.pp-events-hero { padding:18px 0 20px; }.pp-hero-layout { gap:0; }.pp-heading { display:none; }.pp-feature-card { order:-1; min-height:186px; aspect-ratio:1.82/1; border:5px solid #040a12; border-radius:19px; }.pp-feature-rule { top:10px; right:15px; left:15px; }.pp-feature-caption { right:15px; bottom:13px; left:15px; }.pp-feature-caption p { font-size:8px; }.pp-feature-caption h2 { max-width:280px; font-size:1.8rem; }.pp-feature-caption>span { margin-top:7px; font-size:8px; }.pp-feature-badge { top:15px; left:15px; font-size:8px; }.pp-feature-cta { display:none; }.pp-events-shell { padding-bottom:46px; }.pp-events-rail { border:5px solid #040a12; border-radius:19px; padding:15px; background:rgba(8,21,35,.94); }.pp-events-rail::before { display:none; }.pp-rail-header { display:block; border-radius:999px; padding:6px 12px; background:#040a12; text-align:center; }.pp-rail-header p { display:none; }.pp-rail-header h2 { margin:0; color:var(--pp-blue); font-size:1rem; }.pp-rail-header>span { display:none; }.pp-rail-serial { display:none; }.pp-tab-filter { gap:6px; margin:14px 0 2px; }.pp-tab-filter button { padding:6px 12px; font-size:11px; }.pp-card-grid { grid-template-columns:1fr; gap:10px; margin-top:9px; }.pp-event-card { min-height:0; aspect-ratio:1.82/1; border:5px solid #040a12; border-radius:19px; }.pp-card-caption { right:14px; bottom:12px; left:14px; }.pp-card-caption h3 { max-width:265px; font-size:13px; }.pp-card-caption>div { display:flex; margin-top:5px; font-size:9px; }.pp-card-caption>div span { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }.pp-card-caption strong { font-size:9px; padding-top:5px; }.pp-card-code { top:13px; right:14px; font-size:7px; }.pp-card-live { top:13px; left:14px; border-radius:4px; padding:4px 7px; background:var(--pp-blue); color:#04151d; font-size:8px; }.pp-review-mode { margin-top:10px; border-left:0; border-radius:8px; padding:8px; font-size:9px; } }
+  /* ── Pulse badge ── */
+  .pp-card-live:not(.pp-card-ended) i { animation:pp-pulse 1.8s ease infinite; }
+  @keyframes pp-pulse { 0%,100%{box-shadow:0 0 0 0 rgba(41,220,255,.7)} 50%{box-shadow:0 0 0 5px rgba(41,220,255,0)} }
+  /* ── Countdown ── */
+  .pp-countdown { color:var(--pp-blue)!important; font-size:9px!important; font-weight:700!important; letter-spacing:.05em!important; }
+  /* ── Search bar ── */
+  .pp-search-wrap { position:relative; display:flex; align-items:center; margin:10px 0 16px; }.pp-search-icon { position:absolute; left:12px; color:var(--pp-blue); font-size:18px; pointer-events:none; }.pp-search-input { width:100%; border:1px solid var(--pp-line); border-radius:999px; padding:9px 36px 9px 36px; background:rgba(10,25,40,.7); color:var(--pp-white); font:14px 'DM Sans',sans-serif; outline:none; transition:border-color .2s; }.pp-search-input::placeholder { color:var(--pp-muted); }.pp-search-input:focus { border-color:var(--pp-blue); }.pp-search-clear { position:absolute; right:12px; background:none; border:none; color:var(--pp-muted); font-size:13px; cursor:pointer; }
+  /* ── Skeleton loading ── */
+  .pp-skeleton-card { position:relative; min-height:280px; overflow:hidden; border:1px solid rgba(41,65,90,.5); border-radius:12px; background:rgba(12,23,37,.9); }.pp-sk-img { height:65%; background:linear-gradient(90deg,rgba(30,60,90,.4) 25%,rgba(41,220,255,.08) 50%,rgba(30,60,90,.4) 75%); background-size:200%; animation:pp-shimmer 1.4s infinite; }.pp-sk-body { padding:12px 14px; }.pp-sk-line { height:10px; border-radius:4px; background:linear-gradient(90deg,rgba(30,60,90,.5) 25%,rgba(41,220,255,.08) 50%,rgba(30,60,90,.5) 75%); background-size:200%; animation:pp-shimmer 1.4s infinite; margin-bottom:8px; }.pp-sk-short { width:35%; }.pp-sk-long { width:80%; }.pp-sk-med { width:55%; }
+  @keyframes pp-shimmer { from{background-position:200% 0} to{background-position:-200% 0} }
+  @media (max-width:600px) { .pp-search-wrap { margin:8px 0 10px; }.pp-skeleton-card { aspect-ratio:1.82/1; min-height:0; border:5px solid #040a12; border-radius:19px; } }
 `
 

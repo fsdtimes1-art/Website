@@ -104,6 +104,10 @@ export async function deleteEvent(id, confirmationName) {
   })
 }
 
+export async function duplicateEvent(id) {
+  return request(`/events/${id}/duplicate`, { method: 'POST' })
+}
+
 export async function deleteCategory(eventId, catId) {
   return request(`/events/${eventId}/categories/${catId}`, { method: 'DELETE' })
 }
@@ -130,6 +134,10 @@ export async function verifyWhatsappPurchase(id) {
 
 export async function deletePendingPurchase(id) {
   return request(`/purchases/${id}`, { method: 'DELETE' })
+}
+
+export async function resendTicketEmail(id) {
+  return request(`/purchases/${id}/resend-email`, { method: 'POST' })
 }
 
 export async function voidETicket(ticketId) {

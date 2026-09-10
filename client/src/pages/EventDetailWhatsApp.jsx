@@ -1,9 +1,10 @@
 /**
- * WhatsApp ticket-flow review page: visual hierarchy is updated only.
- * The existing API order creation, WhatsApp message, manual-payment confirmation, and email-ticket workflow are retained.
+ * WhatsApp ticket-flow page — enhanced with SEO, confetti, share, countdown, order ref.
  */
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
+import { Helmet } from 'react-helmet-async'
+import confetti from 'canvas-confetti'
 import { createWhatsappOrder, getEvent, getOrderTotal, getOrderTotals } from '../lib/api'
 
 const WHATSAPP_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER || '923001234567'
@@ -31,6 +32,19 @@ function Field({ label, hint, ...props }) {
   return <label className="flow-field"><span>{label}</span><input {...props} />{hint && <small>{hint}</small>}</label>
 }
 
+function getCountdown(dateStr) {
+  if (!dateStr) return null
+  const diff = new Date(dateStr) - new Date()
+  if (diff <= 0) return null
+  const days  = Math.floor(diff / 86400000)
+  const hours = Math.floor((diff % 86400000) / 3600000)
+  const mins  = Math.floor((diff % 3600000) / 60000)
+  if (days >= 7)  return `in ${days} days`
+  if (days >= 1)  return `in ${days}d ${hours}h`
+  if (hours >= 1) return `in ${hours}h ${mins}m`
+  return `in ${mins} minutes`
+}
+
 export default function EventDetailWhatsApp() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -45,11 +59,19 @@ export default function EventDetailWhatsApp() {
   const [formError, setFormError] = useState(null)
   const [sending, setSending] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const [orderId, setOrderId] = useState(null)
+  const [shareOk, setShareOk] = useState(false)
 
   useEffect(() => {
     if (reviewEvent) { setEvent(reviewEvent); setLoading(false); return }
     getEvent(id).then(setEvent).catch(err => setError(err.message)).finally(() => setLoading(false))
   }, [id, reviewEvent])
+
+  // Fire confetti when order submitted
+  useEffect(() => {
+    if (!submitted) return
+    confetti({ particleCount: 130, spread: 80, origin: { y: 0.55 } })
+  }, [submitted])
 
   function handleSelectionChange(next) {
     setSelection(next)
@@ -58,6 +80,19 @@ export default function EventDetailWhatsApp() {
       while (names.length < next.quantity - 1) names.push('')
       return names
     })
+  }
+
+  async function handleShare() {
+    const url = window.location.href
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: event?.name, text: `Book tickets for ${event?.name} on Faisalabad Times!`, url })
+      } catch (_) {}
+    } else {
+      navigator.clipboard.writeText(url).catch(() => {})
+      setShareOk(true)
+      setTimeout(() => setShareOk(false), 2500)
+    }
   }
 
   async function handleSendWhatsapp() {
@@ -70,15 +105,33 @@ export default function EventDetailWhatsApp() {
     const ticketNames = [form.name.trim(), ...extraNames.map(name => name.trim())]
     try {
       const { purchaseId } = await createWhatsappOrder({ eventId: event.id, categoryId: selection.category.id, quantity: selection.quantity, buyerName: form.name.trim(), buyerEmail: form.email.trim(), buyerPhone: form.phone.trim(), ticketNames })
+      setOrderId(purchaseId)
       const totals = getOrderTotals(selection.category.price, selection.quantity, event.discounts || [], selection.category.service_fee)
       const discountLines = (event.discounts || []).map(discount => {
         const amount = discount.type === 'percent' ? totals.subtotal * Number(discount.value) / 100 : Number(discount.value)
         return `*${discount.label}${discount.type === 'percent' ? ` (-${discount.value}%)` : ''}:* − PKR ${amount.toLocaleString()}`
       })
-      const lines = [`🎟️ *New Ticket Order — ${event.name}*`, '', `*Name:* ${form.name.trim()}`, `*Email:* ${form.email.trim()}`, form.phone.trim() ? `*Phone:* ${form.phone.trim()}` : null, `*Category:* ${selection.category.name}`, `*Quantity:* ${selection.quantity}`, `*Attendees:* ${ticketNames.join(', ')}`, `*Ticket Price:* PKR ${totals.subtotal.toLocaleString()}`, ...discountLines, `*Service fee:* PKR ${totals.fees.toLocaleString()}`, `*Total:* PKR ${totals.total.toLocaleString()}`, '', `*Order Ref:* ${purchaseId}`].filter(Boolean).join('\n')
+      const eventDateStr = !Number.isNaN(new Date(event.date).getTime())
+        ? new Date(event.date).toLocaleDateString('en-PK', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
+        : 'TBA'
+      const lines = [
+        `🎟️ *New Ticket Order — ${event.name}*`, '',
+        `*Date:* ${eventDateStr}`,
+        `*Venue:* ${event.venue || 'TBA'}`, '',
+        `*Name:* ${form.name.trim()}`,
+        `*Email:* ${form.email.trim()}`,
+        form.phone.trim() ? `*Phone:* ${form.phone.trim()}` : null,
+        `*Category:* ${selection.category.name}`,
+        `*Quantity:* ${selection.quantity}`,
+        `*Attendees:* ${ticketNames.join(', ')}`, '',
+        `*Ticket Price:* PKR ${totals.subtotal.toLocaleString()}`,
+        ...discountLines,
+        `*Service fee:* PKR ${totals.fees.toLocaleString()}`,
+        `*Total:* PKR ${totals.total.toLocaleString()}`, '',
+        `*Order Ref:* ${purchaseId}`,
+      ].filter(Boolean).join('\n')
       const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(lines)}`
       setSubmitted(true)
-      // Redirect same tab — no blank tab flash, works on mobile & desktop
       window.location.href = url
     } catch (err) {
       setFormError(err.message)
@@ -95,16 +148,37 @@ export default function EventDetailWhatsApp() {
   const time = startTime && endTime ? `${startTime} – ${endTime}` : startTime
   const orderTotal = selection.category ? getOrderTotal(selection.category.price, selection.quantity, event.discounts || [], selection.category.service_fee) : 0
   const totals = selection.category ? getOrderTotals(selection.category.price, selection.quantity, event.discounts || [], selection.category.service_fee) : null
+  const countdown = getCountdown(event.date)
 
   return <main className="flow-page"><style>{ticketFlowCss}</style>
-    <section className="flow-hero">{event.image_url ? <img src={event.image_url} alt={event.name} /> : <div /> }<div className="flow-hero-shade" /><button onClick={() => navigate('/events')}>← Back to events</button><span>LIVE EVENT</span></section>
+    <Helmet>
+      <title>{event.name} — Buy Tickets | Faisalabad Times</title>
+      <meta name="description" content={`Book tickets for ${event.name} at ${event.venue || 'Faisalabad'}. ${date}. Fast WhatsApp booking — no account needed.`} />
+      <meta property="og:title" content={`${event.name} | Faisalabad Times`} />
+      <meta property="og:description" content={`Get tickets for ${event.name} — ${date}${event.venue ? ` at ${event.venue}` : ''}.`} />
+      {event.image_url && <meta property="og:image" content={event.image_url} />}
+      <meta property="og:type" content="website" />
+    </Helmet>
+    <section className="flow-hero">{event.image_url ? <img src={event.image_url} alt={event.name} /> : <div /> }<div className="flow-hero-shade" />
+      <button onClick={() => navigate('/events')}>← Back to events</button>
+      <div className="flow-hero-actions">
+        <button className="flow-share-btn" onClick={handleShare} title="Share this event">
+          {shareOk ? '✓ Link copied!' : '↑ Share'}
+        </button>
+      </div>
+      <span>LIVE EVENT</span>
+    </section>
     <div className="container flow-wrap"><section className="flow-main"><div className="flow-event-title"><h1>{event.name}</h1><div><span>◷ {date}{time && ` · ${time}`}</span></div></div><nav className="flow-tabs"><a href="#tickets">Tickets</a><a href="#details">Event details</a></nav>
-      <section className="flow-info"><div><p>Date</p><strong>{date}</strong></div><div><p>Time</p><strong>{time || 'Time TBA'}</strong></div></section>
+      <section className="flow-info"><div><p>Date</p><strong>{date}</strong></div><div><p>Time</p><strong>{time || 'Time TBA'}</strong></div>{event.venue && <div><p>Venue</p><strong>{event.venue}</strong></div>}{countdown && <div className="flow-countdown"><p>Starts</p><strong>⏱ {countdown}</strong></div>}</section>
       <section id="tickets" className="flow-section"><header><p>01 / SELECT</p><h2>Choose your tickets</h2></header><TicketPicker categories={event.seat_categories || []} selection={selection} onSelectionChange={handleSelectionChange} /></section>
       {event.description && <section id="details" className="flow-section flow-about"><header><p>02 / ABOUT</p><h2>Event details</h2></header><p>{event.description}</p></section>}
     </section>
     <aside className="flow-cart"><div className="flow-cart-top"><p>Your ticket desk</p><h2>{submitted ? 'Order prepared' : selection.category ? 'Order summary' : 'Your order'}</h2></div>
-      {submitted ? <div className="flow-success"><i>✓</i><h3>WhatsApp is ready</h3><p>Send the prepared message. After payment is confirmed, your ticket will be delivered to the email address you entered.</p><button onClick={() => { setSubmitted(false); setSelection({ category: null, quantity: 1 }); setForm({ name: '', email: '', phone: '' }); setExtraNames([]) }}>Start a new order</button></div> : <div className="flow-cart-body">
+      {submitted ? <div className="flow-success"><i>✓</i><h3>WhatsApp is ready</h3>
+        {orderId && <div className="flow-order-ref"><p>Order Reference</p><strong>{orderId.slice(-10).toUpperCase()}</strong></div>}
+        <p>Send the prepared message. After payment is confirmed, your ticket will be delivered to the email address you entered.</p>
+        <button onClick={() => { setSubmitted(false); setOrderId(null); setSelection({ category: null, quantity: 1 }); setForm({ name: '', email: '', phone: '' }); setExtraNames([]) }}>Start a new order</button>
+      </div> : <div className="flow-cart-body">
         <div className="flow-step">1. Ticket choice <b>{selection.category ? `${selection.quantity} × ${selection.category.name}` : 'Not selected'}</b></div>
         <Field label="Full name *" name="name" value={form.name} onChange={event => setForm(current => ({ ...current, name: event.target.value }))} placeholder="e.g. Ahmed Khan" />
         <Field label="Email address *" name="email" type="email" value={form.email} onChange={event => setForm(current => ({ ...current, email: event.target.value }))} placeholder="tickets@email.com" hint="Your confirmed ticket will be sent here." />
@@ -125,4 +199,15 @@ const ticketFlowCss = `
   .flow-cart{position:sticky;top:95px;align-self:start;overflow:hidden;border:1px solid #2d668b;border-radius:16px;background:var(--f-panel);box-shadow:0 24px 60px rgba(0,0,0,.35)}.flow-cart-top{padding:20px 22px;border-bottom:1px dashed #3a6684;background:linear-gradient(135deg,#0f2c46,#0b1725)}.flow-cart-top p{margin:0;color:#a9f4ff;font-size:9px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}.flow-cart-top h2{margin:5px 0 0;font-family:'Bebas Neue',Impact,sans-serif;font-size:1.9rem;font-weight:400;letter-spacing:.02em}.flow-cart-body{display:grid;gap:16px;padding:20px}.flow-step{display:flex;justify-content:space-between;gap:12px;border-radius:8px;padding:10px;background:#10243a;color:#b8d5e6;font-size:11px}.flow-step b{color:#fff;font-weight:700;text-align:right}.flow-field>span,.flow-extra>p{display:block;margin-bottom:7px;color:#b8d5e6;font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase}.flow-field input,.flow-extra input{width:100%;border:1px solid #416783;border-radius:8px;padding:12px;background:#050b14;color:#fff;font:13px 'DM Sans',sans-serif;outline:0}.flow-field input:focus,.flow-extra input:focus{border-color:var(--f-blue)}.flow-field small{display:block;margin-top:5px;color:#829fb4;font-size:10px}.flow-extra{display:grid;gap:7px}.flow-total{display:grid;gap:9px;border-top:1px dashed #3a6684;border-bottom:1px dashed #3a6684;padding:14px 0}.flow-total>div{display:flex;justify-content:space-between;gap:12px;color:#b8d5e6;font-size:12px}.flow-total b{font-weight:600;color:#fff}.flow-total .flow-grand{align-items:end;padding-top:5px}.flow-grand strong{color:#a9f4ff;font-family:'Bebas Neue',Impact,sans-serif;font-size:1.9rem;font-weight:400;letter-spacing:.02em}.flow-error{margin:0;border:1px solid rgba(255,90,90,.5);border-radius:8px;padding:9px;color:#ffb4b4;font-size:12px}.flow-whatsapp{border:0;border-radius:8px;padding:15px;background:var(--f-blue);color:#04151d;font:800 13px 'DM Sans',sans-serif;cursor:pointer}.flow-whatsapp:disabled{opacity:.55;cursor:not-allowed}.flow-note{margin:0;color:#94afc0;font-size:10px;line-height:1.55;text-align:center}.flow-success{padding:28px;text-align:center}.flow-success i{display:grid;width:50px;height:50px;place-items:center;margin:auto;border:1px solid var(--f-blue);border-radius:50%;color:var(--f-blue);font-size:22px;font-style:normal}.flow-success h3{margin:15px 0 8px;font-family:'Bebas Neue',Impact,sans-serif;font-size:1.8rem;font-weight:400}.flow-success p{color:#a8c4d6;font-size:12px;line-height:1.65}.flow-success button{width:100%;margin-top:17px;border:1px solid #3a6684;border-radius:8px;padding:11px;background:transparent;color:#fff;cursor:pointer}
   @media(max-width:900px){.flow-wrap{grid-template-columns:1fr}.flow-cart{position:static}.flow-info{grid-template-columns:repeat(3,1fr)}}@media(max-width:600px){.flow-page{padding-top:84px}.flow-hero{height:205px;border-bottom:4px solid #080609;box-shadow:0 -16px 28px rgba(0,0,0,.78)}.flow-hero::after{position:absolute;z-index:1;top:0;right:0;left:0;height:34px;content:'';background:linear-gradient(180deg,rgba(0,0,0,.84),rgba(0,0,0,0));pointer-events:none}.flow-hero button{top:13px;left:13px;padding:7px 10px;font-size:10px}.flow-hero>span{left:15px;bottom:13px;font-size:8px}.flow-wrap{padding-top:19px;padding-bottom:45px}.flow-event-title h1{font-size:2.5rem}.flow-event-title>div{display:grid;gap:5px;margin-top:10px;font-size:11px}.flow-tabs{margin:18px 0 13px;padding:4px}.flow-tabs a{padding:8px 4px;font-size:10px}.flow-info{grid-template-columns:1fr;gap:6px}.flow-info>div{display:flex;min-height:0;align-items:center;justify-content:space-between;padding:11px 13px}.flow-info strong{margin:0;font-size:11px;text-align:right}.flow-section{margin-top:27px}.flow-section h2{font-size:1.7rem}.flow-ticket-row{grid-template-columns:18px 1fr auto;gap:9px;padding:12px}.flow-ticket-copy strong,.flow-ticket-price{font-size:12px}.flow-ticket-copy small,.flow-ticket-price small{font-size:9px}.flow-quantity{padding:11px}.flow-stepper button,.flow-stepper b{width:31px;height:31px}.flow-cart{border-radius:14px}.flow-cart-top{padding:16px 17px}.flow-cart-body{gap:13px;padding:17px}.flow-whatsapp{padding:14px}.flow-note{font-size:9px}}
   #tickets, #details { scroll-margin-top: 104px; }
+  /* ── Share button ── */
+  .flow-hero-actions { position:absolute; z-index:2; top:24px; right:24px; }
+  .flow-share-btn { border:1px solid rgba(255,255,255,.2); border-radius:999px; padding:8px 13px; background:rgba(9,7,13,.72); color:#fff; font:600 12px 'DM Sans',sans-serif; cursor:pointer; transition:background .18s,border-color .18s; }
+  .flow-share-btn:hover { background:rgba(41,220,255,.15); border-color:var(--f-blue); color:var(--f-blue); }
+  /* ── Countdown cell in flow-info ── */
+  .flow-countdown strong { color:var(--f-blue)!important; }
+  /* ── Order reference box ── */
+  .flow-order-ref { margin:14px 0; border:1px solid rgba(41,220,255,.3); border-radius:10px; padding:12px 16px; background:rgba(41,220,255,.07); text-align:center; }
+  .flow-order-ref p { margin:0 0 4px; color:#a9f4ff; font-size:9px; font-weight:800; letter-spacing:.13em; text-transform:uppercase; }
+  .flow-order-ref strong { color:#fff; font-family:'Bebas Neue',Impact,sans-serif; font-size:1.6rem; letter-spacing:.1em; }
+  @media(max-width:600px){.flow-hero-actions{top:13px;right:13px}.flow-share-btn{padding:6px 10px;font-size:10px}}
 `
