@@ -90,7 +90,9 @@ export default function EventDetailWhatsApp() {
 
   const eventDate = new Date(event.date)
   const date = Number.isNaN(eventDate.getTime()) ? 'Date to be announced' : eventDate.toLocaleDateString('en-PK', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
-  const time = Number.isNaN(eventDate.getTime()) ? '' : eventDate.toLocaleTimeString('en-PK', { hour: '2-digit', minute: '2-digit' })
+  const startTime = Number.isNaN(eventDate.getTime()) ? '' : eventDate.toLocaleTimeString('en-PK', { hour: '2-digit', minute: '2-digit' })
+  const endTime = event.end_time ? new Date(event.end_time).toLocaleTimeString('en-PK', { hour: '2-digit', minute: '2-digit' }) : ''
+  const time = startTime && endTime ? `${startTime} – ${endTime}` : startTime
   const orderTotal = selection.category ? getOrderTotal(selection.category.price, selection.quantity, event.discounts || [], selection.category.service_fee) : 0
   const totals = selection.category ? getOrderTotals(selection.category.price, selection.quantity, event.discounts || [], selection.category.service_fee) : null
 

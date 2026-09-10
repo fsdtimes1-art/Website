@@ -1,4 +1,4 @@
-/* v2 — past events, Live/Past filter, WhatsApp fix, navbar z-index fix */
+﻿/* v3 — is_featured support, past events, Live/Past filter */
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getEvents } from '../lib/api'
@@ -21,8 +21,8 @@ function isPast(event) {
 
 function availability(event) {
   const categories = event.seat_categories || []
-  const total = categories.reduce((sum, category) => sum + Number(category.total_seats || 0), 0)
-  const sold = categories.reduce((sum, category) => sum + Number(category.sold_seats || 0), 0)
+  const total = categories.reduce((sum, c) => sum + Number(c.total_seats || 0), 0)
+  const sold  = categories.reduce((sum, c) => sum + Number(c.sold_seats  || 0), 0)
   return { total, sold, soldOut: total > 0 && sold >= total, almostGone: total > 0 && sold < total && total - sold <= 20 }
 }
 
@@ -30,41 +30,38 @@ function dateDetails(value) {
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return { day: 'Date TBA', time: '' }
   return {
-    day: date.toLocaleDateString('en-PK', { day: 'numeric', month: 'short' }),
+    day:  date.toLocaleDateString('en-PK', { day: 'numeric', month: 'short' }),
     time: date.toLocaleTimeString('en-PK', { hour: '2-digit', minute: '2-digit' }),
   }
 }
 
 function EventTicketCard({ event, index }) {
   const { soldOut, almostGone } = availability(event)
-  const past = isPast(event)
+  const past     = isPast(event)
   const isReview = event.is_review_fixture === true
-  const price = event.seat_categories?.length ? Math.min(...event.seat_categories.map(category => Number(category.price))) : null
+  const price    = event.seat_categories?.length ? Math.min(...event.seat_categories.map(c => Number(c.price))) : null
   const { day, time } = dateDetails(event.date)
 
-  // Past events: never clickable, show "Ended" badge
-  // Sold-out live: not clickable, show "Sold out" badge
-  // Live: clickable, show "Live" or "Almost gone" badge
   const isClickable = !past && !soldOut
-  const badge = past ? 'Ended' : soldOut ? 'Sold out' : almostGone ? 'Almost gone' : 'Live'
+  const badge   = past ? 'Ended' : soldOut ? 'Sold out' : almostGone ? 'Almost gone' : 'Live'
   const Wrapper = isClickable ? Link : 'article'
-  const props = isClickable ? { to: `/events/${event.id}/whatsapp`, state: isReview ? { reviewEvent: event } : undefined } : {}
+  const props   = isClickable ? { to: `/events/${event.id}/whatsapp`, state: isReview ? { reviewEvent: event } : undefined } : {}
 
-  return <Wrapper {...props} className={`pp-event-card ${(!isClickable) ? 'is-sold' : ''} ${past ? 'is-past' : ''}`}>
+  return <Wrapper {...props} className={`pp-event-card ${!isClickable ? 'is-sold' : ''} ${past ? 'is-past' : ''}`}>
     {event.image_url ? <img src={event.image_url} alt={event.name} /> : <div className="pp-image-fallback" />}
     <div className="pp-card-overlay" />
     <span className={`pp-card-live ${past ? 'pp-card-ended' : ''}`}>{!past && <i />} {badge}</span>
     <span className="pp-card-code">FSD // {String(index + 1).padStart(2, '0')}</span>
-    <div className="pp-card-caption"><p>{event.seat_categories?.[0]?.name || 'Event ticket'}</p><h3>{event.name}</h3><div><span>◷ {day}{time && ` · ${time}`}</span></div><strong>{past ? 'Event ended' : soldOut ? 'Tickets unavailable' : price !== null ? `From PKR ${price.toLocaleString()}` : 'View tickets'} {isClickable && ' →'}</strong></div>
+    <div className="pp-card-caption"><p>{event.seat_categories?.[0]?.name || 'Event ticket'}</p><h3>{event.name}</h3><div><span>&#9711; {day}{time && ` · ${time}`}</span></div><strong>{past ? 'Event ended' : soldOut ? 'Tickets unavailable' : price !== null ? `From PKR ${price.toLocaleString()}` : 'View tickets'}{isClickable && ' \u2192'}</strong></div>
   </Wrapper>
 }
 
 export default function Events() {
-  const [events, setEvents] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  const [events,     setEvents]     = useState([])
+  const [loading,    setLoading]    = useState(true)
+  const [error,      setError]      = useState(null)
   const [reviewMode, setReviewMode] = useState(false)
-  const [tab, setTab] = useState('live') // 'live' | 'past'
+  const [tab,        setTab]        = useState('live')
 
   useEffect(() => {
     getEvents()
@@ -73,23 +70,23 @@ export default function Events() {
       .finally(() => setLoading(false))
   }, [])
 
-  const liveEvents = events.filter(e => !isPast(e))
-  const pastEvents = events.filter(e => isPast(e))
+  const liveEvents    = events.filter(e => !isPast(e))
+  const pastEvents    = events.filter(e =>  isPast(e))
   const visibleEvents = tab === 'past' ? pastEvents : liveEvents
 
-  // Featured: first live non-sold-out event
-  const featured = liveEvents.find(event => !availability(event).soldOut) || liveEvents[0] || events[0]
+  const featured     = liveEvents.find(e => e.is_featured)
+                    || liveEvents.find(e => !availability(e).soldOut)
+                    || liveEvents[0] || events[0]
   const featuredDate = featured ? dateDetails(featured.date) : null
 
   return <div className="pp-scope">
-    <style>{pulsePassEventsCss}</style><style>{'@media(max-width:600px){.pp-scope .pp-events-hero{padding:92px 0 20px}}'}</style>
-    <section className="pp-events-hero"><div className="container pp-hero-layout"><div className="pp-heading"><p><i /> Faisalabad live desk</p><h1>Find your next <em>live moment.</em></h1><span>Concerts, comedy, maker rooms, and city gatherings—now in one clearer ticket desk.</span></div>
-      {featured && <article className="pp-feature-card">{featured.image_url ? <img src={featured.image_url} alt={featured.name} /> : <div className="pp-image-fallback" />}<div className="pp-feature-wash" /><span className="pp-feature-rule" /><span className="pp-feature-badge"><i /> Featured</span><div className="pp-feature-caption"><p>Featured this week</p><h2>{featured.name}</h2><span>◷ {featuredDate.day}{featuredDate.time && ` · ${featuredDate.time}`}</span></div></article>}
+    <style>{pulsePassEventsCss}</style>
+    <section className="pp-events-hero"><div className="container pp-hero-layout"><div className="pp-heading"><p><i /> Faisalabad live desk</p><h1>Find your next <em>live moment.</em></h1><span>Concerts, comedy, maker rooms, and city gatherings now in one clearer ticket desk.</span></div>
+      {featured && <article className="pp-feature-card">{featured.image_url ? <img src={featured.image_url} alt={featured.name} /> : <div className="pp-image-fallback" />}<div className="pp-feature-wash" /><span className="pp-feature-rule" /><span className="pp-feature-badge"><i /> Featured</span><div className="pp-feature-caption"><p>Featured this week</p><h2>{featured.name}</h2><span>&#9711; {featuredDate.day}{featuredDate.time && ` · ${featuredDate.time}`}</span></div></article>}
     </div></section>
 
     <section className="container pp-events-shell"><div className="pp-events-rail"><span className="pp-rail-serial">FSD // EVENTS</span><div className="pp-rail-header"><div><p><i /> What&apos;s on</p><h2>Events</h2></div><span>Choose an event to view ticket options.</span></div>
 
-      {/* Live / Past filter */}
       <div className="pp-tab-filter">
         <button className={tab === 'live' ? 'is-active' : ''} onClick={() => setTab('live')}>
           <i /> Live now
@@ -102,11 +99,11 @@ export default function Events() {
       </div>
 
       {reviewMode && <p className="pp-review-mode">Review preview uses sample listings only.</p>}
-      {loading && <div className="pp-state"><span className="pp-spinner" /> Loading events…</div>}
+      {loading && <div className="pp-state"><span className="pp-spinner" /> Loading events&hellip;</div>}
       {error && <div className="pp-state pp-error">Could not load events: {error}</div>}
       {!loading && !error && visibleEvents.length === 0 && (
         <div className="pp-state">
-          {tab === 'past' ? 'No past events to show.' : 'No upcoming events at the moment — check back soon.'}
+          {tab === 'past' ? 'No past events to show.' : 'No upcoming events at the moment \u2014 check back soon.'}
         </div>
       )}
       {!loading && !error && visibleEvents.length > 0 && <div className="pp-card-grid">{visibleEvents.map((event, index) => <EventTicketCard key={event.id} event={event} index={index} />)}</div>}

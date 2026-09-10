@@ -47,12 +47,14 @@ export default function Home() {
 
   const carouselEvents = useMemo(() => {
     const now = new Date()
-    return events.filter(event => {
+    const filtered = events.filter(event => {
       if (!event || event.is_active === false) return false
-      if (!event.date) return true // no date = show it
+      if (!event.date) return true
       const d = new Date(event.date)
-      return Number.isNaN(d.getTime()) || d > now // only future events
+      return Number.isNaN(d.getTime()) || d > now
     })
+    // featured events appear first in the carousel
+    return filtered.sort((a, b) => (b.is_featured ? 1 : 0) - (a.is_featured ? 1 : 0))
   }, [events])
 
   useEffect(() => { if (eventIndex >= carouselEvents.length) setEventIndex(0) }, [eventIndex, carouselEvents.length])

@@ -13,8 +13,10 @@ function emptyForm() {
     image_url:   '',
     date:        '',
     time:        '',
+    end_time:    '',
     venue:       '',
     is_active:   true,
+    is_featured: false,
     categories:  [{ ...EMPTY_CAT }],
     discounts:   [],
   }
@@ -48,24 +50,32 @@ export default function EventForm() {
   const [error,   setError]   = useState(null)
   const [success, setSuccess] = useState(false)
 
-  const [showCal,    setShowCal]    = useState(false)
-  const [showTime,   setShowTime]   = useState(false)
-  const [calAnchor,  setCalAnchor]  = useState(null)
-  const [timeAnchor, setTimeAnchor] = useState(null)
-  const [calYear,    setCalYear]    = useState(new Date().getFullYear())
-  const [calMonth,   setCalMonth]   = useState(new Date().getMonth())
+  const [showCal,       setShowCal]       = useState(false)
+  const [showTime,      setShowTime]      = useState(false)
+  const [showEndTime,   setShowEndTime]   = useState(false)
+  const [calAnchor,     setCalAnchor]     = useState(null)
+  const [timeAnchor,    setTimeAnchor]    = useState(null)
+  const [endTimeAnchor, setEndTimeAnchor] = useState(null)
+  const [calYear,       setCalYear]       = useState(new Date().getFullYear())
+  const [calMonth,      setCalMonth]      = useState(new Date().getMonth())
 
   const [timeH, setTimeH] = useState('12')
   const [timeM, setTimeM] = useState('00')
   const [timeP, setTimeP] = useState('PM')
 
+  const [endTimeH, setEndTimeH] = useState('12')
+  const [endTimeM, setEndTimeM] = useState('00')
+  const [endTimeP, setEndTimeP] = useState('PM')
+
   const [dragOver, setDragOver] = useState(false)
 
-  const calRef     = useRef(null)
-  const timeRef    = useRef(null)
-  const calBtnRef  = useRef(null)
-  const timeBtnRef = useRef(null)
-  const fileInputRef = useRef(null)
+  const calRef        = useRef(null)
+  const timeRef       = useRef(null)
+  const endTimeRef    = useRef(null)
+  const calBtnRef     = useRef(null)
+  const timeBtnRef    = useRef(null)
+  const endTimeBtnRef = useRef(null)
+  const fileInputRef  = useRef(null)
 
   const today = new Date(); today.setHours(0,0,0,0)
   const todayStr = toDateStr(today.getFullYear(), today.getMonth(), today.getDate())
@@ -73,14 +83,9 @@ export default function EventForm() {
   // ── Close popups on outside click ───────────────────────
   useEffect(() => {
     function handler(e) {
-      if (
-        calRef.current     && !calRef.current.contains(e.target) &&
-        calBtnRef.current  && !calBtnRef.current.contains(e.target)
-      ) setShowCal(false)
-      if (
-        timeRef.current    && !timeRef.current.contains(e.target) &&
-        timeBtnRef.current && !timeBtnRef.current.contains(e.target)
-      ) setShowTime(false)
+      if (calRef.current && !calRef.current.contains(e.target) && calBtnRef.current && !calBtnRef.current.contains(e.target)) setShowCal(false)
+      if (timeRef.current && !timeRef.current.contains(e.target) && timeBtnRef.current && !timeBtnRef.current.contains(e.target)) setShowTime(false)
+      if (endTimeRef.current && !endTimeRef.current.contains(e.target) && endTimeBtnRef.current && !endTimeBtnRef.current.contains(e.target)) setShowEndTime(false)
     }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
@@ -88,7 +93,7 @@ export default function EventForm() {
 
   // ── Close popups on scroll ───────────────────────────────
   useEffect(() => {
-    const close = () => { setShowCal(false); setShowTime(false) }
+    const close = () => { setShowCal(false); setShowTime(false); setShowEndTime(false) }
     window.addEventListener('scroll', close, true)
     return () => window.removeEventListener('scroll', close, true)
   }, [])
@@ -105,22 +110,37 @@ export default function EventForm() {
         const time = dt.toTimeString().slice(0, 5)
         setCalYear(dt.getFullYear())
         setCalMonth(dt.getMonth())
-        // Sync time picker selects
+        // Sync start time picker selects
         let h = dt.getHours()
         const ampm = h >= 12 ? 'PM' : 'AM'
         if (h > 12) h -= 12
         if (h === 0) h = 12
-        setTimeH(String(h).padStart(2,'0'))
-        setTimeM(String(dt.getMinutes()).padStart(2,'0'))
+        setTimeH(String(h).padStart(2,'00'))
+        setTimeM(String(dt.getMinutes()).padStart(2,'00'))
         setTimeP(ampm)
+        // Sync end time picker selects
+        let end_time = ''
+        if (event.end_time) {
+          const edt = new Date(event.end_time)
+          end_time = edt.toTimeString().slice(0, 5)
+          let eh = edt.getHours()
+          const eampm = eh >= 12 ? 'PM' : 'AM'
+          if (eh > 12) eh -= 12
+          if (eh === 0) eh = 12
+          setEndTimeH(String(eh).padStart(2,'00'))
+          setEndTimeM(String(edt.getMinutes()).padStart(2,'00'))
+          setEndTimeP(eampm)
+        }
         setForm({
           name:        event.name        || '',
           description: event.description || '',
           image_file:  null,
           image_url:   event.image_url   || '',
           date, time,
+          end_time,
           venue:       event.venue       || '',
           is_active:   event.is_active   ?? true,
+          is_featured: event.is_featured ?? false,
           categories:  event.seat_categories?.length
             ? event.seat_categories.map(c => ({
                 id:          c.id,
@@ -221,7 +241,7 @@ export default function EventForm() {
   function openTime(e) {
     const r = e.currentTarget.getBoundingClientRect()
     setTimeAnchor({ top: r.bottom + 6, left: r.left })
-    setShowCal(false)
+    setShowCal(false); setShowEndTime(false)
     setShowTime(v => !v)
   }
 
@@ -232,6 +252,27 @@ export default function EventForm() {
     const val = `${String(h).padStart(2,'0')}:${timeM}`
     setForm(f => ({ ...f, time: val }))
     setShowTime(false)
+  }
+
+  function openEndTime(e) {
+    const r = e.currentTarget.getBoundingClientRect()
+    setEndTimeAnchor({ top: r.bottom + 6, left: r.left })
+    setShowCal(false); setShowTime(false)
+    setShowEndTime(v => !v)
+  }
+
+  function applyEndTime() {
+    let h = parseInt(endTimeH)
+    if (endTimeP === 'PM' && h !== 12) h += 12
+    if (endTimeP === 'AM' && h === 12) h = 0
+    const val = `${String(h).padStart(2,'0')}:${endTimeM}`
+    setForm(f => ({ ...f, end_time: val }))
+    setShowEndTime(false)
+  }
+
+  function clearEndTime() {
+    setForm(f => ({ ...f, end_time: '' }))
+    setEndTimeH('12'); setEndTimeM('00'); setEndTimeP('PM')
   }
 
   function displayTime(val) {
@@ -289,14 +330,17 @@ export default function EventForm() {
     const validationError = validate()
     if (validationError) return setError(validationError)
     setError(null); setSaving(true)
-    const datetime = new Date(`${form.date}T${form.time}:00`).toISOString()
+    const datetime    = new Date(`${form.date}T${form.time}:00`).toISOString()
+    const end_datetime = form.end_time ? new Date(`${form.date}T${form.end_time}:00`).toISOString() : null
     const payload = {
       name:        form.name.trim(),
       description: form.description.trim() || null,
       image_url:   form.image_url || null,
       date:        datetime,
+      end_time:    end_datetime,
       venue:       form.venue.trim(),
       is_active:   form.is_active,
+      is_featured: form.is_featured,
       categories:  form.categories.map(c => ({
         ...(c.id ? { id: c.id } : {}),
         name:        c.name.trim(),
@@ -483,6 +527,32 @@ export default function EventForm() {
               </button>
             </Field>
 
+            <Field label="End Time (optional)">
+              <div style={{ display:'flex', gap:'8px', alignItems:'center' }}>
+                <button ref={endTimeBtnRef} type="button" onClick={openEndTime} style={{
+                  flex:1, textAlign:'left', background:'var(--black-3)',
+                  border:`1px solid ${showEndTime ? 'rgba(245,158,11,0.5)' : 'rgba(255,255,255,0.1)'}`,
+                  borderRadius:'8px', padding:'11px 14px',
+                  color: form.end_time ? 'var(--white)' : 'var(--gray-mid)',
+                  fontSize:'14px', cursor:'pointer', display:'flex', alignItems:'center',
+                  justifyContent:'space-between', transition:'border-color 0.15s',
+                }}>
+                  <span>{form.end_time ? displayTime(form.end_time) : 'e.g. 9:00 PM'}</span>
+                  <span style={{ opacity:0.5, fontSize:'16px' }}>🕐</span>
+                </button>
+                {form.end_time && (
+                  <button type="button" onClick={clearEndTime} title="Clear end time" style={{
+                    background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)',
+                    borderRadius:'8px', padding:'11px 13px', color:'var(--gray-mid)',
+                    fontSize:'13px', cursor:'pointer',
+                  }}>✕</button>
+                )}
+              </div>
+              <p style={{ marginTop:'5px', fontSize:'11px', color:'var(--gray-mid)' }}>
+                Shown as "4:00 PM – 9:00 PM" on the event page. Leave blank to show start time only.
+              </p>
+            </Field>
+
           </div>
 
           <Field label="Venue *">
@@ -490,6 +560,37 @@ export default function EventForm() {
               placeholder="e.g. Marriott Hotel, Karachi"
               value={form.venue} onChange={handleField} />
           </Field>
+
+          {/* ── FEATURED TOGGLE ── */}
+          <div style={{
+            display:'flex', alignItems:'center', justifyContent:'space-between',
+            border:'1px solid rgba(245,158,11,0.2)', borderRadius:'10px',
+            padding:'14px 16px', background:'rgba(245,158,11,0.04)', marginTop:'8px',
+          }}>
+            <div>
+              <p style={{ margin:0, fontWeight:700, fontSize:'13px', color:'var(--white)' }}>📌 Pin as Featured Event</p>
+              <p style={{ margin:'3px 0 0', fontSize:'11px', color:'var(--gray-mid)', lineHeight:1.4 }}>
+                Featured events appear first in the home banner carousel and as the highlighted card on the Events page.
+                Only one event should be featured at a time.
+              </p>
+            </div>
+            <div onClick={() => setForm(f => ({ ...f, is_featured: !f.is_featured }))} style={{
+              position:'relative', width:'46px', height:'26px', borderRadius:'999px',
+              cursor:'pointer', flexShrink:0, marginLeft:'16px',
+              background: form.is_featured ? 'rgba(245,158,11,0.7)' : 'rgba(255,255,255,0.08)',
+              border: form.is_featured ? '1px solid rgba(245,158,11,0.8)' : '1px solid rgba(255,255,255,0.12)',
+              transition:'background 0.2s, border-color 0.2s',
+            }}>
+              <div style={{
+                position:'absolute', top:'3px',
+                left: form.is_featured ? '23px' : '3px',
+                width:'18px', height:'18px', borderRadius:'50%',
+                background: form.is_featured ? '#fff' : 'rgba(255,255,255,0.4)',
+                transition:'left 0.2s',
+              }} />
+            </div>
+          </div>
+
         </Section>
 
         {/* ── SEAT CATEGORIES ── */}
@@ -780,6 +881,63 @@ export default function EventForm() {
           >
             Confirm
           </button>
+        </div>
+      )}
+
+      {/* ── END TIME POPUP ── */}
+      {showEndTime && endTimeAnchor && (
+        <div ref={endTimeRef} style={{
+          position:'fixed', top: endTimeAnchor.top, left: endTimeAnchor.left,
+          zIndex:9999, background:'var(--black-2)',
+          border:'1px solid rgba(255,255,255,0.1)',
+          borderRadius:'12px', padding:'20px', width:'220px',
+          boxShadow:'0 20px 60px rgba(0,0,0,0.6)',
+        }}>
+          <p style={{
+            color:'var(--gray-mid)', fontSize:'10px', fontWeight:'700',
+            letterSpacing:'1.5px', textTransform:'uppercase', marginBottom:'14px',
+          }}>END TIME</p>
+          <div style={{ display:'flex', gap:'8px', alignItems:'center', marginBottom:'16px' }}>
+            <div style={{ flex:1 }}>
+              <p style={{ color:'var(--gray-mid)', fontSize:'10px', textAlign:'center', marginBottom:'6px' }}>HR</p>
+              <select value={endTimeH} onChange={e => setEndTimeH(e.target.value)} style={{
+                width:'100%', background:'var(--black-3)', border:'1px solid rgba(255,255,255,0.1)',
+                borderRadius:'6px', color:'var(--white)', fontSize:'20px', fontWeight:'600',
+                padding:'8px 4px', textAlign:'center', cursor:'pointer', appearance:'none',
+              }}>
+                {Array.from({length:12},(_,i) => String(i+1).padStart(2,'0')).map(h => <option key={h} value={h}>{h}</option>)}
+              </select>
+            </div>
+            <span style={{ color:'var(--gold)', fontSize:'24px', fontWeight:'700', paddingTop:'18px' }}>:</span>
+            <div style={{ flex:1 }}>
+              <p style={{ color:'var(--gray-mid)', fontSize:'10px', textAlign:'center', marginBottom:'6px' }}>MIN</p>
+              <select value={endTimeM} onChange={e => setEndTimeM(e.target.value)} style={{
+                width:'100%', background:'var(--black-3)', border:'1px solid rgba(255,255,255,0.1)',
+                borderRadius:'6px', color:'var(--white)', fontSize:'20px', fontWeight:'600',
+                padding:'8px 4px', textAlign:'center', cursor:'pointer', appearance:'none',
+              }}>
+                {['00','05','10','15','20','25','30','35','40','45','50','55'].map(m => <option key={m} value={m}>{m}</option>)}
+              </select>
+            </div>
+            <div style={{ display:'flex', flexDirection:'column', gap:'4px', paddingTop:'18px' }}>
+              {['AM','PM'].map(p => (
+                <button key={p} onClick={() => setEndTimeP(p)} style={{
+                  background: endTimeP === p ? 'var(--gold)' : 'var(--black-3)',
+                  border: '1px solid rgba(255,255,255,0.1)', borderRadius:'6px',
+                  color: endTimeP === p ? '#000' : 'var(--gray-mid)',
+                  fontSize:'11px', fontWeight:'700', padding:'6px 8px', cursor:'pointer',
+                }}>{p}</button>
+              ))}
+            </div>
+          </div>
+          <button onClick={applyEndTime} style={{
+            width:'100%', background:'var(--gold)', border:'none',
+            borderRadius:'8px', color:'#000', fontSize:'13px',
+            fontWeight:'700', padding:'10px', cursor:'pointer',
+          }}
+            onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
+            onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+          >Confirm</button>
         </div>
       )}
 
