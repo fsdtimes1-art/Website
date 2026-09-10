@@ -372,13 +372,16 @@ function GeneratorTab({ events, onCreated, onToast }) {
           {/* Quantity + Start Serial */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
             <div>
-              <label style={S.label}>Quantity (1–250)</label>
+              <label style={S.label}>Quantity (1–50 per batch)</label>
               <input
-                type="number" min={1} max={250} required
+                type="number" min={1} max={50} required
                 className="input"
                 value={form.quantity}
-                onChange={e => setField('quantity', parseInt(e.target.value, 10) || 1)}
+                onChange={e => setField('quantity', Math.min(50, parseInt(e.target.value, 10) || 1))}
               />
+              <p style={{ color: 'var(--gray-mid)', fontSize: '11px', marginTop: '4px' }}>
+                For larger runs create multiple batches.
+              </p>
             </div>
             <div>
               <label style={S.label}>Starting Serial #</label>
@@ -403,7 +406,7 @@ function GeneratorTab({ events, onCreated, onToast }) {
             >
               <p style={{ fontSize: '24px' }}>🖼️</p>
               <p style={{ color: template ? 'var(--gold)' : 'var(--gray-mid)', fontSize: '13px', marginTop: '6px' }}>
-                {template ? template.name : 'Click to upload (max 5MB, optional)'}
+                {template ? template.name : 'Click to upload (max 2 MB — JPEG/PNG/WebP)'}
               </p>
               {template && (
                 <button
@@ -420,6 +423,10 @@ function GeneratorTab({ events, onCreated, onToast }) {
               style={{ display: 'none' }}
               onChange={e => setTemplate(e.target.files[0] || null)}
             />
+            <p style={{ color: 'var(--gray-mid)', fontSize: '11px', marginTop: '6px' }}>
+              💡 Keep artwork under 2 MB — larger files may cause PDF download to fail.
+              Compress with <a href="https://squoosh.app" target="_blank" rel="noreferrer" style={{ color: 'var(--gold)' }}>squoosh.app</a> if needed.
+            </p>
           </div>
         </div>
 

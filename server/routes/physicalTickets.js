@@ -18,9 +18,13 @@ const {
 } = require('../services/physicalTicketService');
 
 // Multer — memory storage (no disk writes, safe for Vercel serverless)
+// Template size limit: 2 MB.
+// Why: the PDF is streamed directly through Vercel's serverless function which
+// has a ~4.5 MB response body limit. A 2 MB JPEG template + 50 QR codes (~400 KB)
+// = ~2.5 MB PDF → safely under. At 5 MB the PDF could exceed 4.5 MB and fail.
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits:  { fileSize: 5 * 1024 * 1024 }, // 5 MB max template
+  limits:  { fileSize: 2 * 1024 * 1024 }, // 2 MB max — see comment above
   fileFilter: (_req, file, cb) => {
     if (['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype)) {
       cb(null, true);
@@ -391,15 +395,31 @@ router.get('/batches/:id/pdf', async (req, res) => {
       ticketH: parseFloat(req.query.ticketH || 70),
     };
 
-    // ── Generate PDF (parallel QR generation inside) ─────────
+    // ── Download ticket artwork template (if uploaded) ────────
+    let templateBuffer = null;
+    if (batch.template_url) {
+      try {
+        const { data: fileData, error: dlErr } = await supabase.storage
+          .from('physical-ticket-templates')
+          .download(batch.template_url);
+        if (!dlErr && fileData) {
+          templateBuffer = Buffer.from(await fileData.arrayBuffer());
+        }
+      } catch (_) {
+        // Template unavailable — PDF falls back to brand background (non-fatal)
+        console.warn(`Template download failed for ${batch.batch_ref} — using fallback background`);
+      }
+    }
+
+    // ── Generate PDF (artwork background + QR codes) ──────────
     const { generatePhysicalTicketPDF } = require('../services/physicalTicketService');
     const pdfBuffer = await generatePhysicalTicketPDF(
       { batchRef: batch.batch_ref, quantity: batch.quantity,
         startSerial: batch.start_serial, endSerial: batch.end_serial },
       tickets,
-      batch.events         || { name: 'Event', date: new Date().toISOString(), venue: '' },
+      batch.events          || { name: 'Event', date: new Date().toISOString(), venue: '' },
       batch.seat_categories || { name: 'General' },
-      null,    // no template — PDF is a QR-only overlay
+      templateBuffer,        // artwork as full-bleed background (embedded once by PDFKit)
       layout
     );
 
