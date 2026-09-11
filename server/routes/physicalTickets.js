@@ -223,6 +223,7 @@ router.post('/batches', upload.single('template'), async (req, res) => {
       qrSize = '24',
       ticketW = '180',
       ticketH = '70',
+      serialAlign = 'below',
     } = req.body;
 
     const quantity    = parseInt(quantityRaw, 10);
@@ -309,11 +310,12 @@ router.post('/batches', upload.single('template'), async (req, res) => {
         template_url:     templateStoragePath,
         created_by:       req.adminAccount || 'admin',
         // ── QR layout — stored so Download from Overview uses correct position ──
-        qr_x:     parseFloat(qrX),
-        qr_y:     parseFloat(qrY),
-        qr_size:  parseFloat(qrSize),
-        ticket_w: parseFloat(ticketW),
-        ticket_h: parseFloat(ticketH),
+        qr_x:        parseFloat(qrX),
+        qr_y:        parseFloat(qrY),
+        qr_size:     parseFloat(qrSize),
+        ticket_w:    parseFloat(ticketW),
+        ticket_h:    parseFloat(ticketH),
+        serial_align: serialAlign === 'above' ? 'above' : 'below',
       })
       .select()
       .single();
@@ -399,11 +401,12 @@ router.get('/batches/:id/pdf', async (req, res) => {
     // Fall back to query params (backward-compat for old batches)
     // then to hardcoded defaults.
     const layout = {
-      qrX:     parseFloat(batch.qr_x     ?? req.query.qrX     ?? 76),
-      qrY:     parseFloat(batch.qr_y     ?? req.query.qrY     ?? 15),
-      qrSize:  parseFloat(batch.qr_size  ?? req.query.qrSize  ?? 24),
-      ticketW: parseFloat(batch.ticket_w ?? req.query.ticketW ?? 180),
-      ticketH: parseFloat(batch.ticket_h ?? req.query.ticketH ?? 70),
+      qrX:         parseFloat(batch.qr_x     ?? req.query.qrX     ?? 76),
+      qrY:         parseFloat(batch.qr_y     ?? req.query.qrY     ?? 15),
+      qrSize:      parseFloat(batch.qr_size  ?? req.query.qrSize  ?? 24),
+      ticketW:     parseFloat(batch.ticket_w ?? req.query.ticketW ?? 180),
+      ticketH:     parseFloat(batch.ticket_h ?? req.query.ticketH ?? 70),
+      serialAlign: batch.serial_align ?? req.query.serialAlign ?? 'below',
     };
 
     // ── Download ticket artwork template (if uploaded) ────────

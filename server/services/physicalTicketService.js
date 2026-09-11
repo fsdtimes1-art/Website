@@ -103,11 +103,12 @@ async function generatePhysicalTicketPDF(
   layout = {}
 ) {
   const {
-    qrX      = 76,   // QR left edge, % of ticket width
-    qrY      = 15,   // QR top edge,  % of ticket height
-    qrSize   = 24,   // mm
-    ticketW  = 180,  // mm
-    ticketH  = 70,   // mm
+    qrX      = 76,
+    qrY      = 15,
+    qrSize   = 24,
+    ticketW  = 180,
+    ticketH  = 70,
+    serialAlign = 'below',
   } = layout;
 
   // Convert mm → PDF points (1 mm ≈ 2.8346 pt)
@@ -181,12 +182,17 @@ async function generatePhysicalTicketPDF(
         // ── QR code (on top of artwork) ───────────────────────────
         doc.image(qrBuf, qrPx, qrPy, { width: qrPs, height: qrPs });
 
-        // ── Serial number below the QR ────────────────────────────
+        // ── Serial number (above or below QR, based on serialAlign) ──
+        const serialFontSize = 5.5;
+        const serialGap      = 2;        // pt gap between QR edge and text
+        const serialY = serialAlign === 'above'
+          ? qrPy - serialFontSize - serialGap   // sit above the QR top edge
+          : qrPy + qrPs + serialGap;             // sit below the QR bottom edge
         doc
           .fillColor(serialColor)
           .font('Helvetica-Bold')
-          .fontSize(5.5)
-          .text(ticket.serial_code, qrPx, qrPy + qrPs + 2, {
+          .fontSize(serialFontSize)
+          .text(ticket.serial_code, qrPx, serialY, {
             width: qrPs, align: 'center',
           });
 

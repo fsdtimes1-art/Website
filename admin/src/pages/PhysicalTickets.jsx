@@ -288,6 +288,7 @@ function GeneratorTab({ events, onCreated, onToast }) {
   const [form, setForm] = useState({
     eventId: '', categoryId: '', quantity: 50, startSerial: 1,
     qrX: 76, qrY: 15, qrSize: 24, ticketW: 180, ticketH: 70,
+    serialAlign: 'below',
   })
   const [template,   setTemplate]   = useState(null)  // File object
   const [submitting, setSubmitting] = useState(false)
@@ -321,6 +322,7 @@ function GeneratorTab({ events, onCreated, onToast }) {
       fd.append('qrSize',      String(form.qrSize))
       fd.append('ticketW',     String(form.ticketW))
       fd.append('ticketH',     String(form.ticketH))
+      fd.append('serialAlign', form.serialAlign)
       if (template) fd.append('template', template)
 
       const data = await createPhysicalBatch(fd)
@@ -443,18 +445,49 @@ function GeneratorTab({ events, onCreated, onToast }) {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
               <div>
                 <label style={S.label}>QR Left Edge (% of width)</label>
-                <input type="number" min={0} max={95} step={1} className="input"
+                <input type="number" min={0} max={100} step={0.1} className="input"
                   value={form.qrX} onChange={e => setField('qrX', parseFloat(e.target.value))} />
               </div>
               <div>
                 <label style={S.label}>QR Top Edge (% of height)</label>
-                <input type="number" min={0} max={90} step={1} className="input"
+                <input type="number" min={0} max={100} step={0.1} className="input"
                   value={form.qrY} onChange={e => setField('qrY', parseFloat(e.target.value))} />
               </div>
               <div>
                 <label style={S.label}>QR Size (mm)</label>
-                <input type="number" min={10} max={60} step={1} className="input"
+                <input type="number" min={5} max={60} step={0.1} className="input"
                   value={form.qrSize} onChange={e => setField('qrSize', parseFloat(e.target.value))} />
+              </div>
+              <div>
+                <label style={S.label}>Serial Number Position</label>
+                <div style={{ display: 'flex', gap: '8px', marginTop: '2px' }}>
+                  {['below', 'above'].map(opt => (
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={() => setField('serialAlign', opt)}
+                      style={{
+                        flex: 1,
+                        padding: '8px 6px',
+                        borderRadius: '6px',
+                        border: form.serialAlign === opt
+                          ? '1px solid rgba(245,158,11,0.5)'
+                          : '1px solid rgba(255,255,255,0.1)',
+                        background: form.serialAlign === opt
+                          ? 'rgba(245,158,11,0.12)'
+                          : 'transparent',
+                        color: form.serialAlign === opt ? 'var(--gold)' : 'var(--gray-mid)',
+                        fontSize: '11px',
+                        fontWeight: form.serialAlign === opt ? '700' : '400',
+                        cursor: 'pointer',
+                        textTransform: 'capitalize',
+                        transition: 'all 0.15s',
+                      }}
+                    >
+                      {opt === 'below' ? '↓ Below QR' : '↑ Above QR'}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
