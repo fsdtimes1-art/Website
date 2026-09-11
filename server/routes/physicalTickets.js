@@ -308,6 +308,12 @@ router.post('/batches', upload.single('template'), async (req, res) => {
         end_serial:       endSerial,
         template_url:     templateStoragePath,
         created_by:       req.adminAccount || 'admin',
+        // ── QR layout — stored so Download from Overview uses correct position ──
+        qr_x:     parseFloat(qrX),
+        qr_y:     parseFloat(qrY),
+        qr_size:  parseFloat(qrSize),
+        ticket_w: parseFloat(ticketW),
+        ticket_h: parseFloat(ticketH),
       })
       .select()
       .single();
@@ -356,8 +362,11 @@ router.get('/batches/:id/pdf', async (req, res) => {
 
     if (bErr || !batch) return res.status(404).json({ error: 'Batch not found' });
 
-    // ── If already cached in storage, serve from there first ─
-    if (batch.pdf_url) {
+    // ── If already cached in storage, serve from there ONLY if
+    //    this batch was created before layout columns existed (qr_x is null).
+    //    Batches with stored layout always regenerate to guarantee correct position.
+    const hasStoredLayout = batch.qr_x != null;
+    if (batch.pdf_url && !hasStoredLayout) {
       try {
         const { data: fileData, error: dlErr } = await supabase.storage
           .from('physical-ticket-templates')
@@ -386,13 +395,15 @@ router.get('/batches/:id/pdf', async (req, res) => {
       return res.status(404).json({ error: 'No tickets found for this batch' });
     }
 
-    // ── Layout — query params override batch defaults ─────────
+    // ── Layout — DB values (set at creation) take priority ───────
+    // Fall back to query params (backward-compat for old batches)
+    // then to hardcoded defaults.
     const layout = {
-      qrX:     parseFloat(req.query.qrX     || 76),
-      qrY:     parseFloat(req.query.qrY     || 15),
-      qrSize:  parseFloat(req.query.qrSize  || 24),
-      ticketW: parseFloat(req.query.ticketW || 180),
-      ticketH: parseFloat(req.query.ticketH || 70),
+      qrX:     parseFloat(batch.qr_x     ?? req.query.qrX     ?? 76),
+      qrY:     parseFloat(batch.qr_y     ?? req.query.qrY     ?? 15),
+      qrSize:  parseFloat(batch.qr_size  ?? req.query.qrSize  ?? 24),
+      ticketW: parseFloat(batch.ticket_w ?? req.query.ticketW ?? 180),
+      ticketH: parseFloat(batch.ticket_h ?? req.query.ticketH ?? 70),
     };
 
     // ── Download ticket artwork template (if uploaded) ────────

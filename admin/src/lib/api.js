@@ -231,11 +231,19 @@ export async function createPhysicalBatch(formData) {
   })
 }
 
-export async function getPhysicalBatchPdfUrl(batchId, batchRef) {
+export async function getPhysicalBatchPdfUrl(batchId, batchRef, layout = {}) {
   // Use authenticated fetch — PT_BASE may be a relative URL so we cannot use
   // direct browser navigation (relative <a href> would hit the admin server, not backend).
   // Blob URLs are always same-origin so a.click(download) is never popup-blocked.
-  const res = await fetch(`${PT_BASE}/batches/${batchId}/pdf`, {
+  const qs = new URLSearchParams()
+  if (layout.qrX    != null) qs.set('qrX',     String(layout.qrX))
+  if (layout.qrY    != null) qs.set('qrY',     String(layout.qrY))
+  if (layout.qrSize != null) qs.set('qrSize',  String(layout.qrSize))
+  if (layout.ticketW != null) qs.set('ticketW', String(layout.ticketW))
+  if (layout.ticketH != null) qs.set('ticketH', String(layout.ticketH))
+  const qsStr = qs.toString()
+  const url = `${PT_BASE}/batches/${batchId}/pdf${qsStr ? `?${qsStr}` : ''}`
+  const res = await fetch(url, {
     credentials: 'include',
     headers: { 'x-admin-key': getStoredKey() },
   })

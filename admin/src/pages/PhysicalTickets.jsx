@@ -131,7 +131,17 @@ function OverviewTab({ stats, batches, loadingStats, loadingBatches, onDownloadP
   async function handleDownload(batch) {
     setDownloadingId(batch.id)
     try {
-      const result = await onDownloadPdf(batch.id, batch.batch_ref)
+      // Pass stored layout so server uses correct QR position.
+      // batch.qr_x etc. come from DB (saved at creation).
+      // Fallback values match server defaults for old batches without stored layout.
+      const layout = {
+        qrX:     batch.qr_x     ?? 76,
+        qrY:     batch.qr_y     ?? 15,
+        qrSize:  batch.qr_size  ?? 24,
+        ticketW: batch.ticket_w ?? 180,
+        ticketH: batch.ticket_h ?? 70,
+      }
+      const result = await onDownloadPdf(batch.id, batch.batch_ref, layout)
       setReadyPdfs(prev => ({ ...prev, [batch.id]: result }))
     } catch (err) {
       alert(`PDF failed: ${err.message}`)
