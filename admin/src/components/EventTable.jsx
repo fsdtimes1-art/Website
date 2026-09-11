@@ -75,7 +75,6 @@ function EventRow({ event, onToggle, onDelete, onDuplicate, duplicating }) {
     minute: '2-digit',
   })
 
-  const canPermanentlyDelete = isPast && !event.is_active
 
   return (
     <tr>
@@ -315,19 +314,24 @@ function EventRow({ event, onToggle, onDelete, onDuplicate, duplicating }) {
           </button>
 
           <button
-            onClick={() => onDelete(event)}
-            disabled={!canPermanentlyDelete}
+            onClick={() => {
+              const hasTickets = soldSeats > 0
+              const warning = hasTickets
+                ? `⚠️ This event has ${soldSeats} sold ticket(s).\n\nDeleting will permanently remove the event and all purchase records.\n\nType DELETE to confirm:`
+                : `Delete "${event.name}"?\n\nThis will permanently remove the event and cannot be undone.\n\nType DELETE to confirm:`
+              const input = window.prompt(warning)
+              if (input?.trim().toUpperCase() === 'DELETE') onDelete(event)
+            }}
             style={{
               display:      'inline-flex',
               alignItems:   'center',
               background:   'transparent',
               border:       '1px solid rgba(239,68,68,0.2)',
-              color:        canPermanentlyDelete ? '#f87171' : 'var(--gray-dark)',
+              color:        '#f87171',
               fontSize:     '12px',
               padding:      '6px 10px',
               borderRadius: '4px',
-              cursor:       canPermanentlyDelete ? 'pointer' : 'not-allowed',
-              opacity:       canPermanentlyDelete ? 1 : 0.45,
+              cursor:       'pointer',
               transition:   'all 0.15s',
             }}
             onMouseEnter={e => {
@@ -338,9 +342,7 @@ function EventRow({ event, onToggle, onDelete, onDuplicate, duplicating }) {
               e.currentTarget.style.background  = 'transparent'
               e.currentTarget.style.borderColor = 'rgba(239,68,68,0.2)'
             }}
-            title={canPermanentlyDelete
-              ? 'Permanently delete this hidden past event and its related records'
-              : 'Only hidden past events can be permanently deleted'}
+            title="Delete this event (type DELETE to confirm)"
           >
             🗑️
           </button>
